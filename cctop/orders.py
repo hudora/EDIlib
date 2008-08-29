@@ -97,7 +97,7 @@ addressen = [
         doc="NAD-3036"),                                 
     dict(startpos=90, endpos=124, length=35, name='name3',
         doc="NAD-3036"),
-    dict(startpos=125, endpos=159, length=35, name='strasse',
+    dict(startpos=125, endpos=159, length=35, name='strasse1',
         doc="NAD-3042"),
     dict(startpos=160, endpos=194, length=35, name='strasse2',
         doc="NAD-3042"),
@@ -150,6 +150,27 @@ class AddressenHandler(object):
                                          + ("Previous records = %r" % previousparsers))
         if self.parser.partnerart == 'SU' and self.parser.iln != '4005998000007':
             raise MalformedRecordException("Supplier MUST be HUDORA/4005998000007: %r" % self.parser)
+    
+    def contribute_to_order(self, dummy):
+        """Return a dict contributing to the OrderProtocol."""
+        if self.parser.partnerart in ['DP', 'IV']:
+            adrtype = {'DP': 'lieferadresse', 'IV': 'rechnungsadresse'}[self.parser.partnerart]
+            return {adrtype: {'iln': unicode(self.parser.iln),
+                              'name1': unicode(self.parser.name1),
+                              'name2': unicode(self.parser.name2),
+                              'name3': unicode(self.parser.name3),
+                              'strasse': ' '.join([self.parser.strasse1,
+                                                   self.parser.strasse2,
+                                                   self.parser.strasse3]).strip(),
+                              'plz': unicode(self.parser.plz),
+                              'ort': unicode(self.parser.ort),
+                              'land': unicode(self.parser.land),
+                              'tel': unicode(self.parser.tel),
+                              'fax': unicode(self.parser.fax),
+            }}
+        else:
+            return {}
+    
 
 zahlungsbedingungen = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="120"),
@@ -462,8 +483,12 @@ class BelegsummenHandler(object):
         if summe != self.parser.gesammtbetrag:
             raise MalformedFileException("sums do not validate (%d|%d) %r: %r" % (summe,
                                            self.parser.gesammtbetrag, self.parser, previousparsers))
-        
-
+    
+    def contribute_to_order(self, dummy):
+        """Return a dict contributing to the OrderProtocol."""
+        # we contribute nothing since all relevant verifycations are already done in validate()
+        return {}
+    
 # TRU hat uebertraaegt faelschlicherweise bereits in der Bestellung einen 913 Satz. Dieser ist im Grunde
 # unter INVOC dokumentiert, ist allerdings an dieser Stelle nicht, wie dokumentiert 600 Zeichen lang, sondern
 # 512
@@ -563,4 +588,3 @@ def parse_rawdata(data):
                 print "WARNING: no extractor for record %r" % satzart
         
     return orderdict
-    
