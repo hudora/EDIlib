@@ -8,10 +8,12 @@ Copyright (c) 2007 HUDORA GmbH. All rights reserved.
 """
 
 import unittest
-from recordbased import *
+from edilib.recordbased import *
+
 
 class FieldTestsString(unittest.TestCase):
     """Test for Field and it's descendants."""
+    
     def test_basic_field(self):
         """Test basic (string) field."""
         fieldinstance = Field('name', 5, 'XX', doc='Documentation!')
@@ -23,7 +25,6 @@ class FieldTestsString(unittest.TestCase):
         self.assertEqual(fieldinstance.get(), 'BBBB')
         
         self.assertEqual(fieldinstance.doc, 'Documentation!')
-        
     
     def test_fixed_field(self):
         """Test fixed string field."""
@@ -61,10 +62,11 @@ class FieldTestsString(unittest.TestCase):
         fieldinstance = EanField(name='name', length=13)
         fieldinstance.parse('             ')
         self.assertEqual(str(fieldinstance), '')
-
+    
 
 class FieldTestsNumeric(unittest.TestCase):
     """Test for Field and it's descendants."""
+    
     def test_integer(self):
         """Test integer field."""
         fieldinstance = IntegerField('name', 6)
@@ -151,8 +153,10 @@ class FieldTestsNumeric(unittest.TestCase):
         fieldinstance.set(1/3.0)
         self.assertEqual(fieldinstance.formated(), '0000000333')
     
+
 class FieldSpecial(unittest.TestCase):
     """Test for Field and it's descendants."""
+    
     def test_date(self):
         """Test date field."""
         fieldinstance = DateField('name', 8)
@@ -192,9 +196,11 @@ class FieldSpecial(unittest.TestCase):
         fieldinstance.set('A')
         self.assertRaises(FieldNoValidChoice, fieldinstance.set, 'C')
         fieldinstance.set('B')
+    
 
 class FieldParseTestsStrings(unittest.TestCase):
     """Test for Field and it's descendants parsing capability."""
+    
     def test_basic_field(self):
         """Test parsing basic (string) field."""
         fieldinstance = Field('name', 5, 'xX')
@@ -235,9 +241,11 @@ class FieldParseTestsStrings(unittest.TestCase):
         fieldinstance.parse('Xxfoo')
         self.assertEqual(fieldinstance.formated(), 'Xxfoo')
         self.assertEqual(str(fieldinstance), 'Xxfoo')
+    
 
 class FieldParseTestsNumeric(unittest.TestCase):
     """Test for Field and it's descendants parsing capability."""
+    
     def test_integer_field(self):
         """Test parsing of integer field."""
         fieldinstance = IntegerField('name', 5, 17)
@@ -264,7 +272,7 @@ class FieldParseTestsNumeric(unittest.TestCase):
         fieldinstance.parse('     ')
         self.assertEqual(fieldinstance.formated(), '   17')
         self.assertEqual(str(fieldinstance), '17')
-        fieldinstance = IntegerField('name', 5,)
+        fieldinstance = IntegerField('name', 5)
         self.assertEqual(fieldinstance.formated(), '     ')
         self.assertEqual(str(fieldinstance), '')
         
@@ -277,7 +285,7 @@ class FieldParseTestsNumeric(unittest.TestCase):
         self.assertRaises(ValueError, fieldinstance.parse, '0xfff')
         # this works through multi inherance
         self.assertRaises(InvalidData, fieldinstance.parse, '    X')
-        self.assertRaises(ValueError,  fieldinstance.parse, '    X')
+        self.assertRaises(ValueError, fieldinstance.parse, '    X')
     
     def test_integer_field_zeropadded(self):
         """Test parsing of zeropadded  integer field."""
@@ -340,6 +348,7 @@ class FieldParseTestsNumeric(unittest.TestCase):
 
 class FieldParseTestsSpecial(unittest.TestCase):
     """Test for Field and it's descendants parsing capability."""
+    
     def test_date_field(self):
         """Test parsing of date field."""
         fieldinstance = DateField('name', 8, default='20070102')
@@ -370,7 +379,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         # I'm affraid this test is platform dependant
         fieldinstance.parse('1314')
         self.assertEqual(str(fieldinstance), '13:14')
-        self.assertEqual(fieldinstance.value, datetime.datetime(1900, 1, 1, 13, 14) )
+        self.assertEqual(fieldinstance.value, datetime.datetime(1900, 1, 1, 13, 14))
         
         self.assertRaises(InvalidData, fieldinstance.parse, '2526')
         self.assertRaises(InvalidData, fieldinstance.parse, '2525')
@@ -462,7 +471,7 @@ class FieldDatensatzBasic(unittest.TestCase):
         instance = klass()
         self.assertEqual(instance.belegnummer, '')
         self.assertEqual(instance.belegnummer_field.formated(), '                                   ')
-        self.assertEqual(instance.kunden_iln_field.formated(),  '                 ')
+        self.assertEqual(instance.kunden_iln_field.formated(), '                 ')
         self.assertEqual(len(instance.serialize()), 35+17)
         self.assertEqual(instance.serialize(), '                                                    ')
         instance.belegnummer = '123'
@@ -472,6 +481,7 @@ class FieldDatensatzBasic(unittest.TestCase):
         self.assertEqual(len(instance.serialize()), 35+17)
         self.assertEqual(instance.serialize(), '                                1239999999999999    ')
     
+
 class FieldDatensatzParseAndBack(unittest.TestCase):
     """Test for records generated by generate_field_datensatz_class()"""
     
@@ -486,15 +496,15 @@ class FieldDatensatzParseAndBack(unittest.TestCase):
     def test_serialize(self):
         """Test that generated records can serialize() themselfs."""
         felder = [
-            dict(length=4,  startpos=0,  endpos=4,  name='position'),
-            dict(length=15, startpos=4,  endpos=19, name='artikelnummer', fieldclass=RightAdjustedField),
+            dict(length=4, startpos=0, endpos=4, name='position'),
+            dict(length=15, startpos=4, endpos=19, name='artikelnummer', fieldclass=RightAdjustedField),
             dict(length=15, startpos=19, endpos=34, name='menge', fieldclass=DecimalField, precision=3),
-            dict(length=8,  startpos=34, endpos=42, name='date',  fieldclass=DateField),
-            dict(length=4,  startpos=42, endpos=46, name='time',  fieldclass=TimeField),
-            dict(length=8,  startpos=46, endpos=54, name='date2', fieldclass=DateFieldReverse),
-            dict(length=1,  startpos=54, endpos=55, name='fixed', fieldclass=FixedField, default='#'),
-            dict(length=8,  startpos=55, endpos=63, name='int1',  fieldclass=IntegerField),
-            dict(length=8,  startpos=63, endpos=71, name='int2',  fieldclass=IntegerFieldZeropadded),
+            dict(length=8, startpos=34, endpos=42, name='date', fieldclass=DateField),
+            dict(length=4, startpos=42, endpos=46, name='time', fieldclass=TimeField),
+            dict(length=8, startpos=46, endpos=54, name='date2', fieldclass=DateFieldReverse),
+            dict(length=1, startpos=54, endpos=55, name='fixed', fieldclass=FixedField, default='#'),
+            dict(length=8, startpos=55, endpos=63, name='int1', fieldclass=IntegerField),
+            dict(length=8, startpos=63, endpos=71, name='int2', fieldclass=IntegerFieldZeropadded),
             ]
         klass = generate_field_datensatz_class(felder, name='test12', length=71)
         instance = klass()
@@ -507,21 +517,21 @@ class FieldDatensatzParseAndBack(unittest.TestCase):
         instance.date2 = datetime.datetime(2006, 7, 8)
         instance.time = datetime.datetime(2000, 1, 1, 22, 33)
         self.assertEqual(len(instance.serialize()), 71)
-        self.assertEqual(instance.serialize(), 
+        self.assertEqual(instance.serialize(),
                          '9999      14650/42z     111111.00020060506223308072006# 222222200033333')
     
     def test_parse(self):
         """Test parsing of serialized records."""
         felder = [
-            dict(length=4,  startpos=0,  endpos=4,  name='position'),
-            dict(length=15, startpos=4,  endpos=19, name='artikelnummer', fieldclass=RightAdjustedField),
+            dict(length=4, startpos=0, endpos=4, name='position'),
+            dict(length=15, startpos=4, endpos=19, name='artikelnummer', fieldclass=RightAdjustedField),
             dict(length=15, startpos=19, endpos=34, name='menge', fieldclass=DecimalField, precision=3),
-            dict(length=8,  startpos=34, endpos=42, name='date',  fieldclass=DateField),
-            dict(length=4,  startpos=42, endpos=46, name='time',  fieldclass=TimeField),
-            dict(length=8,  startpos=46, endpos=54, name='date2', fieldclass=DateFieldReverse),
-            dict(length=1,  startpos=54, endpos=55, name='fixed', fieldclass=FixedField, default='#'),
-            dict(length=8,  startpos=55, endpos=63, name='int1',  fieldclass=IntegerField),
-            dict(length=8,  startpos=63, endpos=71, name='int2',  fieldclass=IntegerFieldZeropadded),
+            dict(length=8, startpos=34, endpos=42, name='date', fieldclass=DateField),
+            dict(length=4, startpos=42, endpos=46, name='time', fieldclass=TimeField),
+            dict(length=8, startpos=46, endpos=54, name='date2', fieldclass=DateFieldReverse),
+            dict(length=1, startpos=54, endpos=55, name='fixed', fieldclass=FixedField, default='#'),
+            dict(length=8, startpos=55, endpos=63, name='int1', fieldclass=IntegerField),
+            dict(length=8, startpos=63, endpos=71, name='int2', fieldclass=IntegerFieldZeropadded),
             ]
         klass = generate_field_datensatz_class(felder, name='test12', length=71)
         instance = klass()

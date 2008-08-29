@@ -316,7 +316,7 @@ class DecimalField(Field):
         data = data.strip()
         dummy, frac = data, ''
         if '.' in data and self.precision:
-            dec, frac = data.split('.')
+            dummy, frac = data.split('.')
             if len(frac) > self.precision:
                 raise InvalidData('Field %r has a precision of %d but %r has %d fractional digits' %
                                    (self, self.precision, data, len(frac)))
