@@ -108,7 +108,7 @@ addressen = [
     dict(startpos=239, endpos=273, length=35, name='ort',
         doc="NAD-3164"),
     dict(startpos=274, endpos=276, length=3, name='land',
-        doc="NAD-3207"),
+        doc="NAD-3207 - contrary to documentation ISO 3166-1 alpha-2 is NOT always used here."),
     dict(startpos=277, endpos=311, length=35, name='internepartnerid',
         doc="RFF-1154"),
     dict(startpos=312, endpos=346, length=35, name='gegebenepartnerid',
@@ -154,6 +154,10 @@ class AddressenHandler(object):
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
         if self.parser.partnerart in ['DP', 'IV']:
+            
+            # for fixing non ISO 3166-1 alpha-2 data (seen with TRU)
+            landfix = {'D': 'DE'}
+            
             adrtype = {'DP': 'lieferadresse', 'IV': 'rechnungsadresse'}[self.parser.partnerart]
             return {adrtype: {'iln': unicode(self.parser.iln),
                               'name1': unicode(self.parser.name1),
@@ -164,7 +168,7 @@ class AddressenHandler(object):
                                                    self.parser.strasse3]).strip(),
                               'plz': unicode(self.parser.plz),
                               'ort': unicode(self.parser.ort),
-                              'land': unicode(self.parser.land),
+                              'land': unicode(landfix.get(self.parser.land, self.parser.land)),
                               'tel': unicode(self.parser.tel),
                               'fax': unicode(self.parser.fax),
             }}

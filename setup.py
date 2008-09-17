@@ -19,4 +19,7 @@ hubarcode = setup(name='benEDIct',
                    'Programming Language :: Python'],
       zip_safe=True,
       packages = ['edilib', 'edilib.cctop'], 
-      package_dir = {'edilib': ''})
+      package_dir = {'edilib': ''},
+      install_requires = ['huSoftM'],
+      dependency_links = ['http://cybernetics.hudora.biz/dist/huSoftM/'],
+      )
