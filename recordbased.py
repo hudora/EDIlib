@@ -375,6 +375,10 @@ class DateField(Field):
     
     def get_parsed(self, data):
         """Do the actual parsing."""
+        
+        if data == '00000000':
+            # This would result in an invalid date, return dummy date
+            return self.default
         try:
             return datetime.datetime(*time.strptime(data, self.__class__.formatstr)[0:6])
         except ValueError, msg:
