@@ -9,7 +9,7 @@ Copyright (c) 2007 HUDORA GmbH. All rights reserved.
 
 import unittest
 from edilib.recordbased import *
-
+import datetime
 
 class FieldTestsString(unittest.TestCase):
     """Test for Field and it's descendants."""
@@ -158,7 +158,7 @@ class FieldSpecial(unittest.TestCase):
     """Test for Field and it's descendants."""
     
     def test_date(self):
-        """Test date field."""
+        """Test date field."""        
         fieldinstance = DateField('name', 8)
         self.assertEqual(len(fieldinstance.formated()), 8)
         self.assertEqual(fieldinstance.formated(), '        ')
@@ -171,6 +171,10 @@ class FieldSpecial(unittest.TestCase):
         self.assertRaises(InvalidFieldDefinition, DateField, 'name', 6)
         fieldinstance = DateField('name')
         self.assertEqual(len(fieldinstance.formated()), 8)
+        
+        fieldinstance = DateField('name', default=datetime.datetime(1980, 05, 04))
+        self.assertEqual(fieldinstance.get_parsed('00000000'), datetime.datetime(1980, 05, 04))
+
     
     def test_datefieldreverse(self):
         """Test date field."""
