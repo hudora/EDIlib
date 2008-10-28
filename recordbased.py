@@ -120,6 +120,7 @@ class Field(object):
     'length' demines the length of the field. Shorter velues are padded to length,
     longer values result in an Exception beeing raised.
     'default' sets the default falue for this field. If default == '' this denotes an empty field.
+    If default is a callable it is called to get the default value.
     If 'choices' is used, the system enforces that only values present in 'choices' are allowed.
     Attempts to set an other value will result un an Exception.
     """
@@ -153,7 +154,7 @@ class Field(object):
         return self.format(self.value)
     
     def _resolve(self, value):
-        """Get the value of value by caling callables or directly returning values =:-)"""
+        """Get the value of value by calling callables or directly returning values =:-)"""
         if callable(value):
             return value()
         return value
@@ -182,7 +183,7 @@ class Field(object):
             raise SizeMismatch("%s has length %d but you trying to parse %r (len %d)" % (self.name,
                                 self.length, data, len(data)))
         if data.strip() == '': # empty field
-            self.set(self.default)
+            self.set(self._resolve(self.default))
         else:
             self.set(self.get_parsed(data))
     
@@ -194,13 +195,13 @@ class FixedField(Field):
         super(FixedField, self).__init__(*args, **kwargs)
         if not self.default:
             raise InvalidFieldDefinition('%r: no default value given' % self)
-        if len(self.default) != self.length:
+        if len(self._resolve(self.default)) != self.length:
             raise InvalidFieldDefinition('%r: default value %r does not corrospondent to field length (%d)' \
-                                           % (self, self.default, self.length))
+                                           % (self, self._resolve(self.default), self.length))
         
     def set(self, value):
         """Ensure FixedFields can't be changed after creation."""
-        if value.strip() != self.default.strip():
+        if value.strip() != self._resolve(self.default).strip():
             raise FieldImmutable("tired to set %r to %r - but field is immutable." % (self, value))
     
 
@@ -348,7 +349,10 @@ class DecimalFieldNoDotZeropadded(DecimalFieldNoDot):
     
 
 class DateField(Field):
-    """Field encoding a date as YYYYMMDD."""
+    """Field encoding a date as YYYYMMDD.
+    
+    Default value should be a datetime dbject or an callable returning a datetime object.
+    """
     
     formatstr = '%Y%m%d'
     
@@ -376,9 +380,9 @@ class DateField(Field):
     def get_parsed(self, data):
         """Do the actual parsing."""
         
-        if data == '00000000':
+        if data in ['00000000', '99999999']:
             # This would result in an invalid date, return dummy date
-            return self.default
+            return self._resolve(self.default)
         try:
             return datetime.datetime(*time.strptime(data, self.__class__.formatstr)[0:6])
         except ValueError, msg:
