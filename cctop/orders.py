@@ -1,4 +1,7 @@
-"""Functionality for basic parsing of Stratedi ORDERS data.
+#!/usr/bin/env python
+# encoding: utf-8
+
+"""Functionality for basic parsing of StratEDI ORDERS data.
 
 Created by Maximillian Dornseif 2008-08-12."""
 
