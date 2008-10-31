@@ -399,6 +399,7 @@ class AuftragspositionHandler(object):
         return {'positionen': orderdict['positionen']}
     
 
+# weglassen
 positionstermine = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="515"),
     dict(startpos=4, endpos=11, length=8, name='lieferdatum_bevorzugt', fieldclass=DateField,

@@ -7,20 +7,15 @@ Copyright (c) 2008 HUDORA. All rights reserved.
 """
 
 import unittest
-
-
-000-06 Datenaustauschreferenz M an 14 86 99 
-000-07 Bilateral vereinbarte Referenznummer / Archivnummer K an 14 100 113 
-000-08 Anwendungsreferenz K an 14 114 127 
-000-09 Testkennzeichen K n 1 128 128 
-000-10 Versionsnummer der Dateischnittstelle M an 5 129 133 "4.5" 
-000-11 Filler K an 467 134 600 (Blank) 
+import datetime
+from edilib.recordbased import generate_field_datensatz_class, FixedField, DecimalField, IntegerField
+from edilib.recordbased import DateField, TimeField, EanField
 
 
 interchangeheader000 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="000"),
-    dict(length=35, startpos=4, endpos=38, name='sender_iln',),
-    dict(length=35, startpos=39, endpos=73, name='empfaenger_iln',),
+    dict(length=35, startpos=4, endpos=38, name='sender_iln'),
+    dict(length=35, startpos=39, endpos=73, name='empfaenger_iln'),
     dict(length=8, startpos=74, endpos=81, name='erstellungsdatum', fieldclass=DateField, default=datetime.datetime.now),
     dict(length=4, startpos=82, endpos=85, name='erstellungszeit', fieldclass=TimeField, default=datetime.datetime.now),
     dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=FixedField,
@@ -33,7 +28,7 @@ interchangeheader000 = [
     dict(length=467, startpos=134, endpos=600, name='filler', fieldclass=FixedField, default=' '* 467),
 ]
 # fix since this is not in python notation fix "off by one" errors
-for feld in interchangeheader0000:
+for feld in interchangeheader000:
     feld['startpos'] -= 1
 
 
@@ -111,7 +106,7 @@ addressen119 = [
         doc="RFF-1154"),
     dict(startpos=382, endpos=416, length=35, name='partnerabteilung',
         doc="CTA-3412"),           
-    dict(startpos=417, endpos=451, length=35, name='steuernr', fieldclass=FixedField, default='DE 123241519',
+    dict(startpos=417, endpos=451, length=35, name='steuernr',
         doc="RFF-1154 - Muss für Lieferant/Zahlungsleistender"),
     dict(startpos=452, endpos=471, length=20, name='ansprechpartner',
         doc="CTA-3412"),           
@@ -121,7 +116,7 @@ addressen119 = [
         doc="COM-3148"),           
     dict(startpos=512, endpos=514, length=3, name='weeekennzeichen', fieldclass=FixedField, default='XA ',
         doc='"XA" = WEEE-Reg.-Nr.'),
-    dict(startpos=515, endpos=549, length=35, name='weeekennzeichen',
+    dict(startpos=515, endpos=549, length=35, name='weeenr',
          fieldclass=FixedField, default='Muss für Lieferant/Zahlungsleistender, wenn WEEE-Reg.-Nr. existiert'),
     dict(startpos=550, endpos=600, length=51, name='filler', fieldclass=FixedField, default=' '),
     ]
@@ -130,7 +125,6 @@ addressen119 = [
 for feld in addressen119:
     feld['startpos'] -= 1
 
-]
 
 texte130 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="130"),
@@ -269,11 +263,11 @@ belegsummen900 = [
          precision=2, doc="MOA-5004"),
     dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag', fieldclass=FixedField,
          default=' ' * 18, doc="MOA-5004"),
-    dict(startpos=40, endpos=57, length=18, name 'nettowarenwert_gesammt', fieldclass=DecimalField)
-    dict(startpos=58, endpos=75, length=18, name 'steuerpflichtiger_betrag', fieldclass=DecimalField)
-    dict(startpos=76, endpos=93, length=18, name 'sontofaehiger_betrag', fieldclass=DecimalField)
-    dict(startpos=94, endpos=111, length=18, name 'zuundabschlage', fieldclass=DecimalField)
-    dict(startpos=112, endpos=129, length=18, name 'gesammt_verkaufswert', fieldclass=DecimalField)
+    dict(startpos=40, endpos=57, length=18, name='nettowarenwert_gesammt', fieldclass=DecimalField),
+    dict(startpos=58, endpos=75, length=18, name='steuerpflichtiger_betrag', fieldclass=DecimalField),
+    dict(startpos=76, endpos=93, length=18, name='skontofaehiger_betrag', fieldclass=DecimalField),
+    dict(startpos=94, endpos=111, length=18, name='zu_und_abschlage', fieldclass=DecimalField),
+    dict(startpos=112, endpos=129, length=18, name='gesammt_verkaufswert', fieldclass=DecimalField),
     dict(startpos=130, endpos=600, length=471, name='filler', fieldclass=FixedField, default=' ' * 473),
 ]
 

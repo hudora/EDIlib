@@ -153,6 +153,22 @@ class FieldTestsNumeric(unittest.TestCase):
         fieldinstance.set(1/3.0)
         self.assertEqual(fieldinstance.formated(), '0000000333')
     
+    def test_decimal_parse(self):
+        fieldinstance = DecimalFieldNoDotZeropadded('name', length=5, precision=2)
+        fieldinstance.parse('01900')
+        self.assertEqual(fieldinstance.formated(), '01900')
+        self.assertEqual(fieldinstance.get(), 19)
+    
+    def test_decimal_signed(self):
+        fieldinstance = DecimalFieldNoDotSigned('name', length=7, precision=3)
+        fieldinstance.parse('018000+')
+        self.assertEqual(fieldinstance.get(), 18)
+        self.assertEqual(fieldinstance.formated(), '018000+')
+        fieldinstance.parse('016000-')
+        self.assertEqual(fieldinstance.get(), -16)
+        # self.assertEqual(fieldinstance.formated(), '016000-')
+        fieldinstance.parse('017000 ')
+        self.assertEqual(fieldinstance.get(), 17)
 
 class FieldSpecial(unittest.TestCase):
     """Test for Field and it's descendants."""
@@ -362,7 +378,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         self.assertEqual(str(fieldinstance), '2007-05-06')
         self.assertEqual(fieldinstance.value, datetime.datetime(2007, 5, 6))
         
-        self.assertRaises(InvalidData, fieldinstance.parse, '99999999')
+        self.assertRaises(InvalidData, fieldinstance.parse, '88888888')
         
         fieldinstance = DateField('name', 8, default=datetime.datetime(2007, 7, 8))
         fieldinstance.parse('        ')

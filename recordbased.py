@@ -336,9 +336,18 @@ class DecimalFieldNoDot(DecimalField):
         
         if not self.precision:
             raise InvalidFieldDefinition("%r: no precision defined" % (self))
-        ret = super(DecimalFieldNoDot, self).format(value)
+        ret = super(DecimalFieldNoDot, self).format(value).replace('.', '')
         return ("%%%ds" % self.length) % ret.replace('.', '')
-    
+
+    def parse(self, data):
+        """Check if the data can be parsed and actually parse it."""
+        
+        # insert decimal point
+        data = "%s.%s" % (data[:-(self.precision)], data[-(self.precision):])
+        
+        if data:
+            self.set(Decimal(data.strip()))
+
 
 class DecimalFieldNoDotZeropadded(DecimalFieldNoDot):
     """Field representing a decimal value without a dot."""
@@ -346,6 +355,38 @@ class DecimalFieldNoDotZeropadded(DecimalFieldNoDot):
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         return super(DecimalFieldNoDotZeropadded, self).format(value).replace(' ', '0')
+    
+
+class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
+    """Field representing a decimal value without a dot and Sinage in the last Byte.
+    
+    E.G. 12.32 -> '1232+'.
+    """
+    
+    def format(self, value):
+        """Formats the data according to the field's length, etc."""
+        
+        ret = super(DecimalFieldNoDotZeropadded, self).format(abs(value))
+        # relace souporflous space at the beginning due to lenght also contianing the sign at the end
+        # which the superclass doesn't know about
+        ret = ret[1:].replace(' ', '0')
+        if value < 0:
+            return ret + '-'
+        else:
+            return ret + '+'
+    
+    def parse(self, data):
+        """Check if the data can be parsed and actually parse it."""
+        
+        # insert decimal point
+        sign = data[-1]
+        data = "%s.%s" % (data[:-(self.precision+1)], data[-(self.precision+1):-1])
+        
+        if data:
+            if sign == '-':
+                self.set(Decimal(data.strip()) * -1)
+            else:
+                self.set(Decimal(data.strip()))
     
 
 class DateField(Field):
