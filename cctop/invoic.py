@@ -12,29 +12,29 @@ from edilib.recordbased import generate_field_datensatz_class, FixedField, Decim
 from edilib.recordbased import DateField, TimeField, EanField
 
 
-interchangeheader000 = [
+INTERCHANGEHEADER000 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="000"),
     dict(length=35, startpos=4, endpos=38, name='sender_iln'),
     dict(length=35, startpos=39, endpos=73, name='empfaenger_iln'),
     dict(length=8, startpos=74, endpos=81, name='erstellungsdatum', fieldclass=DateField, default=datetime.datetime.now),
     dict(length=4, startpos=82, endpos=85, name='erstellungszeit', fieldclass=TimeField, default=datetime.datetime.now),
-    dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=FixedField,
+    dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=IntegerField,
          doc='Fortlaufende achtstellige Sendenummer.'),
-    dict(length=14, startpos=100, endpos=113, name='referenznummer', fieldclass=FixedField),
-    dict(length=14, startpos=114, endpos=127, name='anwendungsreferenz', fieldclass=FixedField),
+    dict(length=14, startpos=100, endpos=113, name='referenznummer', fieldclass=IntegerField),
+    dict(length=14, startpos=114, endpos=127, name='anwendungsreferenz'),
     # This has to be changed to 0 for production data
-    dict(length=1, startpos=128, endpos=128, name='testkennzeichen', fieldclass=FixedField, default='1'),
+    dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
     dict(length=5, startpos=129, endpos=133, name='schnittstellenversion', fieldclass=FixedField, default='4.5  '),
     dict(length=467, startpos=134, endpos=600, name='filler', fieldclass=FixedField, default=' '* 467),
 ]
 # fix since this is not in python notation fix "off by one" errors
-for feld in interchangeheader000:
+for feld in INTERCHANGEHEADER000:
     feld['startpos'] -= 1
+interchangeheader000 = generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader', length=600)
 
-
-transaktionskopf100 = [
+TRANSAKTIONSKOPF100 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="100"),
-    dict(startpos=4, endpos=17, length=14, name='referenz', fieldclass=FixedField, default="1",
+    dict(startpos=4, endpos=17, length=14, name='referenz', fieldclass=IntegerField,
         doc='Eindeutige Nachrichtenreferenz des Absenders; laufende Nummer der Nachrichten im Datenaustausch;'
             + ' beginnt mit "1" und wird für jede Rechnung/Gutschrift innerhalb einer Übertragungsdatei'
             + ' um 1 erhöht.'),
@@ -65,11 +65,12 @@ transaktionskopf100 = [
     dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' '*387),
     ]
 # fix since this is not in python notation fix "off by one" errors
-for feld in transaktionskopf100:
+for feld in TRANSAKTIONSKOPF100:
     feld['startpos'] -= 1
-    
+transaktionskopf100 = generate_field_datensatz_class(TRANSAKTIONSKOPF100, name='transaktionskopf', length=600)
+
 # Satzart 119: ID + Adressen der beteiligten Partner (1 x pro Transaktion und Partner)
-addressen119 = [
+ADDRESSEN119 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="119"),
     dict(startpos=4, endpos=6, length=3, name='partnerart',
         choices=('BY', 'IV', 'DP', 'SU'),
@@ -117,13 +118,14 @@ addressen119 = [
     dict(startpos=512, endpos=514, length=3, name='weeekennzeichen', fieldclass=FixedField, default='XA ',
         doc='"XA" = WEEE-Reg.-Nr.'),
     dict(startpos=515, endpos=549, length=35, name='weeenr',
-         fieldclass=FixedField, default='Muss für Lieferant/Zahlungsleistender, wenn WEEE-Reg.-Nr. existiert'),
-    dict(startpos=550, endpos=600, length=51, name='filler', fieldclass=FixedField, default=' '),
+         default='DE 70323035', doc='Muss für Lieferant/Zahlungsleistender, wenn WEEE-Reg.-Nr. existiert'),
+    dict(startpos=550, endpos=600, length=51, name='filler', fieldclass=FixedField, default=' '*51),
     ]
 
 # fix since this is not in python notation fix "off by one" errors
-for feld in addressen119:
+for feld in ADDRESSEN119:
     feld['startpos'] -= 1
+addressen119 = generate_field_datensatz_class(ADDRESSEN119, name='adressatz', length=600)
 
 
 texte130 = [
@@ -166,7 +168,7 @@ zusatzkosten140 = [
 for feld in zusatzkosten140:
     feld['startpos'] -= 1
 
-rechnungsposition500 = [
+RECHNUNGSPOSITION500 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="500"),
     dict(startpos=4, endpos=9, length=6, name='positionsnummer', fieldclass=IntegerField,
          doc="LIN-1082"),
@@ -238,11 +240,13 @@ rechnungsposition500 = [
         default=' ', doc="?"),
     dict(startpos=509, endpos=511, length=3, name='grund_abweichung', fieldclass=FixedField,
         default='   ', doc="?"),
-    dict(startpos=512, endpos=600, length=89, name='filler', fieldclass=FixedField, default=' ' * 5),
+    dict(startpos=512, endpos=600, length=89, name='filler', fieldclass=FixedField, default=' ' * 89),
 ]
 # fix since this is not in python notation fix "off by one" errors
-for feld in rechnungsposition500:
+for feld in RECHNUNGSPOSITION500:
     feld['startpos'] -= 1
+rechnungsposition500 = generate_field_datensatz_class(RECHNUNGSPOSITION500, name='positionssatz', length=600)
+
 
 artikeltexte530 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="530"),

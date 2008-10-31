@@ -11,6 +11,7 @@ import unittest
 from edilib.recordbased import *
 import datetime
 
+
 class FieldTestsString(unittest.TestCase):
     """Test for Field and it's descendants."""
     
@@ -169,6 +170,7 @@ class FieldTestsNumeric(unittest.TestCase):
         # self.assertEqual(fieldinstance.formated(), '016000-')
         fieldinstance.parse('017000 ')
         self.assertEqual(fieldinstance.get(), 17)
+    
 
 class FieldSpecial(unittest.TestCase):
     """Test for Field and it's descendants."""
@@ -190,8 +192,7 @@ class FieldSpecial(unittest.TestCase):
         
         fieldinstance = DateField('name', default=datetime.datetime(1980, 05, 04))
         self.assertEqual(fieldinstance.get_parsed('00000000'), datetime.datetime(1980, 05, 04))
-
-    
+        
     def test_datefieldreverse(self):
         """Test date field."""
         fieldinstance = DateFieldReverse('name', 8)
