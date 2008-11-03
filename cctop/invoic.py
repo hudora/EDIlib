@@ -196,8 +196,8 @@ RECHNUNGSPOSITION500 = [
         default = '               ', doc="QTY-6060"),
     dict(startpos=301, endpos=303, length=3, name='waehrung', fieldclass=FixedField, default='EUR',
         doc="CUX-6345"),
-    dict(startpos=304, endpos=308, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5,
-        doc="TAX-5278"),
+    dict(startpos=304, endpos=308, length=5, name='mwstsatz', fieldclass=DecimalField,
+        precision=2, doc="TAX-5278"),
     dict(startpos=309, endpos=323, length=15, name='nettostueckpreis', fieldclass=DecimalField,
         precision=4, doc="PRI-5118"),
     dict(startpos=324, endpos=338, length=15, name='bruttostueckpreis', fieldclass=FixedField,
@@ -212,11 +212,11 @@ RECHNUNGSPOSITION500 = [
         default=' ' * 9, doc="PRI-5284"),
     dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE'],
         doc='PRI-6411 "PCE" = Stück; "KGM" = Kilogramm'),
-    dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=FixedField,
-        default=' ' * 18, doc='''MOA-5004 Nettowarenwert = Menge x Bruttopreis ./. Artikelrabatte bzw. Menge x Nettopreis (Rabatte sind im Preis eingerechnet) 
+    dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=DecimalField,
+         doc='''MOA-5004 Nettowarenwert = Menge x Bruttopreis ./. Artikelrabatte bzw. Menge x Nettopreis (Rabatte sind im Preis eingerechnet) 
     Bei Gutschriftspositionen ist der Nettowarenwert negativ einzustellen.'''),
-    dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=FixedField,
-        default=' ' * 18, doc="MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte"),
+    dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=DecimalField,
+         doc="MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte"),
     dict(startpos=432, endpos=449, length=18, name='summeabschlaege', fieldclass=FixedField,
         default=' ' * 18, doc='MOA-5004 Summe aller Zu- und Abschläge aus Satzart(en) 513 mit vorzeichengerechter Darstellung'),
     dict(startpos=450, endpos=456, length=7, name='verpackungsart', choices=['CT'],
@@ -261,24 +261,25 @@ artikeltexte530 = [
 for feld in artikeltexte530:
     feld['startpos'] -= 1
 
-belegsummen900 = [
+BELEGSUMMEN900 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="900"),
     dict(startpos=4, endpos=21, length=18, name='rechnungsendbetrag', fieldclass=DecimalField,
          precision=2, doc="MOA-5004"),
-    dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag', fieldclass=FixedField,
-         default=' ' * 18, doc="MOA-5004"),
+    dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag', fieldclass=DecimalField,
+         doc="MOA-5004"),
     dict(startpos=40, endpos=57, length=18, name='nettowarenwert_gesammt', fieldclass=DecimalField),
     dict(startpos=58, endpos=75, length=18, name='steuerpflichtiger_betrag', fieldclass=DecimalField),
     dict(startpos=76, endpos=93, length=18, name='skontofaehiger_betrag', fieldclass=DecimalField),
     dict(startpos=94, endpos=111, length=18, name='zu_und_abschlage', fieldclass=DecimalField),
     dict(startpos=112, endpos=129, length=18, name='gesammt_verkaufswert', fieldclass=DecimalField),
-    dict(startpos=130, endpos=600, length=471, name='filler', fieldclass=FixedField, default=' ' * 473),
+    dict(startpos=130, endpos=600, length=471, name='filler', fieldclass=FixedField, default=' ' * 471),
 ]
 
 
 # fix since this is not in python notation fix "off by one" errors
-for feld in belegsummen900:
+for feld in BELEGSUMMEN900:
     feld['startpos'] -= 1
+belegsummen900 = generate_field_datensatz_class(BELEGSUMMEN900, name='belegsummen', length=600)
 
 # Satzart 901: MWSt.-Angaben (1 x pro Transaktion und MWSt.-Satz)
 

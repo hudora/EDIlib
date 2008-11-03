@@ -201,7 +201,7 @@ class FixedField(Field):
         
     def set(self, value):
         """Ensure FixedFields can't be changed after creation."""
-        if value.strip() != self._resolve(self.default).strip():
+        if str(value).strip() != str(self._resolve(self.default)).strip():
             raise FieldImmutable("tired to set %r to %r - but field is immutable." % (self, value))
     
 

@@ -5,8 +5,9 @@
 
 Created by Maximillian Dornseif 2008-08-12."""
 
+import datetime
 from edilib.recordbased import generate_field_datensatz_class, FixedField, DecimalField, IntegerField
-from edilib.recordbased import DateField, EanField
+from edilib.recordbased import DateField, EanField, TimeField
 
 
 class BenedictException(RuntimeError):
@@ -28,6 +29,42 @@ class MalformedFileException(BenedictException):
     """Is raised if the intra record structure is malformed."""
     pass
     
+INTERCHANGEHEADER000 = [
+    dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="000"),
+    dict(length=35, startpos=4, endpos=38, name='sender_iln'),
+    dict(length=35, startpos=39, endpos=73, name='empfaenger_iln'),
+    dict(length=8, startpos=74, endpos=81, name='erstellungsdatum', fieldclass=DateField, default=datetime.datetime.now),
+    dict(length=4, startpos=82, endpos=85, name='erstellungszeit', fieldclass=TimeField, default=datetime.datetime.now),
+    dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=IntegerField,
+         doc='Fortlaufende achtstellige Sendenummer.'),
+    dict(length=14, startpos=100, endpos=113, name='referenznummer', fieldclass=IntegerField),
+    dict(length=14, startpos=114, endpos=127, name='anwendungsreferenz'),
+    # This has to be changed to 0 for production data
+    dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
+    dict(length=5, startpos=129, endpos=133, name='schnittstellenversion', fieldclass=FixedField, default='4.5  '),
+    dict(length=379, startpos=134, endpos=512, name='filler', fieldclass=FixedField, default=' '* 379),
+]
+# fix since this is not in python notation fix "off by one" errors
+for feld in INTERCHANGEHEADER000:
+    feld['startpos'] -= 1
+
+class InterchangeheaderHandler(object):
+    """Validates if parsed record is well formed."""
+    
+    def __init__(self, thisparser):
+        self.parser = thisparser
+    
+    def validate(self, previousparsers):
+        """Executes Validation and raises Exceptions on failures."""
+        
+        if previousparsers != []:
+            raise MalformedFileException("Interchangeheader always must be the first record." +
+                                         (" Previous records = %r" % ([self.parser] + previousparsers)))
+    
+    def contribute_to_order(self, dummy):
+        """Return a dict contributing to the OrderProtocol."""
+        return {} # FIXME
+
 
 transaktionskopf = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="100"),
@@ -76,7 +113,7 @@ class TransaktionskopfHandler(object):
         if previousparsers != []:
             raise MalformedFileException("Transaktionskopf always must be the first record." +
                                          (" Previous records = %r" % ([self.parser] + previousparsers)))
-    
+
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
         return {'kundenauftragsnr': unicode(self.parser.belegnummer),
@@ -326,9 +363,10 @@ auftragsposition = [
     dict(startpos=236, endpos=270, length=35, name='artikelfarbe', fieldclass=FixedField,
         default=' ' * 35, doc="IMD-7008"),
     dict(startpos=271, endpos=285, length=15, name='bestellmenge', fieldclass=DecimalField,
-        precision=2, doc="QTY-6060"),
-    dict(startpos=286, endpos=300, length=15, name='menge_ohne_berechnung', fieldclass=FixedField,
-        default = '               ', doc="QTY-6060"),
+        precision=3, doc="QTY-6060"),
+    # FIXME
+    #dict(startpos=286, endpos=300, length=15, name='menge_ohne_berechnung', fieldclass=FixedField,
+    #    default = '               ', doc="QTY-6060"),
     dict(startpos=301, endpos=303, length=3, name='waehrung', fieldclass=FixedField, default='EUR',
         doc="CUX-6345"),
     dict(startpos=304, endpos=308, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5,
@@ -503,7 +541,7 @@ class BelegsummenHandler(object):
 abschlaege = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="913"),
     dict(startpos=4, endpos=6, length=3, name='kennzeichen', choices=['A']),
-    dict(startpos=7, endpos=9, length=3, name='art', choices=['GRB', 'RCH']),
+    dict(startpos=7, endpos=9, length=3, name='art', choices=['GRB', 'RCH', 'AA ', 'DI ']),
     dict(startpos=10, endpos=12, length=3, name='kalkulationsfolgeanzeige', fieldclass=FixedField,
          default=' ' * 3),
     dict(startpos=13, endpos=17, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5),
@@ -538,6 +576,7 @@ class AbschlaegeHandler(object):
     
 
 ordersparser = {
+    '000': generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader', length=512),
     '100': generate_field_datensatz_class(transaktionskopf, name='transaktionskopf', length=512),
     '119': generate_field_datensatz_class(addressen, name='addresse', length=512),
     '120': generate_field_datensatz_class(zahlungsbedingungen, name='zahlungsbedingungen', length=512),
@@ -551,6 +590,7 @@ ordersparser = {
 
 
 recordhandlers = {
+    '000': InterchangeheaderHandler,
     '100': TransaktionskopfHandler,
     '119': AddressenHandler,
     '120': ZahlungsbedingungenHandler,
@@ -564,35 +604,52 @@ recordhandlers = {
 
 
 def parse_rawdata(data):
-    """Parses a Stratedi ORDERS file and returns a object following the AuftragsProtokoll."""
+    """Parses a Stratedi ORDERS file and returns a objects following the AuftragsProtokoll.
     
+    In fact it returns (header, [Auftrag, Auftrag, ...]).
+    """
+    
+    firstline = ''
+    header = None
     parsers = []
+    auftraege = []
     orderdict = {'positionen': []}
     for line in data.split('\n'):
         line = line.strip('\r\n')
         if not line:
             # empty line
             continue
+        
+        # pad / truncate to 512 bytes
+        line = "%-512s" % line[:512]
+        
         satzart = line[:3]
         if satzart not in ordersparser:
             raise UnknownRecordException("unknown satzart %r" % satzart)
-        if len(line) > 512:
-            raise MalformedRecordException("illegal line length in record %r %d: %r" % (satzart,
-                                                                                        len(line), line))
         
-        # pad line to exactly match 512 bytes
-        line = line + ((512-len(line)) * ' ')
         parser = ordersparser[satzart]()
         parser.parse(line)
-        if satzart not in recordhandlers:
-            print "WARNING: no validator for record %r" % satzart
+        if satzart == '000':
+            # special case: interchange header
+            firstline = line
+            header = recordhandlers[satzart](parser)
         else:
-            handler = recordhandlers[satzart](parser)
-            handler.validate(parsers)
-            parsers.append(parser)
-            if hasattr(handler, 'contribute_to_order'):
-                orderdict.update(handler.contribute_to_order(orderdict))
+            if satzart == '100':
+                # new auftrag starting
+                if parsers:
+                    auftraege.append(orderdict)
+                parsers = []
+                orderdict = {'positionen': []}
+            
+            if satzart not in recordhandlers:
+                print "WARNING: no validator for record %r" % satzart
             else:
-                print "WARNING: no extractor for record %r" % satzart
+                handler = recordhandlers[satzart](parser)
+                handler.validate(parsers)
+                parsers.append(parser)
+                if hasattr(handler, 'contribute_to_order'):
+                    orderdict.update(handler.contribute_to_order(orderdict))
+                else:
+                    print "WARNING: no extractor for record %r" % satzart
         
-    return orderdict
+    return (header, auftraege)
