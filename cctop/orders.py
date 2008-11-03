@@ -84,16 +84,12 @@ transaktionskopf = [
         doc="BGM-1001"),
     dict(startpos=41, endpos=43, length=3, name='transaktionsfunktion', fieldclass=FixedField, default='9  ',
         doc="BGM-1225"),
-    dict(startpos=44, endpos=78, length=35, name='belegnummer',
-        doc="BGM-1004"),
-    dict(startpos=79, endpos=86, length=8, name='belegdatum', fieldclass=DateField,
-        doc="DTM-2380"),
-    dict(startpos=87, endpos=89, length=3, name='antwortart',
+    dict(startpos=44, endpos=78, length=35, name='auftragsnummer', doc="BGM-1004"),
+    dict(startpos=79, endpos=86, length=8, name='auftragsdatum', fieldclass=DateField, doc="DTM-2380"),
+    dict(startpos=87, endpos=89, length=3, name='antwortart', fieldclass=FixedField, default='   ',
         doc="BGM-4343"),
-    dict(startpos=90, endpos=90, length=1, name='selbstabholung', # Boolean?
-        doc="TOD-4055"),
-    dict(startpos=91, endpos=125, length=35, name='dokumentanname',
-        doc="BGM-1000"),
+    dict(startpos=90, endpos=90, length=1, name='selbstabholung', doc="TOD-4055"),
+    dict(startpos=91, endpos=125, length=35, name='dokumentanname', doc="BGM-1000"),
     dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' '*387),
     ]
 # fix since this is not in python notation fix "off by one" errors
@@ -116,8 +112,8 @@ class TransaktionskopfHandler(object):
 
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
-        return {'kundenauftragsnr': unicode(self.parser.belegnummer),
-                'bestelldatum': self.parser.belegdatum}
+        return {'kundenauftragsnr': unicode(self.parser.auftragsnummer),
+                'bestelldatum': self.parser.auftragsdatum}
     
 
 addressen = [
@@ -129,42 +125,25 @@ addressen = [
                DP Delivery party: Party to which goods should be delivered, if not identical with consignee.
                IV Invoicee: Party to whom an invoice is issued.
                SU Supplier: Party who supplies goods and/or services."""),
-    dict(startpos=7, endpos=19, length=13, name='iln',
-        doc="NAD-3039"),
-    dict(startpos=20, endpos=54, length=35, name='name1',
-        doc="NAD-3036"),                                 
-    dict(startpos=55, endpos=89, length=35, name='name2',
-        doc="NAD-3036"),                                 
-    dict(startpos=90, endpos=124, length=35, name='name3',
-        doc="NAD-3036"),
-    dict(startpos=125, endpos=159, length=35, name='strasse1',
-        doc="NAD-3042"),
-    dict(startpos=160, endpos=194, length=35, name='strasse2',
-        doc="NAD-3042"),
-    dict(startpos=195, endpos=229, length=35, name='strasse3',
-        doc="NAD-3042"),
-    dict(startpos=230, endpos=238, length=9, name='plz',
-        doc="NAD-3251"),
-    dict(startpos=239, endpos=273, length=35, name='ort',
-        doc="NAD-3164"),
+    dict(startpos=7, endpos=19, length=13, name='iln', doc="NAD-3039"),
+    dict(startpos=20, endpos=54, length=35, name='name1', doc="NAD-3036"),                                 
+    dict(startpos=55, endpos=89, length=35, name='name2', doc="NAD-3036"),                                 
+    dict(startpos=90, endpos=124, length=35, name='name3', doc="NAD-3036"),
+    dict(startpos=125, endpos=159, length=35, name='strasse1', doc="NAD-3042"),
+    dict(startpos=160, endpos=194, length=35, name='strasse2', doc="NAD-3042"),
+    dict(startpos=195, endpos=229, length=35, name='strasse3', doc="NAD-3042"),
+    dict(startpos=230, endpos=238, length=9, name='plz', doc="NAD-3251"),
+    dict(startpos=239, endpos=273, length=35, name='ort', doc="NAD-3164"),
     dict(startpos=274, endpos=276, length=3, name='land',
         doc="NAD-3207 - contrary to documentation ISO 3166-1 alpha-2 is NOT always used here."),
-    dict(startpos=277, endpos=311, length=35, name='internepartnerid',
-        doc="RFF-1154"),
-    dict(startpos=312, endpos=346, length=35, name='gegebenepartnerid',
-        doc="RFF-1154"),
-    dict(startpos=347, endpos=381, length=35, name='ustdid',
-        doc="RFF-1154"),
-    dict(startpos=382, endpos=416, length=35, name='partnerabteilung',
-        doc="CTA-3412"),           
-    dict(startpos=417, endpos=451, length=35, name='steuernr',
-        doc="RFF-1154"),           
-    dict(startpos=452, endpos=471, length=20, name='ansprechpartner',
-        doc="CTA-3412"),           
-    dict(startpos=472, endpos=491, length=20, name='tel',
-        doc="COM-3148"),           
-    dict(startpos=492, endpos=511, length=20, name='fax',
-        doc="COM-3148"),           
+    dict(startpos=277, endpos=311, length=35, name='internepartnerid', doc="RFF-1154"),
+    dict(startpos=312, endpos=346, length=35, name='gegebenepartnerid', doc="RFF-1154"),
+    dict(startpos=347, endpos=381, length=35, name='ustdid', doc="RFF-1154"),
+    dict(startpos=382, endpos=416, length=35, name='partnerabteilung', doc="CTA-3412"),
+    dict(startpos=417, endpos=451, length=35, name='steuernr', doc="RFF-1154"),           
+    dict(startpos=452, endpos=471, length=20, name='ansprechpartner', doc="CTA-3412"),           
+    dict(startpos=472, endpos=491, length=20, name='tel', doc="COM-3148"),           
+    dict(startpos=492, endpos=511, length=20, name='fax', doc="COM-3148"),           
     dict(startpos=512, endpos=512, length=1, name='filler', fieldclass=FixedField, default=' '),
     ]
 
@@ -211,12 +190,13 @@ class AddressenHandler(object):
                               'land': unicode(landfix.get(self.parser.land, self.parser.land)),
                               'tel': unicode(self.parser.tel),
                               'fax': unicode(self.parser.fax),
+                              'ustdid': unicode(self.parser.ustdid),
             }}
         else:
             return {}
     
 
-zahlungsbedingungen = [
+ZAHLUNGSBEDINGUNGEN120 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="120"),
     dict(startpos=4, endpos=6, length=3, name='waehrung', fieldclass=FixedField, default='EUR',
         doc="CUX-6345"),
@@ -228,8 +208,7 @@ zahlungsbedingungen = [
         doc="DTM8-2380"),
     dict(startpos=23, endpos=30, length=8, name='faelligkeitsdatum', fieldclass=FixedField, default=' ' * 8,
         doc="DTM8-2380"),
-    dict(startpos=31, endpos=33, length=3, name='incoterms', choices=['DDP'],
-        doc="TOD-4053"),
+    dict(startpos=31, endpos=33, length=3, name='incoterms', choices=['DDP'], doc="TOD-4053"),
     dict(startpos=34, endpos=36, length=3, name='valutatage', fieldclass=FixedField, default=' ' * 3,
         doc="PAT8-2152"),
     dict(startpos=37, endpos=71, length=35, name='frei', fieldclass=FixedField, default=' ' * 35,
@@ -243,7 +222,7 @@ zahlungsbedingungen = [
     dict(startpos=113, endpos=512, length=400, name='filler', fieldclass=FixedField, default=' ' * 400),
 ]
 # fix since this is not in python notation fix "off by one" errors
-for feld in zahlungsbedingungen:
+for feld in ZAHLUNGSBEDINGUNGEN120:
     feld['startpos'] -= 1
     
 
@@ -260,14 +239,16 @@ class ZahlungsbedingungenHandler(object):
             raise MalformedFileException("Zahlungsbedingungensatz can only follow a Addresssatz." +
                                          ("Previous records = %r" % previousparsers))
     
+    def contribute_to_order(self, dummy):
+        return {}
+        
 
 texte = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="130"),
     dict(startpos=4, endpos=6, length=3, name='textzuordnung', choices=['AAI'],
          doc="""FTX-4451: Text subject code qualifier
                 AAI General information: The text contains general information"""),
-    dict(startpos=7, endpos=356, length=350, name='text',
-        doc="FTX-4440"),
+    dict(startpos=7, endpos=356, length=350, name='text', doc="FTX-4440"),
     dict(startpos=357, endpos=512, length=156, name='filler', fieldclass=FixedField, default=' ' * 156),
 ]
 # fix since this is not in python notation fix "off by one" errors
@@ -290,16 +271,23 @@ class TexteHandler(object):
     
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
+        
+        # certain messages are ignored
+        if self.parser.text in ['DIE NICHTBEACHTUNG DER RAHMENBEDINGUNGEN KANN ZUR ANNAHME VERWEIGERUNG DER WARE FUEHREN.',
+                                'ALLE KOSTEN, DIE DURCH DIE NICHTBEACHTUNG ENTSTEHEN, TRAEGT DER HERSTELLER',
+                                "ALLE TRANSPORTE MUESSEN DEN RAHMENBEDINGUNGEN FUER DEN WARENVERKEHR MIT TOYS'R'US, NEUESTE AUSGABE, ENTSPRECHEN.",
+                                'IN ABAENDERUNG VON PUNKT IX,1.ABSATZ,SATZ 2 DER UMSEITIG ABGEDRUCKTEN ALLGEMEINEN EINKAUFSBEDINGUNGEN GELTEN DIE GESETZLICHENGEWAEHRLEISTUNGSFRISTEN.',
+                                ]:
+            return {}
+        
         text = orderdict.get('bestelltext', '')
         text = u'\n'.join([text, self.parser.text]).strip()
         return {'bestelltext': text}
 
 zusatzkosten = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="140"),
-    dict(startpos=4, endpos=8, length=5, name='mwstsatz',
-         doc="TAX20-5278"),
-    dict(startpos=9, endpos=16, length=8, name='skontoprozent', fieldclass=DecimalField,
-        doc="PCD17-5482"),
+    dict(startpos=4, endpos=8, length=5, name='mwstsatz', doc="TAX20-5278"),
+    dict(startpos=9, endpos=16, length=8, name='skontoprozent', fieldclass=DecimalField, doc="PCD17-5482"),
     dict(startpos=17, endpos=34, length=18, name='skontobetrag', fieldclass=FixedField, default=' ' * 18,
         doc="MOA20-5004"),
     dict(startpos=35, endpos=52, length=18, name='frachtbetrag', fieldclass=FixedField, default=' ' * 18,
@@ -308,8 +296,7 @@ zusatzkosten = [
          default=' ' * 18, doc="MOA20-5004"),
     dict(startpos=71, endpos=88, length=18, name='versicherungsbetrag', fieldclass=FixedField,
          default=' ' * 18, doc="MOA20-5004"),
-    dict(startpos=89, endpos=91, length=3, name='skontotage',
-        doc="PAT8-2152"),
+    dict(startpos=89, endpos=91, length=3, name='skontotage', doc="PAT8-2152"),
     dict(startpos=92, endpos=99, length=8, name='skontodatum', fieldclass=FixedField, default=' ' * 8,
         doc="PAT8-2152"),
     dict(startpos=100, endpos=512, length=413, name='filler', fieldclass=FixedField, default=' ' * 413),
@@ -348,16 +335,12 @@ auftragsposition = [
         default='   ', doc="LIN-1229"),
     dict(startpos=13, endpos=25, length=13, name='ean', fieldclass=EanField,
         doc="LIN-7140"),
-    dict(startpos=26, endpos=60, length=35, name='artnr_lieferant',
-        doc="PIA-7140"),
-    dict(startpos=61, endpos=95, length=35, name='artnr_kunde',
-        doc="PIA-7140"),
+    dict(startpos=26, endpos=60, length=35, name='artnr_lieferant', doc="PIA-7140"),
+    dict(startpos=61, endpos=95, length=35, name='artnr_kunde', doc="PIA-7140"),
     dict(startpos=96, endpos=130, length=35, name='warengruppe', fieldclass=FixedField,
         default=' ' * 35, doc="RFF-1154"),
-    dict(startpos=131, endpos=165, length=35, name='artikelbezeichnung1',
-        doc="IMD-7008"),
-    dict(startpos=166, endpos=200, length=35, name='artikelbezeichnung2',
-        doc="IMD-7008"),
+    dict(startpos=131, endpos=165, length=35, name='artikelbezeichnung1', doc="IMD-7008"),
+    dict(startpos=166, endpos=200, length=35, name='artikelbezeichnung2', doc="IMD-7008"),
     dict(startpos=201, endpos=235, length=35, name='artikelgroesse', fieldclass=FixedField,
         default=' ' * 35, doc="IMD-7008"),
     dict(startpos=236, endpos=270, length=35, name='artikelfarbe', fieldclass=FixedField,
@@ -395,7 +378,7 @@ auftragsposition = [
         doc="PAC-7065"),
     dict(startpos=457, endpos=463, length=7, name='verpackungszahl', fieldclass=IntegerField,
         doc="PAC-7065"),
-    dict(startpos=464, endpos=464, length=1, name='gebinde', fieldclass=IntegerField,
+    dict(startpos=464, endpos=464, length=1, name='gebinde', fieldclass=FixedField,
         default=' ', doc="PIA-7143"),
     dict(startpos=465, endpos=479, length=15, name='bestellte_vs_gelieferte_menge', fieldclass=FixedField,
         default=' ' * 15, doc="QTY-6060"),
@@ -426,6 +409,7 @@ class AuftragspositionHandler(object):
                                    " Zahlungsbedingungs-, Zusatzkosten, Auftragspositions- or" +
                                    (" Positionsterminsatz.Previous records = %r" % previousparsers))
     
+    
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
         orderdict['positionen'].append({'menge': int(self.parser.bestellmenge),
@@ -433,6 +417,9 @@ class AuftragspositionHandler(object):
                 'artnr': unicode(self.parser.artnr_lieferant),
                 'kundenartnr': unicode(self.parser.artnr_kunde),
                 'name': u' '.join([self.parser.artikelbezeichnung1, self.parser.artikelbezeichnung2]).strip(),
+                'preis': unicode(self.parser.nettostueckpreis),
+                'menge_kartons': unicode(self.parser.verpackungszahl),
+                'positionsnr': unicode(self.parser.positionsnummer),
                 })
         return {'positionen': orderdict['positionen']}
     
@@ -538,7 +525,7 @@ class BelegsummenHandler(object):
 # TRU hat uebertraaegt faelschlicherweise bereits in der Bestellung einen 913 Satz. Dieser ist im Grunde
 # unter INVOC dokumentiert, ist allerdings an dieser Stelle nicht, wie dokumentiert 600 Zeichen lang, sondern
 # 512
-abschlaege = [
+ABSCHLAEGE913 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="913"),
     dict(startpos=4, endpos=6, length=3, name='kennzeichen', choices=['A']),
     dict(startpos=7, endpos=9, length=3, name='art', choices=['GRB', 'RCH', 'AA ', 'DI ']),
@@ -546,7 +533,7 @@ abschlaege = [
          default=' ' * 3),
     dict(startpos=13, endpos=17, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5),
     dict(startpos=18, endpos=25, length=8, name='prozent', fieldclass=DecimalField),
-    dict(startpos=26, endpos=43, length=18, name='betrag'),
+    dict(startpos=26, endpos=43, length=18, name='betrag', fieldclass=FixedField, default=' ' * 18),
     dict(startpos=44, endpos=58, length=15, name='naturalrabatt', fieldclass=FixedField, default=' ' * 15),
     dict(startpos=59, endpos=73, length=15, name='abschlag_je_einheit', fieldclass=FixedField,
          default=' ' * 15),
@@ -557,7 +544,7 @@ abschlaege = [
 
 
 # fix since this is not in python notation fix "off by one" errors
-for feld in abschlaege:
+for feld in ABSCHLAEGE913:
     feld['startpos'] -= 1
 
 
@@ -574,18 +561,25 @@ class AbschlaegeHandler(object):
             raise MalformedFileException("Abschlaegesatz can only follow a Belegsummensatz." +
                                          (" Previous records = %r" % previousparsers))
     
-
+    def contribute_to_order(self, orderdict):
+        orderdict['abschlaege'].append({'art': unicode(self.parser.art),
+                'prozent': self.parser.prozent,
+                'name': unicode(self.parser.art_abschlag),
+                })
+        return {'abschlaege': orderdict['abschlaege']}
+        
+    
 ordersparser = {
     '000': generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader', length=512),
     '100': generate_field_datensatz_class(transaktionskopf, name='transaktionskopf', length=512),
     '119': generate_field_datensatz_class(addressen, name='addresse', length=512),
-    '120': generate_field_datensatz_class(zahlungsbedingungen, name='zahlungsbedingungen', length=512),
+    '120': generate_field_datensatz_class(ZAHLUNGSBEDINGUNGEN120, name='zahlungsbedingungen', length=512),
     '130': generate_field_datensatz_class(texte, name='texte', length=512),
     '140': generate_field_datensatz_class(zusatzkosten, name='zusatzkosten', length=512),
     '500': generate_field_datensatz_class(auftragsposition, name='auftragsposition', length=512),
     '515': generate_field_datensatz_class(positionstermine, name='positionstermin', length=512),
     '900': generate_field_datensatz_class(belegsummen, name='belegsummen', length=512),
-    '913': generate_field_datensatz_class(abschlaege, name='abschlaege', length=512),
+    '913': generate_field_datensatz_class(ABSCHLAEGE913, name='abschlaege', length=512),
 }
 
 
@@ -613,7 +607,7 @@ def parse_rawdata(data):
     header = None
     parsers = []
     auftraege = []
-    orderdict = {'positionen': []}
+    orderdict = {'positionen': [], 'abschlaege': []}
     for line in data.split('\n'):
         line = line.strip('\r\n')
         if not line:
@@ -639,7 +633,7 @@ def parse_rawdata(data):
                 if parsers:
                     auftraege.append(orderdict)
                 parsers = []
-                orderdict = {'positionen': []}
+                orderdict = {'positionen': [], 'abschlaege': []}
             
             if satzart not in recordhandlers:
                 print "WARNING: no validator for record %r" % satzart
@@ -650,6 +644,6 @@ def parse_rawdata(data):
                 if hasattr(handler, 'contribute_to_order'):
                     orderdict.update(handler.contribute_to_order(orderdict))
                 else:
-                    print "WARNING: no extractor for record %r" % satzart
+                    print "WARNING: no contribute_to_order() for record %r" % satzart
         
     return (header, auftraege)
