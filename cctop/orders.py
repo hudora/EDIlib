@@ -33,20 +33,24 @@ INTERCHANGEHEADER000 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="000"),
     dict(length=35, startpos=4, endpos=38, name='sender_iln'),
     dict(length=35, startpos=39, endpos=73, name='empfaenger_iln'),
-    dict(length=8, startpos=74, endpos=81, name='erstellungsdatum', fieldclass=DateField, default=datetime.datetime.now),
-    dict(length=4, startpos=82, endpos=85, name='erstellungszeit', fieldclass=TimeField, default=datetime.datetime.now),
+    dict(length=8, startpos=74, endpos=81, name='erstellungsdatum',
+         fieldclass=DateField, default=datetime.datetime.now),
+    dict(length=4, startpos=82, endpos=85, name='erstellungszeit', 
+         fieldclass=TimeField, default=datetime.datetime.now),
     dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=IntegerField,
          doc='Fortlaufende achtstellige Sendenummer.'),
     dict(length=14, startpos=100, endpos=113, name='referenznummer', fieldclass=IntegerField),
     dict(length=14, startpos=114, endpos=127, name='anwendungsreferenz'),
     # This has to be changed to 0 for production data
     dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
-    dict(length=5, startpos=129, endpos=133, name='schnittstellenversion', fieldclass=FixedField, default='4.5  '),
+    dict(length=5, startpos=129, endpos=133, name='schnittstellenversion',
+         fieldclass=FixedField, default='4.5  '),
     dict(length=379, startpos=134, endpos=512, name='filler', fieldclass=FixedField, default=' '* 379),
 ]
 # fix since this is not in python notation fix "off by one" errors
 for feld in INTERCHANGEHEADER000:
     feld['startpos'] -= 1
+
 
 class InterchangeheaderHandler(object):
     """Validates if parsed record is well formed."""
@@ -272,6 +276,7 @@ class TexteHandler(object):
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
         
+        # TODO: move to verify_order
         # certain messages are ignored
         if self.parser.text in ['DIE NICHTBEACHTUNG DER RAHMENBEDINGUNGEN KANN ZUR ANNAHME VERWEIGERUNG DER WARE FUEHREN.',
                                 'ALLE KOSTEN, DIE DURCH DIE NICHTBEACHTUNG ENTSTEHEN, TRAEGT DER HERSTELLER',
@@ -408,7 +413,6 @@ class AuftragspositionHandler(object):
             raise MalformedFileException("Auftragspositionssatz can only follow a Addresss-," +
                                    " Zahlungsbedingungs-, Zusatzkosten, Auftragspositions- or" +
                                    (" Positionsterminsatz.Previous records = %r" % previousparsers))
-    
     
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""

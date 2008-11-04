@@ -16,21 +16,25 @@ INTERCHANGEHEADER000 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="000"),
     dict(length=35, startpos=4, endpos=38, name='sender_iln'),
     dict(length=35, startpos=39, endpos=73, name='empfaenger_iln'),
-    dict(length=8, startpos=74, endpos=81, name='erstellungsdatum', fieldclass=DateField, default=datetime.datetime.now),
-    dict(length=4, startpos=82, endpos=85, name='erstellungszeit', fieldclass=TimeField, default=datetime.datetime.now),
+    dict(length=8, startpos=74, endpos=81, name='erstellungsdatum',
+         fieldclass=DateField, default=datetime.datetime.now),
+    dict(length=4, startpos=82, endpos=85, name='erstellungszeit',
+         fieldclass=TimeField, default=datetime.datetime.now),
     dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=IntegerField,
          doc='Fortlaufende achtstellige Sendenummer.'),
     dict(length=14, startpos=100, endpos=113, name='referenznummer', fieldclass=IntegerField),
     dict(length=14, startpos=114, endpos=127, name='anwendungsreferenz'),
     # This has to be changed to 0 for production data
     dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
-    dict(length=5, startpos=129, endpos=133, name='schnittstellenversion', fieldclass=FixedField, default='4.5  '),
+    dict(length=5, startpos=129, endpos=133, name='schnittstellenversion',
+         fieldclass=FixedField, default='4.5  '),
     dict(length=467, startpos=134, endpos=600, name='filler', fieldclass=FixedField, default=' '* 467),
 ]
 # fix since this is not in python notation fix "off by one" errors
 for feld in INTERCHANGEHEADER000:
     feld['startpos'] -= 1
-interchangeheader000 = generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader', length=600)
+interchangeheader000 = generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader',
+                                                      length=600)
 
 TRANSAKTIONSKOPF100 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="100"),
@@ -187,7 +191,8 @@ ZAHLUNGSBEDINGUNGEN120 = [
 # fix since this is not in python notation fix "off by one" errors
 for feld in ZAHLUNGSBEDINGUNGEN120:
     feld['startpos'] -= 1
-zahlungsbedingungen120 = generate_field_datensatz_class(ZAHLUNGSBEDINGUNGEN120, name='zahlungsbedingungen', length=600)
+zahlungsbedingungen120 = generate_field_datensatz_class(ZAHLUNGSBEDINGUNGEN120, name='zahlungsbedingungen',
+                                                        length=600)
 
 
 texte130 = [
@@ -263,7 +268,7 @@ RECHNUNGSPOSITION500 = [
     dict(startpos=309, endpos=323, length=15, name='nettostueckpreis', fieldclass=DecimalField,
         precision=4, doc="PRI-5118"),
     dict(startpos=324, endpos=338, length=15, name='bruttostueckpreis', fieldclass=FixedField,
-        default=' ' * 15, doc="PRI-5118 existieren Artikelzu-/abschläge, ist das Feld Brutto-Stückpreis zu füllen"),
+        default=' ' * 15, doc="PRI-5118 existieren Artikelzu-/abschläge, ist Brutto-Stückpreis zu füllen"),
     dict(startpos=339, endpos=353, length=15, name='verkaufspreis', fieldclass=FixedField,
         default=' ' * 15, doc="PRI-5118"),
     dict(startpos=354, endpos=368, length=15, name='aktionspreis', fieldclass=FixedField,
@@ -275,27 +280,29 @@ RECHNUNGSPOSITION500 = [
     dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE'],
         doc='PRI-6411 "PCE" = Stück; "KGM" = Kilogramm'),
     dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=DecimalField,
-         doc='''MOA-5004 Nettowarenwert = Menge x Bruttopreis ./. Artikelrabatte bzw. Menge x Nettopreis (Rabatte sind im Preis eingerechnet) 
-    Bei Gutschriftspositionen ist der Nettowarenwert negativ einzustellen.'''),
+         doc='''MOA-5004 Nettowarenwert = Menge x Bruttopreis ./. Artikelrabatte bzw. Menge x Nettopreis
+        (Rabatte sind im Preis eingerechnet) 
+        Bei Gutschriftspositionen ist der Nettowarenwert negativ einzustellen.'''),
     dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=DecimalField,
          doc="MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte"),
     dict(startpos=432, endpos=449, length=18, name='summeabschlaege', fieldclass=FixedField,
-        default=' ' * 18, doc='MOA-5004 Summe aller Zu- und Abschläge aus Satzart(en) 513 mit vorzeichengerechter Darstellung'),
+        default=' ' * 18, doc='''MOA-5004 Summe aller Zu- und Abschläge aus Satzart(en) 513 mit
+                              vorzeichengerechter Darstellung'''),
     dict(startpos=450, endpos=456, length=7, name='verpackungsart', choices=['CT'],
         doc="PAC-7065"),
     dict(startpos=457, endpos=463, length=7, name='verpackungszahl', fieldclass=IntegerField,
         doc="PAC-7065"),
     dict(startpos=464, endpos=464, length=1, name='gebinde', fieldclass=IntegerField,
-        default=' ', doc='''PIA-7143 handelt es sich bei der Fakturiereinheit um ein Gebinde, ist hier ein "G" einzustellen; 
-    handelt es sich bei der Fakturiereinheit um ein Display/Sortiment, ist hier ein "D" einzustellen; 
-    wird eine Verbrauchereinheit fakturiert, ist hier ein "V" einzustellen. 
-    „P“ = Pfandartikel (Mehrweg); „E“ = Einweg'''),
+        default=' ', doc='''PIA-7143 handelt es sich bei der Fakturiereinheit um ein Gebinde, ist hier ein
+         "G" einzustellen; handelt es sich bei der Fakturiereinheit um ein Display/Sortiment, ist hier ein
+         "D" einzustellen; wird eine Verbrauchereinheit fakturiert, ist hier ein "V" einzustellen. 
+         "P" = Pfandartikel (Mehrweg); "E" = Einweg'''),
     dict(startpos=465, endpos=479, length=15, name='bestellte_vs_gelieferte_menge', fieldclass=FixedField,
         default=' ' * 15, doc="QTY-6060"),
     dict(startpos=480, endpos=494, length=15, name='aktionsvariante', fieldclass=FixedField,
         default='               ', doc="PIA-7143"),
     dict(startpos=495, endpos=497, length=3, name='steuerbefreit', fieldclass=FixedField,
-        default='   ', doc='TAX-5305, Mußfeld (Inhalt: "Y"), wenn die Artikelposition keiner MwSt. unterliegt'),
+        default='   ', doc='TAX-5305, Mußfeld (Inhalt=Y), wenn die Artikelposition keiner MwSt. unterliegt'),
     dict(startpos=498, endpos=507, length=10, name='kennzeichen', fieldclass=FixedField,
         default='          ', doc="?"),
     dict(startpos=508, endpos=508, length=1, name='nachlieferung_erfolgt', fieldclass=FixedField,
@@ -353,15 +360,19 @@ RECHNUNGSLISTE990 = [
     dict(length=35, startpos=7, endpos=41, name='rechnungslistennr'),
     dict(length=8, startpos=42, endpos=49, name='rechnungslistendatum', fieldclass=DateField),
     dict(length=35, startpos=50, endpos=84, name='abkommen'),
-    dict(length=13, startpos=85, endpos=97, name='hudora_iln', fieldclass=FixedField, default="4005998000007"),
+    dict(length=13, startpos=85, endpos=97, name='hudora_iln',
+         fieldclass=FixedField, default="4005998000007"),
     #dict(length=35, startpos=98, endpos=132, name='lieferantennr'),
     dict(length=13, startpos=133, endpos=145, name='empfaenger_iln'),
-    dict(length=13, startpos=146, endpos=158, name='hudora_iln2', fieldclass=FixedField, default="4005998000007"),
+    dict(length=13, startpos=146, endpos=158, name='hudora_iln2',
+         fieldclass=FixedField, default="4005998000007"),
     dict(length=13, startpos=159, endpos=171, name='zahlungsleistender_iln', fieldclass=EanField),
-    dict(length=3, startpos=172, endpos=174, name='waehrungskennzeichen', fieldclass=FixedField, default="EUR"),
+    dict(length=3, startpos=172, endpos=174, name='waehrungskennzeichen',
+         fieldclass=FixedField, default="EUR"),
     #dict(length=8, startpos=175, endpos=182, name='valutadatum', fieldclass=DateField),
     #990-13 Fälligkeitsdatum (Rechnungsdatum ist Referenzdatum) (12) D an 8 183 190 YYYYMMDD 
-    dict(length=18, startpos=191, endpos=208, name='rechnungslistenendbetrag', fieldclass=DecimalField, precision=2),
+    dict(length=18, startpos=191, endpos=208, name='rechnungslistenendbetrag',
+         fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=209, endpos=226, name='mwst', fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=227, endpos=244, name='nettowarenwert', fieldclass=DecimalField, precision=2),
     #990-17 ReLi-Steuerpflichtiger Betrag, gesamt (125) D n 18 245 262 (2 NK-Stellen) 
