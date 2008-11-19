@@ -6,7 +6,6 @@ Created by Maximillian Dornseif on 2008-10-29.
 Copyright (c) 2008 HUDORA. All rights reserved.
 """
 
-import unittest
 import datetime
 from edilib.recordbased import generate_field_datensatz_class, FixedField, DecimalField, IntegerField
 from edilib.recordbased import DateField, TimeField, EanField
@@ -56,7 +55,7 @@ TRANSAKTIONSKOPF100 = [
         doc='"380" = Rechnung, "381" = Gutschrift (Waren und Dienstleistungen) '),
     dict(startpos=41, endpos=43, length=3, name='transaktionsfunktion', fieldclass=FixedField, default='   ',
         doc="BGM-1225"),
-    dict(startpos=44, endpos=78, length=35, name='belegnummer',
+    dict(startpos=44, endpos=78, length=35, name='belegnr', fieldclass=IntegerField,
         doc="BGM-1004"),
     dict(startpos=79, endpos=86, length=8, name='belegdatum', fieldclass=DateField,
         doc="DTM-2380"),
@@ -267,8 +266,8 @@ RECHNUNGSPOSITION500 = [
         precision=2, doc="TAX-5278"),
     dict(startpos=309, endpos=323, length=15, name='nettostueckpreis', fieldclass=DecimalField,
         precision=4, doc="PRI-5118"),
-    dict(startpos=324, endpos=338, length=15, name='bruttostueckpreis', fieldclass=FixedField,
-        default=' ' * 15, doc="PRI-5118 existieren Artikelzu-/abschläge, ist Brutto-Stückpreis zu füllen"),
+    dict(startpos=324, endpos=338, length=15, name='bruttostueckpreis', fieldclass=DecimalField, precision=2,
+         doc="PRI-5118 existieren Artikelzu-/abschläge, ist Brutto-Stückpreis zu füllen"),
     dict(startpos=339, endpos=353, length=15, name='verkaufspreis', fieldclass=FixedField,
         default=' ' * 15, doc="PRI-5118"),
     dict(startpos=354, endpos=368, length=15, name='aktionspreis', fieldclass=FixedField,
@@ -279,11 +278,11 @@ RECHNUNGSPOSITION500 = [
         default=' ' * 9, doc="PRI-5284"),
     dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE'],
         doc='PRI-6411 "PCE" = Stück; "KGM" = Kilogramm'),
-    dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=DecimalField,
+    dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=DecimalField, precision=2,
          doc='''MOA-5004 Nettowarenwert = Menge x Bruttopreis ./. Artikelrabatte bzw. Menge x Nettopreis
         (Rabatte sind im Preis eingerechnet) 
         Bei Gutschriftspositionen ist der Nettowarenwert negativ einzustellen.'''),
-    dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=DecimalField,
+    dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=DecimalField, precision=2,
          doc="MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte"),
     dict(startpos=432, endpos=449, length=18, name='summeabschlaege', fieldclass=FixedField,
         default=' ' * 18, doc='''MOA-5004 Summe aller Zu- und Abschläge aus Satzart(en) 513 mit
@@ -334,16 +333,20 @@ BELEGSUMMEN900 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="900"),
     dict(startpos=4, endpos=21, length=18, name='rechnungsendbetrag', fieldclass=DecimalField,
          precision=2, doc="MOA-5004"),
-    dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag', fieldclass=DecimalField,
-         doc="MOA-5004"),
-    dict(startpos=40, endpos=57, length=18, name='nettowarenwert_gesammt', fieldclass=DecimalField),
-    dict(startpos=58, endpos=75, length=18, name='steuerpflichtiger_betrag', fieldclass=DecimalField),
-    dict(startpos=76, endpos=93, length=18, name='skontofaehiger_betrag', fieldclass=DecimalField),
-    dict(startpos=94, endpos=111, length=18, name='zu_und_abschlage', fieldclass=DecimalField),
-    dict(startpos=112, endpos=129, length=18, name='gesammt_verkaufswert', fieldclass=DecimalField),
+    dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag',
+         fieldclass=DecimalField, precision=2, doc="MOA-5004"),
+    dict(startpos=40, endpos=57, length=18, name='nettowarenwert_gesammt',
+         fieldclass=DecimalField, precision=2),
+    dict(startpos=58, endpos=75, length=18, name='steuerpflichtiger_betrag',
+         fieldclass=DecimalField, precision=2),
+    dict(startpos=76, endpos=93, length=18, name='skontofaehiger_betrag',
+         fieldclass=DecimalField, precision=2),
+    dict(startpos=94, endpos=111, length=18, name='zu_und_abschlage',
+         fieldclass=DecimalField, precision=2),
+    dict(startpos=112, endpos=129, length=18, name='gesammt_verkaufswert',
+         fieldclass=DecimalField, precision=2),
     dict(startpos=130, endpos=600, length=471, name='filler', fieldclass=FixedField, default=' ' * 471),
 ]
-
 
 # fix since this is not in python notation fix "off by one" errors
 for feld in BELEGSUMMEN900:
@@ -352,7 +355,41 @@ belegsummen900 = generate_field_datensatz_class(BELEGSUMMEN900, name='belegsumme
 
 # Satzart 901: MWSt.-Angaben (1 x pro Transaktion und MWSt.-Satz)
 
-# Satzart 913: Zu- / Abschläge auf Belegebene (max. 1 x pro Abschlagsart / -stufe und MWSt.-Satz) ????
+# Satzart 913: Zu- / Abschläge auf Belegebene (max. 1 x pro Abschlagsart / -stufe und MWSt.-Satz) 
+# (Belegzuschläge bzw. Belegrabatte werden auf den Beleg gewährt. Es handelt sich ausdrücklich nicht um Summen
+#  von Artikelzu-/abschlägen. 
+BELEGABSCHLAEGE913 = [
+    dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="913"),
+    dict(length=3, startpos=4, endpos=6, name='kennzeichen', fieldclass=FixedField, default='A  ',
+         doc='913-02 Kennzeichen Zu-/Abschlag, "C" = Zuschlag, "A" = Abschlag/Rabatt'),
+    dict(length=3, startpos=7, endpos=9, name='art', fieldclass=FixedField, default='   '),
+    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige', fieldclass=FixedField,
+         default='001', doc='''913-04 Kalkulationsfolgeanzeige. Die Kalkulationsstufe gibt darüber Auskunft,
+         ob sich ein Rabatt auf einen bereits reduzierten (rabattierten) Betrag bezieht oder nicht.
+         Existiert nur ein Rabatt, ist der Inhalt immer "1".
+         Mussfeld, wenn mehrere Belegzu-/-abschläge existieren.'''),
+    dict(length=5, startpos=13, endpos=17, name='mwst_abschlag', fieldclass=DecimalField, precision=2,
+         doc='913-05 MWSt.-Satz des Zu-/Abschlages (2 NK-St.)'),
+    dict(length=8, startpos=18, endpos=25, name='abschlag_prozent',
+         fieldclass=DecimalField, precision=2, doc='Zu-/Abschlag in Prozent (2 NK-St.)'),
+    dict(length=18, startpos=26, endpos=43, name='abschlag',
+         fieldclass=DecimalField, precision=2, doc='Zu-/Abschlag als Betrag (2 NK-St.)'),
+    dict(length=15, startpos=44, endpos=58, name='menge_naturalrabatt', fieldclass=IntegerField, default=1,
+         doc='913-08 Menge Naturalrabatt / Mengenzuschlag K n 15 44 58 (2 NK-St.)'),
+    # 913-09 Zu-/Abschlag je Einheit D n 15 59 73 (2 NK-St.) 
+    # 913-10 Zu-/Abschlagbasis D n 18 74 91 (2 NK-St.) 
+    dict(length=35, startpos=92, endpos=126, name='text',
+         doc='913-11 Art des Zu-/Abschlages, Text'),
+    dict(length=474, startpos=127, endpos=600, name='filler', fieldclass=FixedField, default=' '*474,
+         doc='913-12 Filler K(Blank)'),
+]
+
+# fix since this is not in python notation fix "off by one" errors
+for feld in BELEGABSCHLAEGE913:
+    feld['startpos'] -= 1
+belegabschlaege913 = generate_field_datensatz_class(BELEGABSCHLAEGE913, name='belegabschlaege', length=600)
+
+
 
 RECHNUNGSLISTE990 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="990"),
@@ -375,7 +412,8 @@ RECHNUNGSLISTE990 = [
          fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=209, endpos=226, name='mwst', fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=227, endpos=244, name='nettowarenwert', fieldclass=DecimalField, precision=2),
-    #990-17 ReLi-Steuerpflichtiger Betrag, gesamt (125) D n 18 245 262 (2 NK-Stellen) 
+    dict(length=18, startpos=245, endpos=262, name='steuerpflichtiger_betrag',
+         fieldclass=DecimalField, precision=2, doc='990-17 ReLi-Steuerpflichtiger Betrag, gesamt'),
     #990-18 ReLi-Skontofähiger Betrag, gesamt D n 18 263 280 (2 NK-Stellen) 
     #990-19 ReLi-Belegzu- / Abschläge, gesamt (Vorzeichen !!!) D n 18 281 298 (2 NK-Stellen) 
     #990-20 MWSt.-Satz D n 5 299 303 (2 NK-Stellen) 

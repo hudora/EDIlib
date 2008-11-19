@@ -331,6 +331,11 @@ class DecimalFieldNoDot(DecimalField):
     E.G. 12.32 -> '1232'.
     """
     
+    def __init__(self, name, length=15, *args, **kwargs):
+        if 'precision' not in kwargs:
+            raise InvalidFieldDefinition("%r: precision not set" % (self))
+        super(DecimalFieldNoDot, self).__init__(name, length, *args, **kwargs)
+    
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         

@@ -566,6 +566,7 @@ class AbschlaegeHandler(object):
                                          (" Previous records = %r" % previousparsers))
     
     def contribute_to_order(self, orderdict):
+        """Return a dict contributing to the OrderProtocol."""
         orderdict['abschlaege'].append({'art': unicode(self.parser.art),
                 'prozent': self.parser.prozent,
                 'name': unicode(self.parser.art_abschlag),
@@ -633,11 +634,11 @@ def parse_rawdata(data):
             header = recordhandlers[satzart](parser)
         else:
             if satzart == '100':
+                print "FOFOFOF"
                 # new auftrag starting
-                if parsers:
-                    auftraege.append(orderdict)
-                parsers = []
                 orderdict = {'positionen': [], 'abschlaege': []}
+                auftraege.append(orderdict)
+                parsers = []
             
             if satzart not in recordhandlers:
                 print "WARNING: no validator for record %r" % satzart
