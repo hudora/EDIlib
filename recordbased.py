@@ -202,7 +202,7 @@ class FixedField(Field):
     def set(self, value):
         """Ensure FixedFields can't be changed after creation."""
         if str(value).strip() != str(self._resolve(self.default)).strip():
-            raise FieldImmutable("tired to set %r to %r - but field is immutable." % (self, value))
+            raise FieldImmutable("tried to set %r to %r - but field is immutable." % (self, value))
     
 
 class RightAdjustedField(Field):
@@ -283,34 +283,34 @@ class DecimalField(Field):
         if self.precision and (self.precision + 2 > self.length):
             raise InvalidFieldDefinition("%r: too much precision (%d) for too little length (%d)" % (
                                          self, self.precision, self.length))
+        self.formatstring = "%0%%d.%df" % (self.length, self.precision, )
     
+
+    def _reducetofit(self, value):
+        '''When converting a number which has length=self.length e.g. 9000000000.00000 w/ length=15 and precision=5 we get
+
+        '9000000000.00000' which has a length of 16. Reduce this string here until it fits.
+         Make sure, it still the same decimal value.'''
+        while len(value) > self.length:
+            newval = value[:-1]
+            if Decimal(newval) != Decimal(value):
+                print("Field %r has maxlength of %d but after formating wrote %r to it." %
+                        (self, self.length, value))
+                raise FieldTooLong("Field %r has maxlength of %d but after formating wrote %r to it." %
+                        (self, self.length, value))
+            value = newval
+        return value
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
-        if self._resolve(value):
-            ret = str(Decimal(str(self._resolve(value))))
-            if '.' in ret:
-                dec, frac = ret.split('.')
-                ret = dec
-                if self.precision:
-                    frac = frac[:self.precision]
-                    while len(frac) < self.precision:
-                        frac += '0'
-                    ret = dec + '.' + frac
-                else:
-                    if len(ret) < self.length - 2:
-                        ret += '.'
-                        while (len(ret) < self.length) and frac:
-                            ret += frac[0]
-                            frac = frac[1:]
-            elif self.precision:
-                ret = ("%%%ds" % self.length) % ('%s.%s' % (ret, '0' * self.precision))
-            if len(ret) > self.length:
-                raise FieldTooLong("Field %r has maxlength of %d but after formating wrote %r to it." %
-                                    (self, self.length, ret))
-            
-            return ("%%%ds" % self.length) % ret
-        return ("%%%ds" % self.length) % ' '
-    
+
+        value = self._resolve(value)
+        if not value:
+            return ("%%%ds" % self.length) % ' '
+        ret = self.formatstring % Decimal(value)
+        ret = self._reducetofit(ret)
+        return ret
+
     def parse(self, data):
         """Check if the data can be parsed and actually parse it."""
         
@@ -384,6 +384,7 @@ class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
         """Check if the data can be parsed and actually parse it."""
         
         # insert decimal point
+        # print data, self.name, self.length
         sign = data[-1]
         data = "%s.%s" % (data[:-(self.precision+1)], data[-(self.precision+1):-1])
         
@@ -537,7 +538,10 @@ class DatensatzBaseClass(object):
         """Return a string representation of the Datensatz (Record)."""
         data = [' '] * self.length
         for startpos, field in sorted(self.fielddict.items()):
-            fielddata = field.formated()
+            try:
+                fielddata = field.formated()
+            except Exception, e:
+                raise ValueError("Error serializing %r: %s" % (field, str(e)))
             data[startpos:startpos+field.length] = list(fielddata)
         return ''.join(data)
     
@@ -548,7 +552,9 @@ class DatensatzBaseClass(object):
                                 len(data), self, self.length))
         # cut data in chunks fitting to our fields and the the fields parse them
         for startpos, field in sorted(self.fielddict.items()):
+            # print startpos,
             field.parse(data[startpos:startpos+field.length])
+            # print
      
 
 def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
@@ -561,6 +567,7 @@ def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
         
     if not name:
         name = 'AnonymousDatensatzBase'
+
     klass = type(name, (DatensatzBaseClass, ), {'__name__': name, '__doc__': doc})
     klass.feldsource = felder
     reallength = _get_length(felder)
