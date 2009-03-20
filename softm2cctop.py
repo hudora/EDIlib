@@ -41,6 +41,12 @@ g_is_credit = False
 g_invoices = []
 g_is_invoicelist = None
 g_iln_rechnungsempfaenger = None
+g_skonto = 0
+g_zu_und_abschlage = None
+g_steuerpflichtiger_betrag = None
+g_mwst_gesamtbetrag = None
+g_rechnungsendbetrag = None
+
 EDEKA_ILNS = ['4311501000007'] # TODO automaticly generation of this list ???
 
 
@@ -261,6 +267,8 @@ def convert_invoice_position(position_records, previous_output_records):
                            (last_mwst, f3.mwstsatz))
     last_mwst = f3.mwstsatz
 
+    print "preisdimension", f3.preisdimension
+
     # MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte
     rec500.bruttostueckpreis = abs(f3.verkaufspreis)
     rec500.bruttowarenwert = abs(f3.wert_brutto)
@@ -275,7 +283,6 @@ def convert_invoice_position(position_records, previous_output_records):
     dbg_nettoval = rec500.nettostueckpreis * rec500.berechnete_menge - f4.positionsrabatt_gesamt
     if  dbg_nettoval != rec500.nettowarenwert:
         if not (dbg_nettoval == abs(rec500.nettowarenwert) and _is_credit()):
-            import ipdb; ipdb.set_trace()
             raise RuntimeError("Netto-Warenwert unschlüssig: %r * %r != %r" %
                     (rec500.nettostueckpreis, rec500.berechnete_menge, rec500.nettowarenwert))
 
@@ -344,6 +351,17 @@ def convert_invoice_footer(invoice_records, previous_output_records, nettosum, b
         # Zuschlaegen getreu ihrer Vorzeichen
         rec900.zu_und_abschlage = f9.summe_rabatte + f9.summe_zuschlaege
 
+
+    # speichern der einzelrechnungssummen fuer Rechnungslistenendbetröge
+    global g_zu_und_abschlage
+    global g_steuerpflichtiger_betrag
+    global g_mwst_gesamtbetrag
+    global g_rechnungsendbetrag
+    g_zu_und_abschlage += rec900.zu_und_abschlage
+    g_steuerpflichtiger_betrag += rec900.steuerpflichtiger_betrag
+    g_mwst_gesamtbetrag += rec900.mwst_gesamtbetrag
+    g_rechnungsendbetrag += rec900.rechnungsendbetrag
+
     # Vorzeichen muss noch eingearbeitet werden.
     # f9.Vorzeichen Summe Zuschläge'),
     # rec900.gesamt_verkaufswert
@@ -378,6 +396,8 @@ def convert_invoice(softm_record_list, stratedi_records, config):
     if f1list:
         skonto = sum([rec.skontobetrag1_ust1 for rec in f1list])
         paperlist.update_footer(dict(skonto=skonto))
+        global g_skonto
+        g_skonto += skonto
 
     # remove everything until we hit the first F3
     while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F3':
@@ -470,7 +490,12 @@ def convert_invoicelistfooter(softm_record_list, stratedi_records, config):
     rec990.steuerpflichtiger_betrag = sum([rec.warenwert for rec in r2list])
 
     # EDEKA specific
-    rec990.abkommen = '20'
+    if _is_edeka():
+        rec990.abkommen = '20'
+        rec990.rechnungslistenendbetrag = g_rechnungsendbetrag
+        rec990.steuerpflichtiger_betrag = g_steuerpflichtiger_betrag
+        rec990.mwst = g_mwst_gesamtbetrag
+        rec990.reli_zu_und_abschlaege = g_zu_und_abschlage
 
     # Footer information for paperlist
     paperlist.update_footer(dict(warenwert=abs(rec990.steuerpflichtiger_betrag),
@@ -533,12 +558,14 @@ def main():
     transmissions = SoftMTransmission.objects.all()
     for count, transmission in enumerate(transmissions.iterator()):
         filename = transmission.filename
-        # skip weird invoice. TODO to check w/ cgiermann:
+
+        # skip weird invoice. TODO these are using other 'preisdimension'
         if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
                                 'RL00602_UPDATED.txt'.upper()]:
             continue
-        # if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-            # continue
+
+        if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
+            continue
         #if filename.upper() != 'RL00513.TXT': # dbg
             #continue
         # if filename.upper() != 'RL00430.TXT': # diese hier ging an stratedi
@@ -549,7 +576,6 @@ def main():
             g_is_invoicelist = False
         elif filename.upper().startswith('RL'):
             g_is_invoicelist = True
-            continue
         assert(g_is_invoicelist!=None)
 
         print
@@ -557,13 +583,24 @@ def main():
         if filename.lower().endswith('.txt'):
             msg = "softm2cctop: "
             try:
+                global g_skonto
+                g_skonto = 0
                 global g_invoices
                 g_invoices = []
+
+                global g_zu_und_abschlage
+                g_zu_und_abschlage = Decimal('0')
+                global g_steuerpflichtiger_betrag
+                g_steuerpflichtiger_betrag = Decimal('0')
+                global g_mwst_gesamtbetrag
+                g_mwst_gesamtbetrag = Decimal('0')
+                global g_rechnungsendbetrag
+                g_rechnungsendbetrag = Decimal('0')
+
                 workfilename = os.path.join(workdir, filename)
                 paperlist.new_paperlist(workfilename.lower().replace('txt', 'paper')) # TODO nice extension
                 softm2cctop(os.path.join(inputdir, filename), workfilename, transmission)
             except:
-                # import ipdb; ipdb.set_trace()
                 (klass, error_obj, tback) = sys.exc_info()
                 msg += "failed w/ msg: %s" % error_obj.message
                 transmission.status = 'parsing_failed'
