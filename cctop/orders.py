@@ -13,22 +13,22 @@ from edilib.recordbased import DateField, EanField, TimeField
 class BenedictException(RuntimeError):
     """Baseclass for more detailed exceptions."""
     pass
-    
+
 
 class UnknownRecordException(BenedictException):
     """Is raised if an unknown record occures."""
     pass
-    
+
 
 class MalformedRecordException(BenedictException):
     """Is raised if an record is malformed."""
     pass
-    
+
 
 class MalformedFileException(BenedictException):
     """Is raised if the intra record structure is malformed."""
     pass
-    
+
 INTERCHANGEHEADER000 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="000"),
     dict(length=35, startpos=4, endpos=38, name='sender_iln'),
@@ -45,8 +45,9 @@ INTERCHANGEHEADER000 = [
     dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
     dict(length=5, startpos=129, endpos=133, name='schnittstellenversion',
          fieldclass=FixedField, default='4.5  '),
-    dict(length=379, startpos=134, endpos=512, name='filler', fieldclass=FixedField, default=' '* 379),
+    dict(length=379, startpos=134, endpos=512, name='filler', default=' '* 379) #fieldclass=FixedField,
 ]
+
 # fix since this is not in python notation fix "off by one" errors
 for feld in INTERCHANGEHEADER000:
     feld['startpos'] -= 1
@@ -54,17 +55,17 @@ for feld in INTERCHANGEHEADER000:
 
 class InterchangeheaderHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, thisparser):
         self.parser = thisparser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers != []:
             raise MalformedFileException("Interchangeheader always must be the first record." +
                                          (" Previous records = %r" % ([self.parser] + previousparsers)))
-    
+
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
         return {} # FIXME
@@ -93,23 +94,23 @@ transaktionskopf = [
     dict(startpos=87, endpos=89, length=3, name='antwortart', fieldclass=FixedField, default='   ',
         doc="BGM-4343"),
     dict(startpos=90, endpos=90, length=1, name='selbstabholung', doc="TOD-4055"),
-    dict(startpos=91, endpos=125, length=35, name='dokumentanname', doc="BGM-1000"),
+    dict(startpos=91, endpos=125, length=35, name='dokumentenname', doc="BGM-1000"),
     dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' '*387),
     ]
 # fix since this is not in python notation fix "off by one" errors
 for feld in transaktionskopf:
     feld['startpos'] -= 1
-    
+
 
 class TransaktionskopfHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, thisparser):
         self.parser = thisparser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers != []:
             raise MalformedFileException("Transaktionskopf always must be the first record." +
                                          (" Previous records = %r" % ([self.parser] + previousparsers)))
@@ -118,7 +119,68 @@ class TransaktionskopfHandler(object):
         """Return a dict contributing to the OrderProtocol."""
         return {'kundenauftragsnr': unicode(self.parser.auftragsnummer),
                 'bestelldatum': self.parser.auftragsdatum}
-    
+
+
+transaktionstermine = [ # kopiert von satzart 515
+    dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="115"),
+    # die folgenden Felder verwenden wir nicht
+    dict(startpos=4, endpos=11, length=8, name='lieferdatum_bevorzugt', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=12, endpos=19, length=8, name='lieferdatum_min', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=20, endpos=27, length=8, name='lieferdatum_max', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=28, endpos=35, length=8, name='lieferdatum_zugesagt', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=36, endpos=43, length=8, name='lieferdatum_laut_lieferplan', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=44, endpos=51, length=8, name='versanddatum', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=52, endpos=59, length=8, name='pick_up_datum', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=60, endpos=67, length=8, name='letztes_lieferdatum', fieldclass=DateField,
+         doc="DTM-2380"),
+    dict(startpos=68, endpos=73, length=6, name='lieferwoche_bevorzugt', fieldclass=FixedField,
+         default=' ' * 6, doc="DTM-2380"),
+    dict(startpos=74, endpos=79, length=6, name='lieferwoche_min', fieldclass=FixedField,
+         default=' ' * 6, doc="DTM-2380"),
+    dict(startpos=80, endpos=85, length=6, name='lieferwoche_max', fieldclass=FixedField,
+         default=' ' * 6, doc="DTM-2380"),
+    dict(startpos=86, endpos=91, length=6, name='lieferwoche_zugesagt', fieldclass=FixedField,
+         default=' ' * 6, doc="DTM-2380"),
+    dict(startpos=92, endpos=95, length=4, name='lieferuhrzeit', fieldclass=FixedField,
+         default=' ' * 4, doc="DTM-2380"),
+    dict(startpos=96, endpos=99, length=4, name='lieferuhrzeit_earliest', fieldclass=FixedField,
+         default=' ' * 4, doc="DTM-2380"),
+    dict(startpos=100, endpos=103, length=4, name='lieferuhrzeit_latest', fieldclass=FixedField,
+         default=' ' * 4, doc="DTM-2380"),
+    dict(startpos=104, endpos=512, length=409, name='filler', fieldclass=FixedField, default=' ' * 409),
+]
+
+# fix since this is not in python notation fix "off by one" errors
+for feld in transaktionstermine:
+    feld['startpos'] -= 1
+
+
+class TransaktionsterminHandler(object):
+    """Validates if parsed record is well formed."""
+
+    def __init__(self, parser):
+        self.parser = parser
+
+    def validate(self, previousparsers):
+        """Executes Validation and raises Exceptions on failures."""
+
+        if previousparsers[-1].satzart not in ['100']:
+            raise MalformedFileException("Transaktionsterminsatz can only follow a Transaktionskopf. " +
+                                         (" Previous records = %r" % previousparsers))
+
+    def contribute_to_order(self, orderdict):
+        """Return a dict contributing to the OrderProtocol."""
+        return {'anlieferdatum_min': self.parser.lieferdatum_min,
+                'anlieferdatum_max': self.parser.lieferdatum_max,
+                'anlieferdatum_bevorzugt': self.parser.lieferdatum_bevorzugt}
+
 
 addressen = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="119"),
@@ -168,19 +230,19 @@ class AddressenHandler(object):
         if previousparsers[0].satzart != '100':
             raise MalformedFileException("Addresssatz without Transaktionskopf Previous records = %r"
                                          % previousparsers)
-        if previousparsers[-1].satzart not in ['100', '119']:
+        if previousparsers[-1].satzart not in ['100', '115', '119']:
             raise MalformedFileException("Addresssatz can only follow a Transaktionskopf or an Addresssatz."
                                          + ("Previous records = %r" % previousparsers))
         if self.parser.partnerart == 'SU' and self.parser.iln != '4005998000007':
             raise MalformedRecordException("Supplier MUST be HUDORA/4005998000007: %r" % self.parser)
-    
+
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
         if self.parser.partnerart in ['DP', 'IV']:
-            
+
             # for fixing non ISO 3166-1 alpha-2 data (seen with TRU)
             landfix = {'D': 'DE'}
-            
+
             adrtype = {'DP': 'lieferadresse', 'IV': 'rechnungsadresse'}[self.parser.partnerart]
             return {adrtype: {'iln': unicode(self.parser.iln),
                               'name1': unicode(self.parser.name1),
@@ -198,14 +260,13 @@ class AddressenHandler(object):
             }}
         else:
             return {}
-    
+
 
 ZAHLUNGSBEDINGUNGEN120 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="120"),
     dict(startpos=4, endpos=6, length=3, name='waehrung', fieldclass=FixedField, default='EUR',
         doc="CUX-6345"),
-    dict(startpos=7, endpos=11, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5,
-        doc="TAX-5278"),
+    dict(startpos=7, endpos=11, length=5, name='mwstsatz', doc="TAX-5278"),
     dict(startpos=12, endpos=14, length=3, name='zahlungsziel', fieldclass=FixedField, default=' ' * 3,
         doc="PAT8-2152"),
     dict(startpos=15, endpos=22, length=8, name='valutadatum', fieldclass=FixedField, default=' ' * 8,
@@ -272,10 +333,10 @@ class TexteHandler(object):
         if previousparsers[-1].satzart not in ['119', '120', '130']:
             raise MalformedFileException("Textsatz can only follow a Addresss- or a Zahlungsbedingungs or" +
                                    (" other Textsatz. Previous records = %r" % previousparsers))
-    
+
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
-        
+
         # TODO: move to verify_order
         # certain messages are ignored
         if self.parser.text in ['DIE NICHTBEACHTUNG DER RAHMENBEDINGUNGEN KANN ZUR ANNAHME VERWEIGERUNG DER WARE FUEHREN.',
@@ -284,7 +345,7 @@ class TexteHandler(object):
                                 'IN ABAENDERUNG VON PUNKT IX,1.ABSATZ,SATZ 2 DER UMSEITIG ABGEDRUCKTEN ALLGEMEINEN EINKAUFSBEDINGUNGEN GELTEN DIE GESETZLICHENGEWAEHRLEISTUNGSFRISTEN.',
                                 ]:
             return {}
-        
+
         text = orderdict.get('bestelltext', '')
         text = u'\n'.join([text, self.parser.text]).strip()
         return {'bestelltext': text}
@@ -357,29 +418,30 @@ auftragsposition = [
     #    default = '               ', doc="QTY-6060"),
     dict(startpos=301, endpos=303, length=3, name='waehrung', fieldclass=FixedField, default='EUR',
         doc="CUX-6345"),
-    dict(startpos=304, endpos=308, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5,
-        doc="TAX-5278"),
+    dict(startpos=304, endpos=308, length=5, name='mwstsatz', doc="TAX-5278"),
     dict(startpos=309, endpos=323, length=15, name='nettostueckpreis', fieldclass=DecimalField,
         precision=4, doc="PRI-5118"),
-    dict(startpos=324, endpos=338, length=15, name='bruttostueckpreis', fieldclass=FixedField,
-        default=' ' * 15, doc="PRI-5118"),
-    dict(startpos=339, endpos=353, length=15, name='verkaufspreis', fieldclass=FixedField,
-        default=' ' * 15, doc="PRI-5118"),
-    dict(startpos=354, endpos=368, length=15, name='aktionspreis', fieldclass=FixedField,
-        default=' ' * 15, doc="PRI-5118"),
-    dict(startpos=369, endpos=383, length=15, name='listenpreis', fieldclass=FixedField,
-        default=' ' * 15, doc="PRI-5118"),
-    dict(startpos=384, endpos=392, length=9, name='preisbasis', fieldclass=FixedField,
-        default=' ' * 9, doc="PRI-5284"),
-    dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE'],
+
+    # FIXME seem unused
+    #dict(startpos=324, endpos=338, length=15, name='bruttostueckpreis', fieldclass=DecimalField,
+    #    precision=4, doc="PRI-5118"),
+    #dict(startpos=339, endpos=353, length=15, name='verkaufspreis', fieldclass=DecimalField,
+    #    precision=4, doc="PRI-5118"),
+    #dict(startpos=354, endpos=368, length=15, name='aktionspreis', fieldclass=FixedField,
+    #    default=' ' * 15, doc="PRI-5118"),
+    #dict(startpos=369, endpos=383, length=15, name='listenpreis', fieldclass=FixedField,
+    #    default=' ' * 15, doc="PRI-5118"),
+    #dict(startpos=384, endpos=392, length=9, name='preisbasis', fieldclass=FixedField,
+    #    default=' ' * 9, doc="PRI-5284"),
+    dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE', '   '], # FIXME ist leeres Feld zulaessig?
         doc="PRI-6411"),
-    dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=FixedField,
-        default=' ' * 18, doc="MOA-5004"),
-    dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=FixedField,
-        default=' ' * 18, doc="MOA-5004"),
-    dict(startpos=432, endpos=449, length=18, name='summeabschlaege', fieldclass=FixedField,
-        default=' ' * 18, doc="MOA-5004"),
-    dict(startpos=450, endpos=456, length=7, name='verpackungsart', choices=['CT'],
+    #dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=FixedField,
+    #    default=' ' * 18, doc="MOA-5004"),
+    #dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=FixedField,
+    #    default=' ' * 18, doc="MOA-5004"),
+    #dict(startpos=432, endpos=449, length=18, name='summeabschlaege', fieldclass=FixedField,
+    #    default=' ' * 18, doc="MOA-5004"),
+    dict(startpos=450, endpos=456, length=7, name='verpackungsart', choices=['CT', ''],
         doc="PAC-7065"),
     dict(startpos=457, endpos=463, length=7, name='verpackungszahl', fieldclass=IntegerField,
         doc="PAC-7065"),
@@ -402,18 +464,18 @@ for feld in auftragsposition:
 
 class AuftragspositionHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['119', '120', '130', '140', '500', '515']:
             raise MalformedFileException("Auftragspositionssatz can only follow a Addresss-," +
                                    " Zahlungsbedingungs-, Zusatzkosten, Auftragspositions- or" +
                                    (" Positionsterminsatz.Previous records = %r" % previousparsers))
-    
+
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
         orderdict['positionen'].append({'menge': int(self.parser.bestellmenge),
@@ -426,7 +488,7 @@ class AuftragspositionHandler(object):
                 'positionsnr': unicode(self.parser.positionsnummer),
                 })
         return {'positionen': orderdict['positionen']}
-    
+
 
 # weglassen
 positionstermine = [
@@ -467,29 +529,29 @@ for feld in positionstermine:
 
 class PositionsterminHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['500']:
             raise MalformedFileException("Positionsterminsatz can only follow a Auftragspositionssatz. " +
                                          (" Previous records = %r" % previousparsers))
-    
+
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
         orderdict['positionen'][-1].update({'anlieferdatum_min': self.parser.lieferdatum_min,
                                             'anlieferdatum_max': self.parser.lieferdatum_max})
         return {'positionen': orderdict['positionen']}
-    
+
 
 belegsummen = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="900"),
-    dict(startpos=4, endpos=21, length=18, name='gesammtbetrag', fieldclass=DecimalField,
+    dict(startpos=4, endpos=21, length=18, name='gesamtbetrag', fieldclass=DecimalField,
          precision=2, doc="MOA-5004"),
-    dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag', fieldclass=FixedField,
+    dict(startpos=22, endpos=39, length=18, name='mwst_gesamtbetrag', fieldclass=FixedField,
          default=' ' * 18, doc="MOA-5004"),
     dict(startpos=40, endpos=512, length=473, name='filler', fieldclass=FixedField, default=' ' * 473),
 ]
@@ -502,30 +564,30 @@ for feld in belegsummen:
 
 class BelegsummenHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['500', '515']:
             raise MalformedFileException("Belegsummensatz can only follow a Auftragspositions- or" +
                                          ("Positionsterminsatz. Previous records = %r" % previousparsers))
-        
+
         summe = 0
         for parser in previousparsers:
             if parser.satzart == '500':
                 summe += (parser.nettostueckpreis * parser.bestellmenge)
-        if summe != self.parser.gesammtbetrag:
-            raise MalformedFileException("sums do not validate (%d|%d) %r: %r" % (summe,
-                                           self.parser.gesammtbetrag, self.parser, previousparsers))
-    
+        if summe != self.parser.gesamtbetrag:
+            raise MalformedFileException("sums do not validate (%d|%d) %r: %r"
+                    % (summe, self.parser.gesamtbetrag, self.parser, previousparsers))
+
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
         # we contribute nothing since all relevant verifycations are already done in validate()
         return {}
-    
+
 # TRU hat uebertraaegt faelschlicherweise bereits in der Bestellung einen 913 Satz. Dieser ist im Grunde
 # unter INVOC dokumentiert, ist allerdings an dieser Stelle nicht, wie dokumentiert 600 Zeichen lang, sondern
 # 512
@@ -535,7 +597,7 @@ ABSCHLAEGE913 = [
     dict(startpos=7, endpos=9, length=3, name='art', choices=['GRB', 'RCH', 'AA ', 'DI ']),
     dict(startpos=10, endpos=12, length=3, name='kalkulationsfolgeanzeige', fieldclass=FixedField,
          default=' ' * 3),
-    dict(startpos=13, endpos=17, length=5, name='mwstsatz', fieldclass=FixedField, default=' ' * 5),
+    dict(startpos=13, endpos=17, length=5, name='mwstsatz'),
     dict(startpos=18, endpos=25, length=8, name='prozent', fieldclass=DecimalField),
     dict(startpos=26, endpos=43, length=18, name='betrag', fieldclass=FixedField, default=' ' * 18),
     dict(startpos=44, endpos=58, length=15, name='naturalrabatt', fieldclass=FixedField, default=' ' * 15),
@@ -564,7 +626,7 @@ class AbschlaegeHandler(object):
         if previousparsers[-1].satzart not in ['900', '913']:
             raise MalformedFileException("Abschlaegesatz can only follow a Belegsummensatz." +
                                          (" Previous records = %r" % previousparsers))
-    
+
     def contribute_to_order(self, orderdict):
         """Return a dict contributing to the OrderProtocol."""
         orderdict['abschlaege'].append({'art': unicode(self.parser.art),
@@ -572,11 +634,12 @@ class AbschlaegeHandler(object):
                 'name': unicode(self.parser.art_abschlag),
                 })
         return {'abschlaege': orderdict['abschlaege']}
-        
-    
+
+
 ordersparser = {
     '000': generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader', length=512),
     '100': generate_field_datensatz_class(transaktionskopf, name='transaktionskopf', length=512),
+    '115': generate_field_datensatz_class(transaktionstermine, name='transaktionstermine', length=512),
     '119': generate_field_datensatz_class(addressen, name='addresse', length=512),
     '120': generate_field_datensatz_class(ZAHLUNGSBEDINGUNGEN120, name='zahlungsbedingungen', length=512),
     '130': generate_field_datensatz_class(texte, name='texte', length=512),
@@ -591,12 +654,14 @@ ordersparser = {
 recordhandlers = {
     '000': InterchangeheaderHandler,
     '100': TransaktionskopfHandler,
+    '115': TransaktionsterminHandler,
     '119': AddressenHandler,
     '120': ZahlungsbedingungenHandler,
     '130': TexteHandler,
     '140': ZusatzkostenHandler,
     '500': AuftragspositionHandler,
     '515': PositionsterminHandler,
+    #'580': PositionszusatzHandler, # not impl yet
     '900': BelegsummenHandler,
     '913': AbschlaegeHandler,
 }
@@ -604,10 +669,10 @@ recordhandlers = {
 
 def parse_rawdata(data):
     """Parses a Stratedi ORDERS file and returns a objects following the AuftragsProtokoll.
-    
+
     In fact it returns (header, [Auftrag, Auftrag, ...]).
     """
-    
+
     firstline = ''
     header = None
     parsers = []
@@ -618,28 +683,29 @@ def parse_rawdata(data):
         if not line:
             # empty line
             continue
-        
+
         # pad / truncate to 512 bytes
         line = "%-512s" % line[:512]
-        
+
         satzart = line[:3]
         if satzart not in ordersparser:
             raise UnknownRecordException("unknown satzart %r" % satzart)
-        
+
+        # print "Satzart:", satzart
         parser = ordersparser[satzart]()
         parser.parse(line)
+
         if satzart == '000':
             # special case: interchange header
             firstline = line
             header = recordhandlers[satzart](parser)
         else:
             if satzart == '100':
-                print "FOFOFOF"
                 # new auftrag starting
                 orderdict = {'positionen': [], 'abschlaege': []}
                 auftraege.append(orderdict)
                 parsers = []
-            
+
             if satzart not in recordhandlers:
                 print "WARNING: no validator for record %r" % satzart
             else:
@@ -650,5 +716,5 @@ def parse_rawdata(data):
                     orderdict.update(handler.contribute_to_order(orderdict))
                 else:
                     print "WARNING: no contribute_to_order() for record %r" % satzart
-        
+
     return (header, auftraege)

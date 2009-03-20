@@ -51,7 +51,7 @@ TRANSAKTIONSKOPF100 = [
         doc="UNH-0051"),
     dict(startpos=32, endpos=37, length=6, name='organisation2', fieldclass=FixedField, default='EAN008',
         doc="UNH-0057"),
-    dict(startpos=38, endpos=40, length=3, name='transaktionsart', fieldclass=FixedField, default='380',
+    dict(startpos=38, endpos=40, length=3, name='transaktionsart', default='380',
         doc='"380" = Rechnung, "381" = Gutschrift (Waren und Dienstleistungen) '),
     dict(startpos=41, endpos=43, length=3, name='transaktionsfunktion', fieldclass=FixedField, default='   ',
         doc="BGM-1225"),
@@ -206,33 +206,34 @@ texte130 = [
 # fix since this is not in python notation fix "off by one" errors
 for feld in texte130:
     feld['startpos'] -= 1
-    
 
-zusatzkosten140 = [
+
+ZUSATZKOSTEN140 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="140"),
-    dict(startpos=4, endpos=8, length=5, name='mwstsatz',
+    dict(startpos=4, endpos=8, length=5, name='mwstsatz', fieldclass=DecimalField, precision=2,
          doc="TAX20-5278"),
-    dict(startpos=9, endpos=16, length=8, name='skontoprozent', fieldclass=DecimalField,
+    dict(startpos=9, endpos=16, length=8, name='skontoprozent', fieldclass=DecimalField, precision=4,
         doc="PCD17-5482"),
-    dict(startpos=17, endpos=34, length=18, name='skontobetrag', fieldclass=FixedField, default=' ' * 18,
-        doc="MOA20-5004"),
+    dict(startpos=17, endpos=34, length=18, name='skontobetrag', fieldclass=DecimalField,
+        precision=3, doc="MOA20-5004"),
     dict(startpos=35, endpos=52, length=18, name='frachtbetrag', fieldclass=FixedField, default=' ' * 18,
         doc="MOA20-5004"),
     dict(startpos=53, endpos=70, length=18, name='verpackungsbetrag', fieldclass=FixedField,
          default=' ' * 18, doc="MOA20-5004"),
     dict(startpos=71, endpos=88, length=18, name='versicherungsbetrag', fieldclass=FixedField,
          default=' ' * 18, doc="MOA20-5004"),
-    dict(startpos=89, endpos=91, length=3, name='skontotage',
-        doc="PAT8-2152"),
-    dict(startpos=92, endpos=99, length=8, name='skontodatum', fieldclass=FixedField, default=' ' * 8,
-        doc="PAT8-2152"),
+    dict(startpos=89, endpos=91, length=3, name='skontotage', doc="PAT8-2152"),
+    dict(startpos=92, endpos=99, length=8, name='skontodatum', fieldclass=DateField, doc="PAT8-2152"), # FIXME oder DateFieldReverse
     dict(startpos=100, endpos=512, length=413, name='filler', fieldclass=FixedField, default=' ' * 413),
 ]
 
 
 # fix since this is not in python notation fix "off by one" errors
-for feld in zusatzkosten140:
+for feld in ZUSATZKOSTEN140:
     feld['startpos'] -= 1
+
+zusatzkosten140 = generate_field_datensatz_class(ZUSATZKOSTEN140, name='zusatzkosten', length=600)
+
 
 RECHNUNGSPOSITION500 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="500"),
@@ -280,7 +281,7 @@ RECHNUNGSPOSITION500 = [
         doc='PRI-6411 "PCE" = Stück; "KGM" = Kilogramm'),
     dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=DecimalField, precision=2,
          doc='''MOA-5004 Nettowarenwert = Menge x Bruttopreis ./. Artikelrabatte bzw. Menge x Nettopreis
-        (Rabatte sind im Preis eingerechnet) 
+        (Rabatte sind im Preis eingerechnet)
         Bei Gutschriftspositionen ist der Nettowarenwert negativ einzustellen.'''),
     dict(startpos=414, endpos=431, length=18, name='bruttowarenwert', fieldclass=DecimalField, precision=2,
          doc="MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte"),
@@ -294,7 +295,7 @@ RECHNUNGSPOSITION500 = [
     dict(startpos=464, endpos=464, length=1, name='gebinde', fieldclass=IntegerField,
         default=' ', doc='''PIA-7143 handelt es sich bei der Fakturiereinheit um ein Gebinde, ist hier ein
          "G" einzustellen; handelt es sich bei der Fakturiereinheit um ein Display/Sortiment, ist hier ein
-         "D" einzustellen; wird eine Verbrauchereinheit fakturiert, ist hier ein "V" einzustellen. 
+         "D" einzustellen; wird eine Verbrauchereinheit fakturiert, ist hier ein "V" einzustellen.
          "P" = Pfandartikel (Mehrweg); "E" = Einweg'''),
     dict(startpos=465, endpos=479, length=15, name='bestellte_vs_gelieferte_menge', fieldclass=FixedField,
         default=' ' * 15, doc="QTY-6060"),
@@ -333,9 +334,9 @@ BELEGSUMMEN900 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="900"),
     dict(startpos=4, endpos=21, length=18, name='rechnungsendbetrag', fieldclass=DecimalField,
          precision=2, doc="MOA-5004"),
-    dict(startpos=22, endpos=39, length=18, name='mwst_gesammtbetrag',
+    dict(startpos=22, endpos=39, length=18, name='mwst_gesamtbetrag',
          fieldclass=DecimalField, precision=2, doc="MOA-5004"),
-    dict(startpos=40, endpos=57, length=18, name='nettowarenwert_gesammt',
+    dict(startpos=40, endpos=57, length=18, name='nettowarenwert_gesamt',
          fieldclass=DecimalField, precision=2),
     dict(startpos=58, endpos=75, length=18, name='steuerpflichtiger_betrag',
          fieldclass=DecimalField, precision=2),
@@ -343,7 +344,7 @@ BELEGSUMMEN900 = [
          fieldclass=DecimalField, precision=2),
     dict(startpos=94, endpos=111, length=18, name='zu_und_abschlage',
          fieldclass=DecimalField, precision=2),
-    dict(startpos=112, endpos=129, length=18, name='gesammt_verkaufswert',
+    dict(startpos=112, endpos=129, length=18, name='gesamt_verkaufswert',
          fieldclass=DecimalField, precision=2),
     dict(startpos=130, endpos=600, length=471, name='filler', fieldclass=FixedField, default=' ' * 471),
 ]
@@ -355,9 +356,9 @@ belegsummen900 = generate_field_datensatz_class(BELEGSUMMEN900, name='belegsumme
 
 # Satzart 901: MWSt.-Angaben (1 x pro Transaktion und MWSt.-Satz)
 
-# Satzart 913: Zu- / Abschläge auf Belegebene (max. 1 x pro Abschlagsart / -stufe und MWSt.-Satz) 
+# Satzart 913: Zu- / Abschläge auf Belegebene (max. 1 x pro Abschlagsart / -stufe und MWSt.-Satz)
 # (Belegzuschläge bzw. Belegrabatte werden auf den Beleg gewährt. Es handelt sich ausdrücklich nicht um Summen
-#  von Artikelzu-/abschlägen. 
+#  von Artikelzu-/abschlägen.
 BELEGABSCHLAEGE913 = [
     dict(length=3, startpos=1, endpos=3, name='satzart', fieldclass=FixedField, default="913"),
     dict(length=3, startpos=4, endpos=6, name='kennzeichen', fieldclass=FixedField, default='A  ',

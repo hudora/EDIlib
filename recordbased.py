@@ -202,7 +202,8 @@ class FixedField(Field):
     def set(self, value):
         """Ensure FixedFields can't be changed after creation."""
         if str(value).strip() != str(self._resolve(self.default)).strip():
-            raise FieldImmutable("tried to set %r to %r - but field is immutable." % (self, value))
+            raise FieldImmutable("tried to set %r to %r - but field is immutable."
+                    % (str(self.__dict__), value))
     
 
 class RightAdjustedField(Field):
@@ -270,10 +271,10 @@ class IntegerFieldZeropadded(IntegerField):
 
 class DecimalField(Field):
     """Field to encode an fixed precision integer.
-    
+
     This takes an additional parameter to the parameters accepted by Field(), 'precision'.
     'precision' defines the number of digits following the decimal point."""
-    
+
     def __init__(self, name, length=15, *args, **kwargs):
         self.precision = None
         if 'precision' in kwargs:
@@ -281,10 +282,14 @@ class DecimalField(Field):
             del(kwargs['precision'])
         super(DecimalField, self).__init__(name, length, *args, **kwargs)
         if self.precision and (self.precision + 2 > self.length):
-            raise InvalidFieldDefinition("%r: too much precision (%d) for too little length (%d)" % (
-                                         self, self.precision, self.length))
-        self.formatstring = "%0%%d.%df" % (self.length, self.precision, )
-    
+            raise InvalidFieldDefinition("%r: too much precision (%d) for too little length (%d)" %
+                    (self, self.precision, self.length, ))
+
+        # need a precision for the formatstring
+        precision = 0
+        if self.precision:
+            precision = self.precision
+        self.formatstring = "%%#%d.%df" % (self.length, precision, )
 
     def _reducetofit(self, value):
         '''When converting a number which has length=self.length e.g. 9000000000.00000 w/ length=15 and precision=5 we get
@@ -313,7 +318,7 @@ class DecimalField(Field):
 
     def parse(self, data):
         """Check if the data can be parsed and actually parse it."""
-        
+
         data = data.strip()
         dummy, frac = data, ''
         if '.' in data and self.precision:
@@ -323,7 +328,7 @@ class DecimalField(Field):
                                    (self, self.precision, data, len(frac)))
         if data:
             self.set(Decimal(data.strip()))
-    
+
 
 class DecimalFieldNoDot(DecimalField):
     """Field representing a decimal value without a dot.
@@ -574,7 +579,7 @@ def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
     klass.length = length or reallength
     if klass.length < reallength:
         raise InvalidFieldDefinition(
-              "Gesammtlänge der Felder überschreitet die definierte Länge für den Datensatz %d|%d" % (
+              "Gesamtlänge der Felder überschreitet die definierte Länge für den Datensatz %d|%d" % (
               klass.length, reallength))
     # add descriptors
     for feld in klass.feldsource:
