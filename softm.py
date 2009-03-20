@@ -247,7 +247,7 @@ FELDERF3 = [
  dict(length=16, startpos=304, endpos=319, name='verkaufspreis',
       fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=3, startpos=320, endpos=322, name='Mengeneinheit Preis'),
- # dict(length=1, startpos=323, endpos=323, name='preisdimension', fieldclass=FixedField, default='0'),
+ dict(length=1, startpos=323, endpos=323, name='preisdimension', default='0'),
  dict(length=16, startpos=324, endpos=339, name='wert_netto',
       fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=16, startpos=340, endpos=355, name='wert_brutto',

@@ -416,7 +416,8 @@ RECHNUNGSLISTE990 = [
     dict(length=18, startpos=245, endpos=262, name='steuerpflichtiger_betrag',
          fieldclass=DecimalField, precision=2, doc='990-17 ReLi-Steuerpflichtiger Betrag, gesamt'),
     #990-18 ReLi-Skontofähiger Betrag, gesamt D n 18 263 280 (2 NK-Stellen) 
-    #990-19 ReLi-Belegzu- / Abschläge, gesamt (Vorzeichen !!!) D n 18 281 298 (2 NK-Stellen) 
+    dict(length=18, startpos=281, endpos=298, name='reli_zu_und_abschlaege',
+         fieldclass=DecimalField, precision=2, doc='990-19 ReLi-Belegzu- / Abschläge, gesamt (Vorzeichen)'),
     #990-20 MWSt.-Satz D n 5 299 303 (2 NK-Stellen) 
     #990-21 Abrechnungszeitraum - Beginn D an 8 304 311 YYYYMMDD 
     #990-22 Abrechnungszeitraum - Ende D an 8 312 319 YYYYMMDD 
