@@ -26,7 +26,7 @@ attributes.
 >>> felder = [dict(length=4,  startpos=0,  endpos=4,  name='position'),
 ...           dict(length=15, startpos=19, endpos=34, name='menge', fieldclass=DecimalField, precision=3),
 ...           dict(length=15, startpos=4,  endpos=19, name='artikelnummer', fieldclass=RightAdjustedField),
-...           dict(length=8,  startpos=34, endpos=42, name='date', fieldclass=DateField, 
+...           dict(length=8,  startpos=34, endpos=42, name='date', fieldclass=DateField,
 ...                default=datetime.datetime(2006, 7, 8))]
 >>> klass = generate_field_datensatz_class(felder, name='test12', length=42)
 >>> i = klass()
@@ -81,7 +81,7 @@ class FieldImmutable(RecordBasedProtocolException):
 class ParseException(RecordBasedProtocolException):
     """Base class for all exceptions raised during parsing."""
     pass
-    
+
 
 class SizeMismatch(ParseException):
     """Raised during parsing when the data subjected to parsing has not the correct number of bytes."""
@@ -95,27 +95,27 @@ class InvalidData(ParseException, ValueError):
 
 class FieldDescriptor(object):
     """Implements descriptor protocol access for Fields."""
-    
+
     def __init__(self, name, length=5, default='', choices=tuple(), doc=None, **kwargs):
         self.name = name
         self.doc = doc
         self.value = None
-    
+
     def __str__(self):
         return str(self.value)
-    
+
     # methods used for the descriptor protocol. See http://docs.python.org/ref/descriptors.html
-    
+
     def __get__(self, obj, objtype):
         return getattr(obj, self.name + '_field').value
-    
+
     def __set__(self, obj, value):
         return getattr(obj, self.name + '_field').set(value)
-    
+
 
 class Field(object):
     """Base Class for (string) fields in fixed length records.
-    
+
     The parameter 'name' is used for informative purposes.
     'length' demines the length of the field. Shorter velues are padded to length,
     longer values result in an Exception beeing raised.
@@ -124,7 +124,7 @@ class Field(object):
     If 'choices' is used, the system enforces that only values present in 'choices' are allowed.
     Attempts to set an other value will result un an Exception.
     """
-    
+
     def __init__(self, name, length=5, default='', choices=tuple(), doc=None):
         self.name = name
         self.length = length
@@ -132,37 +132,37 @@ class Field(object):
         self.value = default
         self.choices = [self.format(x) for x in choices]
         self.doc = doc
-    
+
     def __str__(self):
         return str(self.value)
-    
+
     def __repr__(self):
         return str("<%s: %r>" % (self.name, self.value))
-    
+
     def get(self):
         """Returns the actual value associated with the field calling callables where needed."""
         return self._resolve(self.value)
-    
+
     def set(self, value):
         """Validate data for Field and then set the Fields value to it."""
         if self.is_valid(self.format(value)):
             self.value = value
         return self.format(value)
-    
+
     def formated(self):
         """Return a formatted version of the Field suitable for writing directly to the record datastream."""
         return self.format(self.value)
-    
+
     def _resolve(self, value):
         """Get the value of value by calling callables or directly returning values =:-)"""
         if callable(value):
             return value()
         return value
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc.  - meant to be overwirtten by subclasses."""
         return ("%%-%ds" % self.length) % self._resolve(value) # pad and left-adjust
-    
+
     def is_valid(self, value):
         """Returns true if value is valid date for Field else raises an Exception."""
         # self.format() should be applied to value before calling is_value()
@@ -172,11 +172,11 @@ class Field(object):
         if self.choices and value not in self.choices:
             raise FieldNoValidChoice("%s has limited choices and %r is not one of them" % (self.name, value))
         return True
-    
+
     def get_parsed(self, data):
         """Do the actual parsing - meant to be overwirtten by subclasses."""
         return data.rstrip()
-    
+
     def parse(self, data):
         """Check if the data can be parsed and then actually initiate parsing."""
         if len(data) != self.length:
@@ -186,11 +186,11 @@ class Field(object):
             self.set(self._resolve(self.default))
         else:
             self.set(self.get_parsed(data))
-    
+
 
 class FixedField(Field):
     """Class for immutable fields in fixed length records."""
-    
+
     def __init__(self, *args, **kwargs):
         super(FixedField, self).__init__(*args, **kwargs)
         if not self.default:
@@ -198,35 +198,35 @@ class FixedField(Field):
         if len(self._resolve(self.default)) != self.length:
             raise InvalidFieldDefinition('%r: default value %r does not corrospondent to field length (%d)' \
                                            % (self, self._resolve(self.default), self.length))
-        
+
     def set(self, value):
         """Ensure FixedFields can't be changed after creation."""
         if str(value).strip() != str(self._resolve(self.default)).strip():
             raise FieldImmutable("tried to set %r to %r - but field is immutable."
                     % (str(self.__dict__), value))
-    
+
 
 class RightAdjustedField(Field):
     """Right adjusted String Field."""
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         return ("%%%ds" % self.length) % self._resolve(value)
-    
+
     def get_parsed(self, data):
         """Do the actual parsing."""
         return data.lstrip()
-    
+
 
 class EanField(Field):
     """Field for storing EANs and ILNs (validates checkdigit)."""
     # BTW: we might want to enforce a field with of 13 bytes but actually there are MANY protocols specifying
     # the fieldsize for EAN-13 to 17 or so bytes.
-    
+
     def get_parsed(self, data):
         """Do the actual parsing."""
         return data.strip()
-    
+
     def is_valid(self, value):
         """Returns true if value is valid date for Field else raises an Exception."""
         value = value.strip()
@@ -238,36 +238,36 @@ class EanField(Field):
                 raise InvalidData("%s: %r no valid checkdigit (%s)" % (self.name, value,
                                                                         checksumming.ean_digit(value[:-1])))
         return super(EanField, self).is_valid(value)
-    
+
 
 class IntegerField(Field):
     """Right adjusted Integer Field."""
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         if isinstance(value, int):
             return ("%%%dd" % self.length) % self._resolve(value)
         else:
             return ("%%%ds" % self.length) % self._resolve(value)
-    
+
     def get_parsed(self, data):
         """Do the actual parsing."""
         try:
             return int(data.strip())
         except ValueError, msg:
             raise InvalidData(msg)
-    
+
 
 class IntegerFieldZeropadded(IntegerField):
     """Right adjusted zero padded Integer Field."""
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         if isinstance(value, int):
             return ("%%0%dd" % self.length) % self._resolve(value)
         else:
             return ("%%%ds" % self.length) % self._resolve(value)
-    
+
 
 class DecimalField(Field):
     """Field to encode an fixed precision integer.
@@ -332,18 +332,18 @@ class DecimalField(Field):
 
 class DecimalFieldNoDot(DecimalField):
     """Field representing a decimal value without a dot.
-    
+
     E.G. 12.32 -> '1232'.
     """
-    
+
     def __init__(self, name, length=15, *args, **kwargs):
         if 'precision' not in kwargs:
             raise InvalidFieldDefinition("%r: precision not set" % (self))
         super(DecimalFieldNoDot, self).__init__(name, length, *args, **kwargs)
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
-        
+
         if not self.precision:
             raise InvalidFieldDefinition("%r: no precision defined" % (self))
         ret = super(DecimalFieldNoDot, self).format(value).replace('.', '')
@@ -351,31 +351,31 @@ class DecimalFieldNoDot(DecimalField):
 
     def parse(self, data):
         """Check if the data can be parsed and actually parse it."""
-        
+
         # insert decimal point
         data = "%s.%s" % (data[:-(self.precision)], data[-(self.precision):])
-        
+
         if data:
             self.set(Decimal(data.strip()))
 
 
 class DecimalFieldNoDotZeropadded(DecimalFieldNoDot):
     """Field representing a decimal value without a dot."""
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         return super(DecimalFieldNoDotZeropadded, self).format(value).replace(' ', '0')
-    
+
 
 class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
     """Field representing a decimal value without a dot and Sinage in the last Byte.
-    
+
     E.G. 12.32 -> '1232+'.
     """
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
-        
+
         ret = super(DecimalFieldNoDotZeropadded, self).format(abs(value))
         # relace souporflous space at the beginning due to lenght also contianing the sign at the end
         # which the superclass doesn't know about
@@ -384,40 +384,40 @@ class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
             return ret + '-'
         else:
             return ret + '+'
-    
+
     def parse(self, data):
         """Check if the data can be parsed and actually parse it."""
-        
+
         # insert decimal point
         # print data, self.name, self.length
         sign = data[-1]
         data = "%s.%s" % (data[:-(self.precision+1)], data[-(self.precision+1):-1])
-        
+
         if data:
             if sign == '-':
                 self.set(Decimal(data.strip()) * -1)
             else:
                 self.set(Decimal(data.strip()))
-    
+
 
 class DateField(Field):
     """Field encoding a date as YYYYMMDD.
-    
+
     Default value should be a datetime dbject or an callable returning a datetime object.
     """
-    
+
     formatstr = '%Y%m%d'
-    
+
     def __init__(self, name, length=8, **kwargs):
         if length != 8:
             raise InvalidFieldDefinition("DateField defined with length != 8")
         super(DateField, self).__init__(name, length, **kwargs)
-    
+
     def __str__(self):
         if hasattr(self.value, 'strftime'):
             return self.value.strftime('%Y-%m-%d')
         return str(self.value)
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         if hasattr(self._resolve(value), 'strftime'):
@@ -428,10 +428,10 @@ class DateField(Field):
             raise FieldTooLong("Field %r has maxlength of %d but you tried to write %r to it" %
                                 (self, self.length, self._resolve(value)))
         return ret
-    
+
     def get_parsed(self, data):
         """Do the actual parsing."""
-        
+
         if data in ['00000000', '99999999']:
             # This would result in an invalid date, return dummy date
             return self._resolve(self.default)
@@ -439,26 +439,26 @@ class DateField(Field):
             return datetime.datetime(*time.strptime(data, self.__class__.formatstr)[0:6])
         except ValueError, msg:
             raise InvalidData("%r - %s" % (data, msg))
-    
+
 
 class DateFieldReverse(DateField):
     """Field encoding a date as DDMMYYYY."""
     formatstr = '%d%m%Y'
-    
+
 
 class TimeField(Field):
     """Field encoding time as HHMM."""
-    
+
     def __init__(self, name, length=4, **kwargs):
         if length != 4:
             raise InvalidFieldDefinition("TimeField defined with length != 4 (%s)" % (length, ))
         super(TimeField, self).__init__(name, length, **kwargs)
-    
+
     def __str__(self):
         if hasattr(self.value, 'strftime'):
             return self.value.strftime('%H:%M')
         return str(self.value)
-    
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
         if hasattr(self._resolve(value), 'strftime'):
@@ -469,26 +469,26 @@ class TimeField(Field):
             raise FieldTooLong("Field %r has maxlength of %d but you tried to write %r to it." % (
                                 self, self.length, self._resolve(value)))
         return ret
-    
+
     def get_parsed(self, data):
         """Do the actual parsing."""
         try:
             return datetime.datetime(*time.strptime(data, "%H%M")[0:6])
         except ValueError, msg:
             raise InvalidData("%r - %s" % (data, msg))
-    
+
 
 class _FieldDescriptorClass(object):
     """Routes arround descriptors for name+'_field' attributes in generate_field_datensatz_class()."""
-    
+
     def __init__(self, fieldinstance):
         self.fieldinstance = fieldinstance
-    
+
     # methods used for the descriptor protocol. See http://docs.python.org/ref/descriptors.html
-    
+
     def __get__(self, obj, objtype):
         return self.fieldinstance
-    
+
 
 def _get_length(felder):
     """Check that fields in the list 'felder' do not overlap. And returns the minimum length of a record."""
@@ -508,25 +508,25 @@ def _get_length(felder):
                                              (feld['name'], posarray[i], i))
             posarray[i] = feld['name'] # store name
     return len(posarray)
-    
+
 
 class DatensatzBaseClass(object):
     """This is the base which will be sublassed for Records - collection of Fields."""
     length = None
-    
+
     def __init__(self):
         self.fielddict = {}
         for feld in self.feldsource:
             self._feldgen(**feld)
-    
+
     def __repr__(self):
         return "<%s: %s>" % (self.__name__, ', '.join([repr(x) for x in self.fielddict.values()]))
-    
+
     def pretty(self):
         """Returns a nicely formated string representation suitable for debugging"""
         return "<%s: %s>" % (self.__name__,
                              ', '.join([repr(x) for x in self.fielddict.values() if str(x).strip()]))
-    
+
     def _feldgen(self, name=None, length=None, startpos=None, endpos=None, fieldclass=Field, **kwargs):
         """Generate field descriptor for a single field and validate Field description."""
         fieldinstance = fieldclass(name, length, **kwargs)
@@ -534,11 +534,11 @@ class DatensatzBaseClass(object):
         # setattr(self, name + '_field', _FieldDescriptorClass(fieldinstance))
         setattr(self, name + '_field', fieldinstance)
         self.fielddict[startpos] = fieldinstance
-    
+
     def fields(self):
         """Equivalent of vars() but beeing able to handle descriptor accessed fields."""
         return dict([(x.name, x.get()) for x in self.fielddict.values()])
-    
+
     def serialize(self):
         """Return a string representation of the Datensatz (Record)."""
         data = [' '] * self.length
@@ -549,7 +549,7 @@ class DatensatzBaseClass(object):
                 raise ValueError("Error serializing %r: %s" % (field, str(e)))
             data[startpos:startpos+field.length] = list(fielddata)
         return ''.join(data)
-    
+
     def parse(self, data):
         """Initiate parsing for all fields."""
         if len(data) != self.length:
@@ -560,16 +560,16 @@ class DatensatzBaseClass(object):
             # print startpos,
             field.parse(data[startpos:startpos+field.length])
             # print
-     
+
 
 def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
     """Dynamicaly generate a class based on field description."""
     # keep in mind, that we are operating on a class, not on an instance.
-    
+
     def klass_feldgen(klass, name=None, length=None, startpos=None, endpos=None, fieldclass=Field, **kwargs):
         """Generate field descriptor for a single field and validate Field description."""
         setattr(klass, name, FieldDescriptor(name, length, **kwargs))
-        
+
     if not name:
         name = 'AnonymousDatensatzBase'
 
@@ -585,7 +585,7 @@ def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
     for feld in klass.feldsource:
         klass_feldgen(klass, **feld)
     return klass
-    
+
 
 if __name__ == '__main__':
     import doctest
