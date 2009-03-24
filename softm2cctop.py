@@ -328,8 +328,9 @@ class SoftMConverter(object):
                                (self.last_mwst, f3.mwstsatz))
         self.last_mwst = f3.mwstsatz
 
-        if int(f3.preisdimension) != 0:
-            raise RuntimeError("Preisdimension != 0 wird noch nicht unterstuetzt")
+        # Preisbasis is die Menge, auf die sich der Stückpreis bezieht: bspw. preisbasis = 1000
+        # heisst, dass der stückpreis entsprechend das tausendfache des Einzelpreises ist
+        rec500.preisbasis = 10**int(f3.preisdimension)
 
         # MOA-5004 Bruttowarenwert = Menge x Bruttopreis ohne MWSt., vor Abzug der Artikelrabatte
         rec500.bruttostueckpreis = abs(f3.verkaufspreis)
@@ -342,17 +343,24 @@ class SoftMConverter(object):
         rec500.nettowarenwert = abs(f3.wert_netto)
 
         # pruefen ob netto = menge x brutto ./. Artikelrabatt
-        dbg_nettoval = rec500.nettostueckpreis * rec500.berechnete_menge - f4.positionsrabatt_gesamt
-        if  dbg_nettoval != rec500.nettowarenwert:
-            if not (dbg_nettoval == abs(rec500.nettowarenwert) and self.is_credit):
-                raise RuntimeError("Netto-Warenwert unschlüssig: %r * %r != %r" %
-                        (rec500.nettostueckpreis, rec500.berechnete_menge, rec500.nettowarenwert))
+        dbg_nettoval = rec500.nettostueckpreis * rec500.berechnete_menge
+        dbg_nettoval /= rec500.preisbasis
+        dbg_nettoval -= f4.positionsrabatt_gesamt
+        dbg_nettoval = dbg_nettoval.quantize(Decimal('.01'))#, rounding=ROUND_DOWN)
+        dbg_nettowarenwert = rec500.nettowarenwert # * rec500.preisbasis
+        dbg_nettowarenwert = dbg_nettowarenwert.quantize(Decimal('.01'))#, rounding=ROUND_DOWN)
+        if  dbg_nettoval != dbg_nettowarenwert:
+            if not (dbg_nettoval == abs(dbg_nettowarenwert) and self.is_credit):
+                raise RuntimeError("Netto-Warenwert unschlüssig: %r != %r" % (dbg_nettoval, dbg_nettowarenwert))
 
-        if rec500.bruttostueckpreis * rec500.berechnete_menge != rec500.bruttowarenwert:
-            if not (abs(rec500.bruttostueckpreis * rec500.berechnete_menge) == abs(rec500.bruttowarenwert)
-                    and self.is_credit):
-                raise RuntimeError("Brutto-Warenwert unschlüssig: %r * %r != %r" % (rec500.bruttostueckpreis,
-                                   rec500.berechnete_menge, rec500.bruttowarenwert))
+        dbg_bruttoval =  rec500.bruttostueckpreis * rec500.berechnete_menge
+        dbg_bruttoval /=  rec500.preisbasis
+        dbg_bruttoval = dbg_bruttoval.quantize(Decimal('.01'))#, rounding=ROUND_DOWN)
+        dbg_bruttowarenwert = rec500.bruttowarenwert
+        dbg_bruttowarenwert = dbg_bruttowarenwert.quantize(Decimal('.01'))#, rounding=ROUND_DOWN)
+        if dbg_bruttoval != dbg_bruttowarenwert:
+            if not (abs(dbg_bruttoval) == abs(dbg_bruttowarenwert) and self.is_credit):
+                raise RuntimeError("Brutto-Warenwert unschlüssig: %r != %r" % (dbg_bruttoval, dbg_bruttowarenwert))
 
         # MOA-5004 Summe aller Zu- und Abschläge aus Satzart(en) 513 mit vorzeichengerechter Darstellung
         # rec500.summeabschlaege
@@ -624,10 +632,10 @@ def main():
         # TODO These are using other 'preisdimension', so skip them atm
         if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
                                 'RL00602_UPDATED.txt'.upper()]:
-            continue
+            pass # continue
 
         if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-            continue
+            pass
 
         print filename
         msg = "softm2cctop: "
