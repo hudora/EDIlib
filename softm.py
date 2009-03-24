@@ -120,8 +120,6 @@ FELDERF1 = [
  dict(length=4, startpos=450, endpos=453, name='Abteilung'),
  dict(length=10, startpos=454, endpos=463, name='Bibliothek'),
  dict(length=3, startpos=464, endpos=466, name='nettotage'),
- # das nachfolgende feld enthaelt nicht die Steuernummer, jedenfalls in den Dateien, die ich gesehen
- # habe
  dict(length=14, startpos=467, endpos=480, name='steuernummer'),
  # TODO: there seems to be something in this field!
  dict(length=15, startpos=481, endpos=495, name='filler'), # fieldclass=FixedField, default=' ' * 15),
