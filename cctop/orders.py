@@ -35,7 +35,7 @@ INTERCHANGEHEADER000 = [
     dict(length=35, startpos=39, endpos=73, name='empfaenger_iln'),
     dict(length=8, startpos=74, endpos=81, name='erstellungsdatum',
          fieldclass=DateField, default=datetime.datetime.now),
-    dict(length=4, startpos=82, endpos=85, name='erstellungszeit', 
+    dict(length=4, startpos=82, endpos=85, name='erstellungszeit',
          fieldclass=TimeField, default=datetime.datetime.now),
     dict(length=14, startpos=86, endpos=99, name='datenaustauschreferenz', fieldclass=IntegerField,
          doc='Fortlaufende achtstellige Sendenummer.'),
@@ -192,8 +192,8 @@ addressen = [
                IV Invoicee: Party to whom an invoice is issued.
                SU Supplier: Party who supplies goods and/or services."""),
     dict(startpos=7, endpos=19, length=13, name='iln', doc="NAD-3039"),
-    dict(startpos=20, endpos=54, length=35, name='name1', doc="NAD-3036"),                                 
-    dict(startpos=55, endpos=89, length=35, name='name2', doc="NAD-3036"),                                 
+    dict(startpos=20, endpos=54, length=35, name='name1', doc="NAD-3036"),
+    dict(startpos=55, endpos=89, length=35, name='name2', doc="NAD-3036"),
     dict(startpos=90, endpos=124, length=35, name='name3', doc="NAD-3036"),
     dict(startpos=125, endpos=159, length=35, name='strasse1', doc="NAD-3042"),
     dict(startpos=160, endpos=194, length=35, name='strasse2', doc="NAD-3042"),
@@ -206,27 +206,27 @@ addressen = [
     dict(startpos=312, endpos=346, length=35, name='gegebenepartnerid', doc="RFF-1154"),
     dict(startpos=347, endpos=381, length=35, name='ustdid', doc="RFF-1154"),
     dict(startpos=382, endpos=416, length=35, name='partnerabteilung', doc="CTA-3412"),
-    dict(startpos=417, endpos=451, length=35, name='steuernr', doc="RFF-1154"),           
-    dict(startpos=452, endpos=471, length=20, name='ansprechpartner', doc="CTA-3412"),           
-    dict(startpos=472, endpos=491, length=20, name='tel', doc="COM-3148"),           
-    dict(startpos=492, endpos=511, length=20, name='fax', doc="COM-3148"),           
+    dict(startpos=417, endpos=451, length=35, name='steuernr', doc="RFF-1154"),
+    dict(startpos=452, endpos=471, length=20, name='ansprechpartner', doc="CTA-3412"),
+    dict(startpos=472, endpos=491, length=20, name='tel', doc="COM-3148"),
+    dict(startpos=492, endpos=511, length=20, name='fax', doc="COM-3148"),
     dict(startpos=512, endpos=512, length=1, name='filler', fieldclass=FixedField, default=' '),
     ]
 
 # fix since this is not in python notation fix "off by one" errors
 for feld in addressen:
     feld['startpos'] -= 1
-    
+
 
 class AddressenHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[0].satzart != '100':
             raise MalformedFileException("Addresssatz without Transaktionskopf Previous records = %r"
                                          % previousparsers)
@@ -238,12 +238,12 @@ class AddressenHandler(object):
 
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
-        if self.parser.partnerart in ['DP', 'IV']:
+        if self.parser.partnerart in ['DP', 'IV', 'BY']:
 
             # for fixing non ISO 3166-1 alpha-2 data (seen with TRU)
             landfix = {'D': 'DE'}
 
-            adrtype = {'DP': 'lieferadresse', 'IV': 'rechnungsadresse'}[self.parser.partnerart]
+            adrtype = {'DP': 'lieferadresse', 'IV': 'rechnungsadresse', 'BY': 'kaeuferadresse'}[self.parser.partnerart]
             return {adrtype: {'iln': unicode(self.parser.iln),
                               'name1': unicode(self.parser.name1),
                               'name2': unicode(self.parser.name2),
@@ -289,24 +289,24 @@ ZAHLUNGSBEDINGUNGEN120 = [
 # fix since this is not in python notation fix "off by one" errors
 for feld in ZAHLUNGSBEDINGUNGEN120:
     feld['startpos'] -= 1
-    
+
 
 class ZahlungsbedingungenHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['119']:
             raise MalformedFileException("Zahlungsbedingungensatz can only follow a Addresssatz." +
                                          ("Previous records = %r" % previousparsers))
-    
+
     def contribute_to_order(self, dummy):
         return {}
-        
+
 
 texte = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="130"),
@@ -319,17 +319,17 @@ texte = [
 # fix since this is not in python notation fix "off by one" errors
 for feld in texte:
     feld['startpos'] -= 1
-    
+
 
 class TexteHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['119', '120', '130']:
             raise MalformedFileException("Textsatz can only follow a Addresss- or a Zahlungsbedingungs or" +
                                    (" other Textsatz. Previous records = %r" % previousparsers))
@@ -376,22 +376,22 @@ for feld in zusatzkosten:
 
 class ZusatzkostenHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['119', '120', '130']:
             raise MalformedFileException("Zusatzkostensatz can only follow a Addresss-, Zahlungsbedingungs" +
                                    (" or Zusatzkostensatz. Previous records = %r" % previousparsers))
-    
+
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
         return {'skontotage': unicode(self.parser.skontotage),
                 'skontoprozent': self.parser.skontoprozent}
-    
+
 
 auftragsposition = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="500"),
@@ -616,13 +616,13 @@ for feld in ABSCHLAEGE913:
 
 class AbschlaegeHandler(object):
     """Validates if parsed record is well formed."""
-    
+
     def __init__(self, parser):
         self.parser = parser
-    
+
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
-        
+
         if previousparsers[-1].satzart not in ['900', '913']:
             raise MalformedFileException("Abschlaegesatz can only follow a Belegsummensatz." +
                                          (" Previous records = %r" % previousparsers))
