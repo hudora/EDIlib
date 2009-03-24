@@ -127,6 +127,8 @@ class Paperlist(object):
 
         headerdict.update(d)
 
+        headerdict['steuernummer'] = 12657370941
+
         assert('hudora_iln' in headerdict)
         assert('empf_iln' in headerdict)
         assert('rechn_nr' in headerdict)
@@ -136,6 +138,7 @@ class Paperlist(object):
         assert('empf_strasse' in headerdict)
         assert('empf_plz' in headerdict)
         assert('empf_ort' in headerdict)
+        assert('steuernummer' in headerdict)
         assert('empf_unsere_lieferantennr' in headerdict)
 
         self.paperlist = """
@@ -143,6 +146,7 @@ Absender: (ILN %(hudora_iln)s)
 HUDORA GmbH                                     Kontonummer des Vertragslieferanten: %(empf_unsere_lieferantennr)s
 Jaegerwald 13
 42897 Remscheid
+Steuernummer %(steuernummer)s
 
 
                                                                              Nummer            Datum

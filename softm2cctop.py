@@ -624,7 +624,7 @@ def main():
             continue
 
         if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-            pass # continue
+            continue
 
         print filename
         msg = "softm2cctop: "
