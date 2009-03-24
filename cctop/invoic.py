@@ -275,7 +275,7 @@ RECHNUNGSPOSITION500 = [
         default=' ' * 15, doc="PRI-5118"),
     dict(startpos=369, endpos=383, length=15, name='listenpreis', fieldclass=FixedField,
         default=' ' * 15, doc="PRI-5118"),
-    dict(startpos=384, endpos=392, length=9, name='preisbasis', fieldclass=FixedField,
+    dict(startpos=384, endpos=392, length=9, name='preisbasis', fieldclass=IntegerField,
         default=' ' * 9, doc="PRI-5284"),
     dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE'],
         doc='PRI-6411 "PCE" = Stück; "KGM" = Kilogramm'),
