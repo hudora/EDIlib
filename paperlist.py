@@ -23,12 +23,47 @@ class Paperlist(object):
         self.filename = filename
         self._is_finished = False
         self.paperlist = None
-        self.invoices = None
+        self.invoices = []
         self.footer = dict(warenwert='TODO', skonto='TODO', umsatzsteuer='TODO', rechnungsendbetrag='TODO',
                             iln='', name_ort='', rechn_nr='', rechn_datum='', leergut='')
         self.valid = False
         self.comments = [] # dbg purpose
         self.__formatstring = None
+
+    def _get_headerstring(self):
+        """Returns formatted Header for paperlist."""
+        headerdict = self.headerdict # alias
+
+        # basic consistency check
+        assert('hudora_iln' in headerdict)
+        assert('empf_iln' in headerdict)
+        assert('rechnungslistennr' in headerdict)
+        assert('datum' in headerdict)
+        assert('empf_name1' in headerdict)
+        assert('empf_name2' in headerdict)
+        assert('empf_strasse' in headerdict)
+        assert('empf_plz' in headerdict)
+        assert('empf_ort' in headerdict)
+        assert('steuernr' in headerdict)
+        assert('empf_unsere_lieferantennr' in headerdict)
+
+        paperlist = """
+Absender: (ILN %(hudora_iln)s)
+HUDORA GmbH                                     Kontonummer des Vertragslieferanten: %(empf_unsere_lieferantennr)s
+Jaegerwald 13
+42897 Remscheid
+Steuernummer %(steuernr)s
+
+
+                                                                             Nummer            Datum
+Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(rechnungslistennr)06i            %(datum)s
+%(empf_name1)s %(empf_name2)s
+%(empf_strasse)s
+%(empf_plz)s %(empf_ort)s
+
+"""
+        paperlist = paperlist % headerdict
+        return paperlist
 
     def _footer(self, formatstring):
         """Positioniert die Summenzeile an der richtigen Stelle."""
@@ -82,7 +117,7 @@ class Paperlist(object):
         if not self.valid:
             paperlist = "V E R A R B E I T U N G S F E H L E R ! ! !"
         else:
-            paperlist = [self.paperlist]
+            paperlist = [self._get_headerstring()]
             # header
             invoice_header = self._invoice_header()
             # table
@@ -112,9 +147,8 @@ class Paperlist(object):
         codecs.open(self.filename, "w", 'utf-8').write(paperlist)
         self._is_finished = True
 
-    def update_header(self, rec000):
+    def update_header_from_rec000(self, rec000):
         """Headerinformationen aus einem SoftM 000-record auslesen."""
-        self.invoices = []
         assert(self.paperlist==None)
 
         headerdict = dict(hudora_iln=rec000.sender_iln, empf_iln=rec000.empfaenger_iln,
@@ -126,37 +160,12 @@ class Paperlist(object):
             d['empf_'+k] = v
 
         headerdict.update(d)
+        headerdict['steuernr'] = 12657370941
+        self.headerdict = headerdict
 
-        headerdict['steuernummer'] = 12657370941
-
-        assert('hudora_iln' in headerdict)
-        assert('empf_iln' in headerdict)
-        assert('rechn_nr' in headerdict)
-        assert('datum' in headerdict)
-        assert('empf_name1' in headerdict)
-        assert('empf_name2' in headerdict)
-        assert('empf_strasse' in headerdict)
-        assert('empf_plz' in headerdict)
-        assert('empf_ort' in headerdict)
-        assert('steuernummer' in headerdict)
-        assert('empf_unsere_lieferantennr' in headerdict)
-
-        self.paperlist = """
-Absender: (ILN %(hudora_iln)s)
-HUDORA GmbH                                     Kontonummer des Vertragslieferanten: %(empf_unsere_lieferantennr)s
-Jaegerwald 13
-42897 Remscheid
-Steuernummer %(steuernummer)s
-
-
-                                                                             Nummer            Datum
-Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(rechn_nr)06i            %(datum)s
-%(empf_name1)s %(empf_name2)s
-%(empf_strasse)s
-%(empf_plz)s %(empf_ort)s
-
-"""
-        self.paperlist = self.paperlist % headerdict
+    def update_header(self, data):
+        self.headerdict.update(data)
+        pass
 
     def update_footer(self, data):
         """Dictionary fuer Listenende aktualisieren."""

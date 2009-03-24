@@ -146,7 +146,7 @@ class SoftMConverter(object):
 
         self.iln_rechnungsempfaenger = rec000.empfaenger_iln
         if self.is_invoicelist:
-            self.paperlist.update_header(rec000) #dict(hudora_iln=rec000.sender_iln, empf_iln=''))
+            self.paperlist.update_header_from_rec000(rec000) #dict(hudora_iln=rec000.sender_iln, empf_iln=''))
         self.stratedi_records.extend([rec000])
 
     def _convert_transmissionhead(self, invoice_records, sequence_no, config):
@@ -211,7 +211,6 @@ class SoftMConverter(object):
         # Lieferant
         rec119_verkaeuferaddr.partnerart = 'SU'
         rec119_verkaeuferaddr.iln = f1.eigene_iln_beim_kunden
-        # TODO: was ist der Unterschied zwischen ustdid und steuernr?
         rec119_verkaeuferaddr.ustdid = f1.ustdid_absender
         rec119_verkaeuferaddr.steuernr = f1.steuernummer
         rec119_verkaeuferaddr.weeenr = config['operatorweeenr']
@@ -238,6 +237,7 @@ class SoftMConverter(object):
         rec119_lieferaddr.internepartnerid = f2.warenempfaenger
 
         if self.is_invoicelist:
+            self.paperlist.update_header(dict(steuernr=rec119_verkaeuferaddr.steuernr))
             self.paperlist.collect_invoice_info(dict(name_ort=rec119_lieferaddr.name1+', '+rec119_lieferaddr.ort,
                 iln=rec119_lieferaddr.iln))
 
@@ -440,6 +440,7 @@ class SoftMConverter(object):
             self.skonto_total += skonto
 
         softm_records = dict(softm_record_slice)
+        # FIXME I think get_list_id() is wrong here. As i understand the doc, here we start from zero for every list
         self._convert_transmissionhead(softm_records, get_list_id(), config)
 
         # the now we have to extract the per invoice records from softm_record_list
@@ -542,9 +543,11 @@ class SoftMConverter(object):
             rec990.reli_zu_und_abschlaege = self.zu_und_abschlage_total
 
         # Footer information for paperlist
+        self.paperlist.update_header(dict(rechnungslistennr=rec990.rechnungslistennr))
         self.paperlist.update_footer(dict(warenwert=abs(rec990.steuerpflichtiger_betrag),
                               umsatzsteuer=abs(rec990.mwst), skonto=abs(self.skonto_total),
-                              rechnungsendbetrag=abs(rec990.rechnungslistenendbetrag)))
+                              rechnungsendbetrag=abs(rec990.rechnungslistenendbetrag),
+                              rechnungslistennr=rec990.rechnungslistennr))
         self.stratedi_records.append(rec990)
 
     def _doconvert(self, additionalconfig=None):
