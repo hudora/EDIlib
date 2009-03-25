@@ -200,6 +200,7 @@ class SoftMConverter(object):
         rec111.auftragsdatum = f1.auftragsdatum
         rec111.lieferdatum = f1.liefertermin
         rec111.lieferscheinnr = f1.lieferscheinnr
+        print "Lieferscheinnr", f1.lieferscheinnr
         rec111.lieferscheindatum = f1.lieferscheindatum
         rec111.rechnungslistennr = f1.rechnungsliste
         rec111.rechnungslistendatum = f1.rechnungslistendatum
@@ -405,7 +406,8 @@ class SoftMConverter(object):
 
         if self.is_edeka:
             # Skonto wird fuer Edeka als Rabatt eingetragen
-            skonto = -f1.skontobetrag1_ust1
+            skonto = -abs(f1.skontobetrag1_ust1)
+            print "skonto edeka", skonto
             rec900.zu_und_abschlage = skonto
             rec900.steuerpflichtiger_betrag = rec900.nettowarenwert_gesamt + skonto
             rec900.mwst_gesamtbetrag = rec900.steuerpflichtiger_betrag * self.last_mwst / Decimal('100.0')
@@ -630,9 +632,9 @@ def main():
         filename = transmission.filename
 
         # TODO These are using other 'preisdimension', so skip them atm
-        if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
+        if not filename.upper() in ['RL00614_UPDATED.txt'.upper(),
                                 'RL00602_UPDATED.txt'.upper()]:
-            pass # continue
+            continue
 
         if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
             pass
