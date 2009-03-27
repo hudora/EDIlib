@@ -76,7 +76,7 @@ class SoftMConverter(object):
         self.is_credit = False
         self.referenced_invoices = []
         self.iln_rechnungsempfaenger = None
-        self.skonto_total = 0
+        self.skontonetto_total = Decimal()
         self.last_mwst = None
         self.zu_und_abschlage_total = Decimal()
         self.steuerpflichtiger_betrag_total = Decimal()
@@ -270,9 +270,6 @@ class SoftMConverter(object):
         rec140.skontotage = f1.skontotage1
         rec140.skontodatum = f1.skontodatum1
 
-        if self.is_invoicelist:
-            self.paperlist.collect_invoice_info(dict(skonto=rec140.skontobetrag))
-
         # pprint.pprint(f1.__dict__)
         # Nicht genutzte Felder aus SoftM
         # f1.
@@ -404,18 +401,31 @@ class SoftMConverter(object):
         # Dies ist "Vorzeichenbehaftet" - siehe http://cybernetics.hudora.biz/intern/fogbugz/default.php?4554
         # rec900.zu_und_abschlage = -1 * f9.summe_rabatte
 
+        # Zuschlaege
+        rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte
+
+        paperlist_skonto = abs(f1.skontobetrag1_ust1)
         if self.is_edeka:
-            # Skonto wird fuer Edeka als Rabatt eingetragen
-            skonto = -abs(f1.skontobetrag1_ust1)
-            print "skonto edeka", skonto
-            rec900.zu_und_abschlage = skonto
-            rec900.steuerpflichtiger_betrag = rec900.nettowarenwert_gesamt + skonto
-            rec900.mwst_gesamtbetrag = rec900.steuerpflichtiger_betrag * self.last_mwst / Decimal('100.0')
-            rec900.rechnungsendbetrag = rec900.steuerpflichtiger_betrag + rec900.mwst_gesamtbetrag
+            # Skonto wird fuer Edeka als Rabatt eingetragen, dazu erstmal auf Nettobetrag umrechnen
+            skonto_netto = paperlist_skonto
+            skonto_netto *= 100
+            skonto_netto /= 119
+            skonto_netto = skonto_netto.quantize(Decimal('.01')) # FIXME: ich glaube so arbeiten Kaufmänner?!?
+            self.skontonetto_total += skonto_netto # Fuer Summe in Papierliste
+            paperlist_skonto = skonto_netto
+
+            # Skonto zu den Rabatten zurechnen
+            rec900.zu_und_abschlage -= skonto_netto
+
+            # Warenwert anpassen
+            rec900.nettowarenwert_gesamt += skonto_netto
+            print "Warenwert:", rec900.nettowarenwert_gesamt,
+            print "Skonto:", skonto_netto
+
+            #rec900.steuerpflichtiger_betrag = rec900.nettowarenwert_gesamt + skonto
+            #rec900.mwst_gesamtbetrag = rec900.steuerpflichtiger_betrag * self.last_mwst / Decimal('100.0')
+            #rec900.rechnungsendbetrag = rec900.steuerpflichtiger_betrag + rec900.mwst_gesamtbetrag
             pass
-        else:
-            # Zuschlaegen getreu ihrer Vorzeichen
-            rec900.zu_und_abschlage = f9.summe_rabatte + f9.summe_zuschlaege
 
         # speichern der einzelrechnungssummen fuer Rechnungslistenendbetröge
         self.zu_und_abschlage_total += rec900.zu_und_abschlage
@@ -431,8 +441,9 @@ class SoftMConverter(object):
         rec913.abschlag = f9.kopfrabatt1
 
         if self.is_invoicelist:
-            self.paperlist.collect_invoice_info(dict(warenwert=rec900.nettowarenwert_gesamt,
-                rechnungsendbetrag=rec900.rechnungsendbetrag, umsatzsteuer=rec900.mwst_gesamtbetrag))
+            self.paperlist.collect_invoice_info(
+                    dict(skonto=paperlist_skonto, warenwert=rec900.nettowarenwert_gesamt,
+                         rechnungsendbetrag=rec900.rechnungsendbetrag, umsatzsteuer=rec900.mwst_gesamtbetrag))
 
         self.stratedi_records.append(rec900)
         if f9.kopfrabatt1 > 0:
@@ -442,12 +453,6 @@ class SoftMConverter(object):
         """Handles a SoftM invoce. Works on a slice of an INVOICE list, which
 
         contains the relavant stuff for the actual invoice."""
-
-        # Skonto aus allen f1 eintraegen ermitteln f. Papierliste
-        f1list = [x[1] for x in softm_record_slice if x[0] == 'F1']
-        if f1list:
-            skonto = sum([rec.skontobetrag1_ust1 for rec in f1list])
-            self.skonto_total += skonto
 
         softm_records = dict(softm_record_slice)
         # FIXME I think get_list_id() is wrong here. As i understand the doc, here we start from zero for every list
@@ -539,6 +544,7 @@ class SoftMConverter(object):
         # rec990.valutadatum
         if r3:
             rec990.rechnungslistenendbetrag = r3.summe
+            assert(r3.summe == self.rechnungsendbetrag_total)
         # rec990.nettowarenwert = r3.summe
 
         rec990.mwst = sum([rec.mwst for rec in r2list])
@@ -554,10 +560,10 @@ class SoftMConverter(object):
 
         # Footer information for paperlist
         self.paperlist.update_header(dict(rechnungslistennr=rec990.rechnungslistennr))
-        self.paperlist.update_footer(dict(warenwert=abs(rec990.steuerpflichtiger_betrag),
-                              umsatzsteuer=abs(rec990.mwst), skonto=abs(self.skonto_total),
-                              rechnungsendbetrag=abs(rec990.rechnungslistenendbetrag),
-                              rechnungslistennr=rec990.rechnungslistennr))
+        self.paperlist.update_footer(dict(warenwert=abs(rec990.steuerpflichtiger_betrag+self.skontonetto_total),
+                                          umsatzsteuer=abs(rec990.mwst), skonto = self.skontonetto_total,
+                                          rechnungsendbetrag=abs(rec990.rechnungslistenendbetrag),
+                                          rechnungslistennr=rec990.rechnungslistennr))
         self.stratedi_records.append(rec990)
 
     def _doconvert(self, additionalconfig=None):
@@ -619,7 +625,7 @@ class SoftMConverter(object):
 def main():
     """Main function to be called by cron."""
     inputdir = "/usr/local/edi/transfer/softm/pull/new"
-    workdir = "/usr/local/edi/transfer/softm/pull/test"
+    workdir = "/usr/local/edi/transfer/softm/pull/test3"
     outputdir = "/usr/local/edi/transfer/stratedi/push/new"
 
     makedirhier(workdir)
@@ -632,11 +638,13 @@ def main():
         filename = transmission.filename
 
         # TODO These are using other 'preisdimension', so skip them atm
-        if not filename.upper() in ['RL00614_UPDATED.txt'.upper(),
+        if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
                                 'RL00602_UPDATED.txt'.upper()]:
-            continue
+            pass # continue
 
         if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
+            if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
+                continue
             pass
 
         print filename

@@ -68,9 +68,9 @@ Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(re
     def _footer(self, formatstring):
         """Positioniert die Summenzeile an der richtigen Stelle."""
         skonto = sum([float(inv.get('skonto', 0)) for inv in self.invoices])
-        # self.footer['skonto'] = skonto
-        if (abs(float(self.footer['skonto']) - float(skonto)) > 0.009):
-            raise RuntimeError('Skonto nicht plausibel: %s != %s' % (float(self.footer['skonto']), float(skonto)))
+        self.footer['skonto'] = skonto
+        #if (abs(float(self.footer['skonto']) - float(skonto)) > 0.009):
+            #raise RuntimeError('Skonto nicht plausibel: %s != %s' % (float(self.footer['skonto']), float(skonto)))
         formatstring = formatstring % _floatvals2string(self.footer)
         splitted = formatstring.split('|')
         leftside = ' '.join(splitted[:5])
@@ -84,21 +84,31 @@ Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(re
         """Returns a formatstring which has the correct fieldlength of addressfield, so that everything is lined-up correctly."""
         if not self.__formatstring:
             maxlen = max([len(tmpdict.get('name_ort', ''))+2 for tmpdict in self.invoices])
-            self.__formatstring = "| %%(name_ort)-%is | %%(iln)13s | %%(rechn_nr)16s | %%(rechn_datum)14s | %%(warenwert)16s | %%(skonto)16s | %%(leergut)26s | %%(umsatzsteuer)16s | %%(rechnungsendbetrag)19s |"
+            self.__formatstring = "| %%(name_ort)-%is | %%(iln)13s | %%(rechn_nr)12s | %%(rechn_datum)12s | %%(warenwert)15s | %%(skonto)12s | %%(leergut)15s | %%(umsatzsteuer)12s | %%(rechnungsendbetrag)14s |"
             self.__formatstring = self.__formatstring % maxlen
         return self.__formatstring
 
     def _invoice_header(self):
         """Returns a string containing the column headers for the invoice list."""
-        s = self._formatstring() % dict(name_ort="Name",
+        s = self._formatstring() % dict(name_ort="",
+                                   iln=" ",
+                                   rechn_nr="Rechnungs-",
+                                   rechn_datum="Rechnungs-",
+                                   warenwert="",
+                                   skonto="",
+                                   leergut="Leergut/Fracht/",
+                                   umsatzsteuer="",
+                                   rechnungsendbetrag="Rechnungs-")
+        s += '\n'
+        s += self._formatstring() % dict(name_ort=u"Warenempfänger",
                                    iln="ILN",
-                                   rechn_nr="Rechnungsnummer",
-                                   rechn_datum="Rechnungsdatum",
+                                   rechn_nr="nummer",
+                                   rechn_datum="datum",
                                    warenwert="Warenwert",
                                    skonto="Skonto",
-                                   leergut="Leergut/Fracht/Verpackung",
+                                   leergut="Verpackung",
                                    umsatzsteuer="Umsatzsteuer",
-                                   rechnungsendbetrag="Rechnungsendbetrag")
+                                   rechnungsendbetrag="betrag")
         return s
 
     def comment(self, msg):
@@ -121,7 +131,7 @@ Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(re
             # header
             invoice_header = self._invoice_header()
             # table
-            sepa = '=' * len(invoice_header)
+            sepa = '=' * len(invoice_header.split('\n')[0])
             paperlist.append(sepa)
             paperlist.append(invoice_header)
             paperlist.append(sepa)
@@ -151,8 +161,10 @@ Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(re
         """Headerinformationen aus einem SoftM 000-record auslesen."""
         assert(self.paperlist==None)
 
+        datum = rec000.erstellungsdatum
+        datum = "%s-%s-%s" % (datum[:4], datum[4:6], datum[6:])
         headerdict = dict(hudora_iln=rec000.sender_iln, empf_iln=rec000.empfaenger_iln,
-                datum=rec000.erstellungsdatum, rechn_nr=rec000.datenaustauschreferenz)
+                          datum=datum, rechn_nr=rec000.datenaustauschreferenz)
         kundendict = husoftm.kunden.get_kunde_by_iln(rec000.empfaenger_iln)
         # print kundendict.__dict__
         d = {}
