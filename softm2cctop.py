@@ -27,6 +27,7 @@ from django.db import connection
 from huTools.fs import makedirhier
 
 from benedict.models import SoftMTransmission
+from benedict import iln
 
 from edilib.cctop.invoic import interchangeheader000, transaktionskopf100, transaktionsreferenz111
 from edilib.cctop.invoic import addressen119, zahlungsbedingungen120, rechnungsposition500, zusatzkosten140
@@ -51,7 +52,6 @@ class SoftMConverter(object):
     """Converts SoftM INVOICE files to Stratedi cctop INVOICE files."""
 
     # identification ILN for customers w/ special treatment
-    EDEKA_ILNS = ['4311501000007'] # TODO automaticly generation of this list from SoftM?
 
     def __init__(self, infile, outfile, transmission):
         """Initialisation...
@@ -114,7 +114,7 @@ class SoftMConverter(object):
 
     @property
     def is_edeka(self):
-        return self.iln_rechnungsempfaenger in SoftMConverter.EDEKA_ILNS
+        return iln.customer(self.iln_rechnungsempfaenger) == 'EDEKA'
 
     def _set_transaktionsart(self, transaktionsart):
         """Checks transaktionsart and sets flag to credit or invoice."""
