@@ -35,8 +35,7 @@ from edilib.cctop.invoic import belegsummen900, belegabschlaege913, rechnungslis
 from edilib.softm import parse_to_objects
 
 from benedict.models import log_action, ADDITION, CHANGE
-
-from paperlist import Paperlist
+from benedict.tools.paperlist import Paperlist
 
 
 def get_list_id():
@@ -82,6 +81,7 @@ class SoftMConverter(object):
         self.steuerpflichtiger_betrag_total = Decimal()
         self.mwst_gesamtbetrag_total = Decimal()
         self.rechnungsendbetrag_total = Decimal()
+        self.transmissionlogmessage = ""
 
         # Parsing variables
         self.softm_record_list = None # whole set of records from SoftM
@@ -149,7 +149,7 @@ class SoftMConverter(object):
             self.paperlist.update_header_from_rec000(rec000) #dict(hudora_iln=rec000.sender_iln, empf_iln=''))
         self.stratedi_records.extend([rec000])
 
-    def _convert_transmissionhead(self, invoice_records, sequence_no, config):
+    def _convert_invoice_head(self, invoice_records, sequence_no, config):
         """Converts SoftM F1 & F2 to StratEDI 100, 111, 119.BY, 119.SU, 119.DP, 119.IV & 120 records."""
 
         # needed entries from softm
@@ -450,13 +450,13 @@ class SoftMConverter(object):
             self.stratedi_records.append(rec913)
 
     def _convert_invoice(self, softm_record_slice, config):
-        """Handles a SoftM invoce. Works on a slice of an INVOICE list, which
+        """Handles a SoftM invoice. Works on a slice of an INVOICE list, which
 
         contains the relavant stuff for the actual invoice."""
 
         softm_records = dict(softm_record_slice)
         # FIXME I think get_list_id() is wrong here. As i understand the doc, here we start from zero for every list
-        self._convert_transmissionhead(softm_records, get_list_id(), config)
+        self._convert_invoice_head(softm_records, get_list_id(), config)
 
         # the now we have to extract the per invoice records from softm_record_list
         # every position starts with a F3 record
@@ -466,6 +466,7 @@ class SoftMConverter(object):
         while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F3':
             tmp_softm_record_list.pop(0)
 
+        # process positions
         nettosum = 0
         bruttosum = 0
         while tmp_softm_record_list:
@@ -516,6 +517,10 @@ class SoftMConverter(object):
 
             # process invoice
             self._convert_invoice(invoice, config)
+
+            # add a mark for breaking up the list later
+            if not self.is_invoicelist():
+                self.stratedi_records.append("SPLIT_HERE")
 
     def _convert_invoicelistfooter(self, config):
         """Converts SoftM R1, R2 & R3 records to a StratEDI 990 record."""
@@ -587,11 +592,28 @@ class SoftMConverter(object):
             self._convert_invoicelistfooter(config)
 
     def convert(self, additionalconfig=None):
-        """Parse INVOICE file and save result in outfile."""
+        """Parse INVOICE file and save result in outfile.
+
+        If we handle a collection of single invoices here, we have to split them into pieces and
+        provide a header for them."""
+
         self.softm_record_list = parse_to_objects(codecs.open(self.infile, 'r', 'cp850'))
         self._doconvert(additionalconfig)
         out = '\r\n'.join([record.serialize() for record in self.stratedi_records])
-        codecs.open(self.outfile, 'w', 'iso-8859-1').write(out + '\r\n')
+        if self.is_invoicelist():
+            codecs.open(self.outfile, 'w', 'iso-8859-1').write(out + '\r\n')
+        else:
+            self.convert_single_invoices(out)
+
+    def convert_single_invoices(self, out):
+        rec000 = self.stratedi_records.pop(0) # XXX sure ???
+        assert(type(rec000) == interchangeheader000)
+        rec000_serialized = rec000.serialize()
+        single_invoices = out.split("SPLIT_HERE")
+        for index, inv in enumerate(single_invoices):
+            invout = rec000_serialized + inv
+            outfilename = self.outfile+str(index)
+            codecs.open(outfilename, 'w', 'iso-8859-1').write(invout + '\r\n')
 
     def passed(self, success=True, message='passed'):
         """Marks if parsing went well or not."""
