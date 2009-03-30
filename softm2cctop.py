@@ -38,6 +38,15 @@ from benedict.models import log_action, ADDITION, CHANGE
 from benedict.tools.paperlist import Paperlist
 
 
+class SplitMarker(object):
+    """Helper class for marking a place inside of the collection of records."""
+    TAG = "SPLIT HERE"
+    def __init__(self):
+        pass
+    def serialize(self):
+        return SplitMarker.TAG
+
+
 def get_list_id():
     "Get next list id from database sequence"
 
@@ -519,8 +528,8 @@ class SoftMConverter(object):
             self._convert_invoice(invoice, config)
 
             # add a mark for breaking up the list later
-            if not self.is_invoicelist():
-                self.stratedi_records.append("SPLIT_HERE")
+            if not self.is_invoicelist:
+                self.stratedi_records.append(SplitMarker())
 
     def _convert_invoicelistfooter(self, config):
         """Converts SoftM R1, R2 & R3 records to a StratEDI 990 record."""
@@ -599,20 +608,30 @@ class SoftMConverter(object):
 
         self.softm_record_list = parse_to_objects(codecs.open(self.infile, 'r', 'cp850'))
         self._doconvert(additionalconfig)
-        out = '\r\n'.join([record.serialize() for record in self.stratedi_records])
-        if self.is_invoicelist():
+        if self.is_invoicelist:
+            out = '\r\n'.join([record.serialize() for record in self.stratedi_records])
             codecs.open(self.outfile, 'w', 'iso-8859-1').write(out + '\r\n')
         else:
-            self.convert_single_invoices(out)
+            self.convert_single_invoices()
 
-    def convert_single_invoices(self, out):
+    def convert_single_invoices(self):
+        """Writes single invoices to seperate files.
+
+        Needs to extract the rec000 (header-info) first, to provide it to all invoices."""
+        # extract and serialize rec000 entry
         rec000 = self.stratedi_records.pop(0) # XXX sure ???
         assert(type(rec000) == interchangeheader000)
-        rec000_serialized = rec000.serialize()
-        single_invoices = out.split("SPLIT_HERE")
+        rec000_serialized = rec000.serialize() + '\r\n'
+        # seraialize rest of file, split invoices and write to seperate files
+        out = '\r\n'.join([record.serialize() for record in self.stratedi_records])
+        single_invoices = out.split(SplitMarker.TAG)
         for index, inv in enumerate(single_invoices):
-            invout = rec000_serialized + inv
-            outfilename = self.outfile+str(index)
+            index += 1 # TODO: use enumerate(single_invoices, 1) when moving to py26 and upper
+            if not inv: # sollte nur fuer den letzten Marker zutreffen, vielleicht gibt es einen clevereren Ansatz
+                continue
+            invout = rec000_serialized + inv.strip()
+            outfilename, ext = os.path.splitext(self.outfile)
+            outfilename = "%s_%03i%s" % (outfilename, index, ext)
             codecs.open(outfilename, 'w', 'iso-8859-1').write(invout + '\r\n')
 
     def passed(self, success=True, message='passed'):
@@ -666,8 +685,11 @@ def main():
 
         if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
             if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
-                continue
+                pass
             pass
+
+        if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
+            continue
 
         print filename
         msg = "softm2cctop: "
