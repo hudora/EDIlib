@@ -227,12 +227,10 @@ class SoftMConverter(object):
         rec119_verkaeuferaddr.tel = config['operatortel']
         rec119_verkaeuferaddr.fax = config['operatorfax']
 
-        try:
-            # R1 entries are related to invoice lists (Vorsicht gef. Halbwissen!). So if this is a
-            # single invoice, we have to handle this here
+        if self.is_invoicelist:
             rec119_verkaeuferaddr.gegebenepartnerid = invoice_records['R1'].lieferantennr_verband
-        except:
-            pass
+        else:
+            rec119_verkaeuferaddr.gegebenepartnerid = f1.lieferantennummer
 
         # Warenempfänger
         rec119_lieferaddr.partnerart = 'DP'
@@ -673,7 +671,7 @@ class SoftMConverter(object):
 def main():
     """Main function to be called by cron."""
     inputdir = "/usr/local/edi/transfer/softm/pull/new"
-    workdir = "/usr/local/edi/transfer/softm/pull/test3"
+    workdir = "/usr/local/edi/transfer/softm/pull/test4"
     outputdir = "/usr/local/edi/transfer/stratedi/push/new"
 
     makedirhier(workdir)
@@ -692,11 +690,11 @@ def main():
 
         if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
             if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-                continue
-            continue
+                pass
+            pass
 
         if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-            pass
+            continue
 
         print filename
         msg = "softm2cctop: "
