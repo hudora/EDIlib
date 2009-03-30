@@ -693,7 +693,7 @@ def main():
                 pass
             pass
 
-        if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
+        if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 30.03.2009
             continue
 
         print filename
