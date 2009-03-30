@@ -209,7 +209,7 @@ class SoftMConverter(object):
         rec111.auftragsdatum = f1.auftragsdatum
         rec111.lieferdatum = f1.liefertermin
         rec111.lieferscheinnr = f1.lieferscheinnr
-        print "Lieferscheinnr", f1.lieferscheinnr
+        # print "Lieferscheinnr", f1.lieferscheinnr
         rec111.lieferscheindatum = f1.lieferscheindatum
         rec111.rechnungslistennr = f1.rechnungsliste
         rec111.rechnungslistendatum = f1.rechnungslistendatum
@@ -404,6 +404,9 @@ class SoftMConverter(object):
         rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
         rec900.skontofaehiger_betrag = abs(f9.skontofaehig)
 
+        print("rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag")
+        print((rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag))
+        print
         # Ist das nur Zuschlaege oder Zuschlaege + Rabatte?
         #print "Rabatt=8.50 2%", f9.kopfrabatt1, f9.kopfrabatt1_prozent
         #print "gesamtrabatt=8.49", f9.summe_rabatte
@@ -413,6 +416,8 @@ class SoftMConverter(object):
         # Zuschlaege
         rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte
 
+        paperlist_warenwert = rec900.steuerpflichtiger_betrag
+        print "paperlist_warenwert", paperlist_warenwert
         paperlist_skonto = abs(f1.skontobetrag1_ust1)
         if self.is_edeka:
             # Skonto wird fuer Edeka als Rabatt eingetragen, dazu erstmal auf Nettobetrag umrechnen
@@ -426,17 +431,16 @@ class SoftMConverter(object):
             # Skonto zu den Rabatten zurechnen
             rec900.zu_und_abschlage -= skonto_netto
 
-            # Warenwert anpassen
-            rec900.nettowarenwert_gesamt += skonto_netto
-            print "Warenwert:", rec900.nettowarenwert_gesamt,
-            print "Skonto:", skonto_netto
+            #print "Warenwert:", rec900.nettowarenwert_gesamt,
+            #print "Skonto:", skonto_netto
 
-            #rec900.steuerpflichtiger_betrag = rec900.nettowarenwert_gesamt + skonto
-            #rec900.mwst_gesamtbetrag = rec900.steuerpflichtiger_betrag * self.last_mwst / Decimal('100.0')
-            #rec900.rechnungsendbetrag = rec900.steuerpflichtiger_betrag + rec900.mwst_gesamtbetrag
+            # Steuerplfichtiger Betrag, MwSt und Endbetrag wg. Skonto auf Nettobetrag anpassen
+            rec900.steuerpflichtiger_betrag -= skonto_netto
+            rec900.mwst_gesamtbetrag = rec900.steuerpflichtiger_betrag * self.last_mwst / Decimal('100.0')
+            rec900.rechnungsendbetrag = rec900.steuerpflichtiger_betrag + rec900.mwst_gesamtbetrag
             pass
 
-        # speichern der einzelrechnungssummen fuer Rechnungslistenendbetröge
+        # Speichern der einzelrechnungssummen fuer Rechnungslistenendbetröge
         self.zu_und_abschlage_total += rec900.zu_und_abschlage
         self.steuerpflichtiger_betrag_total += rec900.steuerpflichtiger_betrag
         self.mwst_gesamtbetrag_total += rec900.mwst_gesamtbetrag
@@ -450,8 +454,9 @@ class SoftMConverter(object):
         rec913.abschlag = f9.kopfrabatt1
 
         if self.is_invoicelist:
+            print "paperlist_warenwert", paperlist_warenwert
             self.paperlist.collect_invoice_info(
-                    dict(skonto=paperlist_skonto, warenwert=rec900.nettowarenwert_gesamt,
+                    dict(skonto=paperlist_skonto, warenwert=paperlist_warenwert,
                          rechnungsendbetrag=rec900.rechnungsendbetrag, umsatzsteuer=rec900.mwst_gesamtbetrag))
 
         self.stratedi_records.append(rec900)
@@ -558,7 +563,6 @@ class SoftMConverter(object):
         # rec990.valutadatum
         if r3:
             rec990.rechnungslistenendbetrag = r3.summe
-            assert(r3.summe == self.rechnungsendbetrag_total)
         # rec990.nettowarenwert = r3.summe
 
         rec990.mwst = sum([rec.mwst for rec in r2list])
@@ -571,6 +575,9 @@ class SoftMConverter(object):
             rec990.steuerpflichtiger_betrag = self.steuerpflichtiger_betrag_total
             rec990.mwst = self.mwst_gesamtbetrag_total
             rec990.reli_zu_und_abschlaege = self.zu_und_abschlage_total
+
+        print "(rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)"
+        print (rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)
 
         # Footer information for paperlist
         self.paperlist.update_header(dict(rechnungslistennr=rec990.rechnungslistennr))
@@ -683,13 +690,13 @@ def main():
                                 'RL00602_UPDATED.txt'.upper()]:
             pass # continue
 
-        if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-            if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
-                pass
-            pass
+        if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
+            if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
+                continue
+            continue
 
         if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-            continue
+            pass
 
         print filename
         msg = "softm2cctop: "
