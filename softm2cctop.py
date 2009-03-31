@@ -271,6 +271,12 @@ class SoftMConverter(object):
         rec140.mwstsatz = f1.ust1_fuer_skonto
         rec140.skontoprozent = f1.skonto1
         rec140.skontobetrag = abs(f1.skontobetrag1_ust1)
+        if self.is_edeka: # TODO code duplication, substitute w/ function
+            skonto_netto = rec140.skontobetrag
+            skonto_netto *= 100
+            skonto_netto /= 119
+            skonto_netto = skonto_netto.quantize(Decimal('.01')) # FIXME: ich glaube so arbeiten Kaufmänner?!?
+            rec140.skontobetrag = skonto_netto
         # rec140.frachtbetrag = f1.xxx
         # rec140.verpackungsbetrag = f1.xxx
         # rec140.versicherungsbetrag = f1.xxx
@@ -402,9 +408,9 @@ class SoftMConverter(object):
         rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
         rec900.skontofaehiger_betrag = abs(f9.skontofaehig)
 
-        print("rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag")
-        print((rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag))
-        print
+        #print("rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag")
+        #print((rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag))
+        #print
         # Ist das nur Zuschlaege oder Zuschlaege + Rabatte?
         #print "Rabatt=8.50 2%", f9.kopfrabatt1, f9.kopfrabatt1_prozent
         #print "gesamtrabatt=8.49", f9.summe_rabatte
@@ -415,8 +421,9 @@ class SoftMConverter(object):
         rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte
 
         paperlist_warenwert = rec900.steuerpflichtiger_betrag
-        print "paperlist_warenwert", paperlist_warenwert
+        #print "paperlist_warenwert", paperlist_warenwert
         paperlist_skonto = abs(f1.skontobetrag1_ust1)
+        #print "Skonto, USt Skonto", f1.skontobetrag1_ust1, f1.ust1_fuer_skonto
         if self.is_edeka:
             # Skonto wird fuer Edeka als Rabatt eingetragen, dazu erstmal auf Nettobetrag umrechnen
             skonto_netto = paperlist_skonto
@@ -452,7 +459,7 @@ class SoftMConverter(object):
         rec913.abschlag = f9.kopfrabatt1
 
         if self.is_invoicelist:
-            print "paperlist_warenwert", paperlist_warenwert
+            #print "paperlist_warenwert", paperlist_warenwert
             self.paperlist.collect_invoice_info(
                     dict(skonto=paperlist_skonto, warenwert=paperlist_warenwert,
                          rechnungsendbetrag=rec900.rechnungsendbetrag, umsatzsteuer=rec900.mwst_gesamtbetrag))
@@ -574,8 +581,8 @@ class SoftMConverter(object):
             rec990.mwst = self.mwst_gesamtbetrag_total
             rec990.reli_zu_und_abschlaege = self.zu_und_abschlage_total
 
-        print "(rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)"
-        print (rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)
+        #print "(rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)"
+        #print (rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)
 
         # Footer information for paperlist
         self.paperlist.update_header(dict(rechnungslistennr=rec990.rechnungslistennr))
@@ -671,7 +678,7 @@ class SoftMConverter(object):
 def main():
     """Main function to be called by cron."""
     inputdir = "/usr/local/edi/transfer/softm/pull/new"
-    workdir = "/usr/local/edi/transfer/softm/pull/test4"
+    workdir = "/usr/local/edi/transfer/softm/pull/test5"
     outputdir = "/usr/local/edi/transfer/stratedi/push/new"
 
     makedirhier(workdir)
@@ -690,11 +697,11 @@ def main():
 
         if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
             if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-                pass
-            pass
+                continue
+            continue
 
         if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 30.03.2009
-            continue
+            pass
 
         print filename
         msg = "softm2cctop: "
