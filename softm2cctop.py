@@ -131,6 +131,10 @@ class SoftMConverter(object):
     def is_edeka(self):
         return iln.customer(self.iln_rechnungsempfaenger) == 'EDEKA'
 
+    @property
+    def is_toys(self):
+        return iln.customer(self.iln_rechnungsempfaenger) == 'TRU'
+
     def _set_transaktionsart(self, transaktionsart):
         """Checks transaktionsart and sets flag to credit or invoice."""
         if transaktionsart in ['380', '84']:
@@ -337,7 +341,10 @@ class SoftMConverter(object):
         rec500.berechnete_menge = f3.menge
         rec500.ean = f3.ean
         rec500.artnr_lieferant = f3.artnr
-        rec500.artnr_kunde = '' # f3.artnr_kunde -> 'FIXME ist bei EDEKA leer und bei TRS falsch!
+        rec500.artnr_kunde = f3.artnr_kunde
+        if self.is_toysrus:
+            rec500.artnr_kunde = rec500.artnr_kunde.upper().replace('SKN', '').strip()
+            assert(1 < int(rec500.artnr_kunde) < 999999)
         rec500.artikelbezeichnung1 = f3.artikelbezeichnung[:35]
         rec500.artikelbezeichnung2 = f3.artikelbezeichnung[35:70]
         rec500.mwstsatz = f3.mwstsatz
