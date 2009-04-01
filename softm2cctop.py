@@ -205,7 +205,8 @@ class SoftMConverter(object):
         rec100.transaktionsart = f1.belegart.lstrip('0')
         self._set_transaktionsart(rec100.transaktionsart)
 
-        rec111.auftragsnr = f1.auftragsnr
+        # rec111.auftragsnr = f1.auftragsnr
+        rec111.auftragsnr = f1.kundenbestellnummer # FIXME nur f. TRU oder auch EDEKA?
         rec111.auftragsdatum = f1.auftragsdatum
         rec111.lieferdatum = f1.liefertermin
         rec111.lieferscheinnr = f1.lieferscheinnr
@@ -330,7 +331,7 @@ class SoftMConverter(object):
         rec500.berechnete_menge = f3.menge
         rec500.ean = f3.ean
         rec500.artnr_lieferant = f3.artnr
-        rec500.artnr_kunde = f3.artnr_kunde
+        rec500.artnr_kunde = '' # f3.artnr_kunde -> 'FIXME ist bei EDEKA leer und bei TRS falsch!
         rec500.artikelbezeichnung1 = f3.artikelbezeichnung[:35]
         rec500.artikelbezeichnung2 = f3.artikelbezeichnung[35:70]
         rec500.mwstsatz = f3.mwstsatz
@@ -382,7 +383,6 @@ class SoftMConverter(object):
         """Converts SoftM F9 record to StratEDI 900 and optionally 913 records."""
 
         rec900 = belegsummen900()
-        rec913 = belegabschlaege913()
         f9 = invoice_records['F9']
         f1 = invoice_records['F1']
 
@@ -455,18 +455,28 @@ class SoftMConverter(object):
         # f9.Vorzeichen Summe Zuschläge'),
         # rec900.gesamt_verkaufswert
 
-        rec913.abschlag_prozent = f9.kopfrabatt1_prozent
-        rec913.abschlag = f9.kopfrabatt1
 
         if self.is_invoicelist:
             #print "paperlist_warenwert", paperlist_warenwert
             self.paperlist.collect_invoice_info(
                     dict(skonto=paperlist_skonto, warenwert=paperlist_warenwert,
                          rechnungsendbetrag=rec900.rechnungsendbetrag, umsatzsteuer=rec900.mwst_gesamtbetrag))
-
         self.stratedi_records.append(rec900)
+
+        # Rabatt 1
+        rec913a = belegabschlaege913()
+        rec913a.abschlag_prozent = f9.kopfrabatt1_prozent
+        rec913a.abschlag = f9.kopfrabatt1
         if f9.kopfrabatt1 > 0:
-            self.stratedi_records.append(rec913)
+            self.stratedi_records.append(rec913a)
+
+        # Rabatt 2 - kaskadierender Rabatt (!?!)
+        rec913b = belegabschlaege913()
+        rec913b.kalkulationsfolgeanzeige = '002' # Rabatt auf rabattierten Endbetrag! FIXME: ist das immer so?
+        rec913b.abschlag_prozent = f9.kopfrabatt2_prozent
+        rec913b.abschlag = f9.kopfrabatt2
+        if f9.kopfrabatt1 > 0:
+            self.stratedi_records.append(rec913b)
 
     def _convert_invoice(self, softm_record_slice, config):
         """Handles a SoftM invoice. Works on a slice of an INVOICE list, which
@@ -678,7 +688,7 @@ class SoftMConverter(object):
 def main():
     """Main function to be called by cron."""
     inputdir = "/usr/local/edi/transfer/softm/pull/new"
-    workdir = "/usr/local/edi/transfer/softm/pull/test5"
+    workdir = "/usr/local/edi/transfer/softm/pull/test10"
     outputdir = "/usr/local/edi/transfer/stratedi/push/new"
 
     makedirhier(workdir)
