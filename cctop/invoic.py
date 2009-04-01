@@ -78,7 +78,7 @@ TRANSAKTINSREFERENZ111 = [
     # 111-03 Angebots-Datum K an 8 39 46 YYYYMMDD 
     # 111-04 Werbe- oder Aktionsnummer K an 35 47 81 
     # 111-05 Nummer der Preisliste K an 35 82 116 
-    dict(length=35, startpos=117, endpos=151, name='auftragsnr'),
+    dict(length=35, startpos=117, endpos=151, name='auftragsnr'), # Kundenbestellnummer?
     dict(length=8, startpos=152, endpos=159, name='auftragsdatum', fieldclass=DateField),
     # 111-08 Interne Auftragsnummer K an 35 160 194 
     # 111-09 Internes Auftragsdatum K an 8 195 202 YYYYMMDD 
@@ -364,7 +364,7 @@ BELEGABSCHLAEGE913 = [
     dict(length=3, startpos=4, endpos=6, name='kennzeichen', fieldclass=FixedField, default='A  ',
          doc='913-02 Kennzeichen Zu-/Abschlag, "C" = Zuschlag, "A" = Abschlag/Rabatt'),
     dict(length=3, startpos=7, endpos=9, name='art', fieldclass=FixedField, default='   '),
-    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige', fieldclass=FixedField,
+    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige', #fieldclass=FixedField,
          default='001', doc='''913-04 Kalkulationsfolgeanzeige. Die Kalkulationsstufe gibt darüber Auskunft,
          ob sich ein Rabatt auf einen bereits reduzierten (rabattierten) Betrag bezieht oder nicht.
          Existiert nur ein Rabatt, ist der Inhalt immer "1".
