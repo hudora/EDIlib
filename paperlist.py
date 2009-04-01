@@ -34,6 +34,8 @@ class Paperlist(object):
         """Returns formatted Header for paperlist."""
         headerdict = self.headerdict # alias
 
+        headerdict['empf_fax'] = '+49 (0) 40/6377-4222'
+
         # basic consistency check
         assert('hudora_iln' in headerdict)
         assert('empf_iln' in headerdict)
@@ -44,6 +46,7 @@ class Paperlist(object):
         assert('empf_strasse' in headerdict)
         assert('empf_plz' in headerdict)
         assert('empf_ort' in headerdict)
+        assert('empf_fax' in headerdict)
         assert('steuernr' in headerdict)
         assert('empf_unsere_lieferantennr' in headerdict)
 
@@ -60,6 +63,7 @@ Empfaenger: (ILN %(empf_iln)s)                           Sammelabrechnung   %(re
 %(empf_name1)s %(empf_name2)s
 %(empf_strasse)s
 %(empf_plz)s %(empf_ort)s
+Per Fax an %(empf_fax)s
 
 """
         paperlist = paperlist % headerdict

@@ -12,6 +12,7 @@ import os.path
 import sys
 import copy
 import pprint
+import shutil
 import codecs
 from decimal import Decimal
 
@@ -20,6 +21,8 @@ from django.core.management import setup_environ
 import settings
 setup_environ(settings)
 from django.db import connection
+
+from pymessaging import zwitscher
 
 #from django.db import transaction
 
@@ -61,15 +64,17 @@ class SoftMConverter(object):
 
     # identification ILN for customers w/ special treatment
 
-    def __init__(self, infile, outfile, transmission):
+    def __init__(self, infile, workfile, outdir, transmission):
         """Initialisation...
 
         infile is the file coming from SoftM
 
-        outfile is the resulting file in cctop format that will be sent to
-        stratedi
+        workfile - as the name says
 
-        transmission represents a SoftMTransmission object."""
+        outdir is the location in the filesystem where the resulting file(s) will be copied to and
+        from where these are uploaded to stratedi.
+
+        transmission represents a SoftMTransmission (django-model) instance."""
 
         #logging.basicConfig(level=logging.DEBUG,
         #                    format='%(asctime)s %(levelname)s %(message)s',
@@ -96,15 +101,16 @@ class SoftMConverter(object):
         self.softm_record_list = None # whole set of records from SoftM
         self.stratedi_records = [] # whole set of records for cctop
         self.infile = infile
-        self.outfile = outfile
+        self.workfile = workfile
+        self.outdir = outdir
         self.transmission = transmission
 
         # Paperlist
         if self.is_invoicelist:
-            fn = outfile.lower().replace('txt', 'paper.txt')
-            print fn
+            self.paperlistfile = workfile.lower().replace('txt', 'paper.txt')
+            print self.paperlistfile
             print 'x' * 30
-            self.paperlist = Paperlist(fn)
+            self.paperlist = Paperlist(self.paperlistfile)
 
     @property
     def is_invoicelist(self):
@@ -623,7 +629,7 @@ class SoftMConverter(object):
             self._convert_invoicelistfooter(config)
 
     def convert(self, additionalconfig=None):
-        """Parse INVOICE file and save result in outfile.
+        """Parse INVOICE file and save result in workfile.
 
         If we handle a collection of single invoices here, we have to split them into pieces and
         provide a header for them."""
@@ -632,7 +638,7 @@ class SoftMConverter(object):
         self._doconvert(additionalconfig)
         if self.is_invoicelist:
             out = '\r\n'.join([record.serialize() for record in self.stratedi_records])
-            codecs.open(self.outfile, 'w', 'iso-8859-1').write(out + '\r\n')
+            codecs.open(self.workfile, 'w', 'iso-8859-1').write(out + '\r\n')
         else:
             self.convert_single_invoices()
 
@@ -652,7 +658,7 @@ class SoftMConverter(object):
             if not inv: # sollte nur fuer den letzten Marker zutreffen, vielleicht gibt es einen clevereren Ansatz
                 continue
             invout = rec000_serialized + inv.strip()
-            outfilename, ext = os.path.splitext(self.outfile)
+            outfilename, ext = os.path.splitext(self.workfile)
             outfilename = "%s_%03i%s" % (outfilename, index, ext)
             codecs.open(outfilename, 'w', 'iso-8859-1').write(invout + '\r\n')
 
@@ -681,14 +687,19 @@ class SoftMConverter(object):
         self.transmission.save()
         log_action(self.transmission, CHANGE, message=self.transmissionlogmessage)
 
-        #tweet = "%d INVOIC Dateien nach cctop konvertiert" % count
-        #TwitHTTP('edi', 'edi').sendTwitter(tweet)
+        # TODO: Wenn mehrere Dateien erzeugt wurden (als Einzelrechnungen), dann hier Sclheife
+        # einbauen...Sollte auber auch für TRU nicht notwendig sein, da Umstellung auf
+        # Rechnungslisten.
+        # if parsing succeeded, copy workfile to outdir and zwitscher
+        shutil.copy(self.workfile, self.outdir)
+        msg = "#INVOICE %r copied to upload area." % os.path.basename(self.workfile)
+        zwitscher(msg, username='edi')
 
 
 def main():
     """Main function to be called by cron."""
     inputdir = "/usr/local/edi/transfer/softm/pull/new"
-    workdir = "/usr/local/edi/transfer/softm/pull/test10"
+    workdir = "/usr/local/edi/transfer/softm/pull/tmp"
     outputdir = "/usr/local/edi/transfer/stratedi/push/new"
 
     makedirhier(workdir)
@@ -716,7 +727,8 @@ def main():
         print filename
         msg = "softm2cctop: "
         workfilename = os.path.join(workdir, filename)
-        converter = SoftMConverter(os.path.join(inputdir, filename), workfilename, transmission)
+        outputfilename = os.path.join(outputdir, filename)
+        converter = SoftMConverter(os.path.join(inputdir, filename), workfilename, outputfilename, transmission)
 
         # Try parsing. If something fails this should be reported and
         # transmission.status  should be set to parsing_error
