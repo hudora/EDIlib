@@ -2,6 +2,7 @@
 # encoding: utf-8
 
 from decimal import Decimal
+import os
 import codecs
 
 import husoftm.kunden
@@ -127,6 +128,7 @@ Per Fax an %(empf_fax)s
         if self._is_finished:
             raise RuntimeError("Datei wurde bereits geschrieben.")
             return
+        self._is_finished = True
 
         if not self.valid:
             paperlist = "V E R A R B E I T U N G S F E H L E R ! ! !"
@@ -159,7 +161,15 @@ Per Fax an %(empf_fax)s
 
         print self.filename
         codecs.open(self.filename, "w", 'utf-8').write(paperlist)
-        self._is_finished = True
+
+    def printlist(self):
+        """Print paperlist to printer Lerdorf (# 2 copies)."""
+        if not self._is_finished:
+            raise RuntimeError("Datei wurde noch nicht geschrieben.")
+        printcommand = '/usr/local/bin/lpr -P%s -o landscape -o cpi=18 -o lpi=8 -o page-left=60'
+        printcommand += ' -H printserver.local.hudora.biz -# 2 %r'
+        printcommand %= ('DruckerLerdorf', self.filename.encode('utf-8'))
+        os.system(printcommand)
 
     def update_header_from_rec000(self, rec000):
         """Headerinformationen aus einem SoftM 000-record auslesen."""

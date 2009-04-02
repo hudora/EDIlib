@@ -64,24 +64,17 @@ class SoftMConverter(object):
 
     # identification ILN for customers w/ special treatment
 
-    def __init__(self, infile, workfile, outdir, transmission):
+    def __init__(self, infile, workfile, uploaddir, transmission):
         """Initialisation...
 
         infile is the file coming from SoftM
 
         workfile - as the name says
 
-        outdir is the location in the filesystem where the resulting file(s) will be copied to and
+        uploaddir is the location in the filesystem where the resulting file(s) will be copied to and
         from where these are uploaded to stratedi.
 
         transmission represents a SoftMTransmission (django-model) instance."""
-
-        #logging.basicConfig(level=logging.DEBUG,
-        #                    format='%(asctime)s %(levelname)s %(message)s',
-        #                    filename=os.path.join(workdir, 'INVOIC_Log.txt'),
-        #                    filemode='a+')
-        #
-        #logging.debug("Verarbeite %r nach %r. Logs in %r" % (inputdir, outputdir, workdir))
 
         # Helper variables # TODO: check which of them are still needed
         self._is_finished = False
@@ -102,8 +95,10 @@ class SoftMConverter(object):
         self.stratedi_records = [] # whole set of records for cctop
         self.infile = infile
         self.workfile = workfile
-        self.outdir = outdir
+        self.uploaddir = uploaddir
         self.transmission = transmission
+        self.faildir = None
+        self.archivdir =  None
 
         # Paperlist
         if self.is_invoicelist:
@@ -132,7 +127,7 @@ class SoftMConverter(object):
         return iln.customer(self.iln_rechnungsempfaenger) == 'EDEKA'
 
     @property
-    def is_toys(self):
+    def is_toysrus(self):
         return iln.customer(self.iln_rechnungsempfaenger) == 'TRU'
 
     def _set_transaktionsart(self, transaktionsart):
@@ -641,7 +636,12 @@ class SoftMConverter(object):
         If we handle a collection of single invoices here, we have to split them into pieces and
         provide a header for them."""
 
-        self.softm_record_list = parse_to_objects(codecs.open(self.infile, 'r', 'cp850'))
+        import ipdb; ipdb.set_trace()
+        infile = codecs.open(self.infile, 'r', 'cp850')
+        print infile
+        if not infile:
+            raise RuntimeError("Datei %s nicht vorhanden" % infile)
+        self.softm_record_list = parse_to_objects(infile)
         self._doconvert(additionalconfig)
         if self.is_invoicelist:
             out = '\r\n'.join([record.serialize() for record in self.stratedi_records])
@@ -694,29 +694,54 @@ class SoftMConverter(object):
         self.transmission.save()
         log_action(self.transmission, CHANGE, message=self.transmissionlogmessage)
 
-        # TODO: Wenn mehrere Dateien erzeugt wurden (als Einzelrechnungen), dann hier Sclheife
-        # einbauen...Sollte auber auch für TRU nicht notwendig sein, da Umstellung auf
-        # Rechnungslisten.
-        # if parsing succeeded, copy workfile to outdir and zwitscher
-        shutil.copy(self.workfile, self.outdir)
-        msg = "#INVOICE %r copied to upload area." % os.path.basename(self.workfile)
-        zwitscher(msg, username='edi')
+        # TODO erstmal nur EDEKA in den upload ordner kopieren
+        if self.is_edeka:
+            # HACK only files w/ higehr number than 627 (First non testing file that was sent to
+            # stratedi)
+            filename = os.path.basename(self.workfile)
+            assert(filename.startswith('RL'))
+            filename = filename.split('.')[0].split('_')[0]
+            filename = filename[2:]
+            if int(filename) > 637: # letzte an Stratedi geschickte Datei
+                # TODO: Wenn mehrere Dateien erzeugt wurden (als Einzelrechnungen), dann hier Sclheife
+                # einbauen...Sollte auber auch für TRU nicht notwendig sein, da Umstellung auf
+                # Rechnungslisten.
+                # if parsing succeeded, copy workfile to uploaddir and zwitscher
+                self.paperlist.printlist()
+                shutil.copy(self.workfile, self.uploaddir)
+                msg = "#INVOICE %r copied to upload area." % os.path.basename(self.workfile)
+                zwitscher(msg, username='edi')
+        if self.transmission.status == 'ok':
+            # shutil.move(self.infile, os.path.join(self.archivdir, 'original'))
+            shutil.move(self.paperlist.filename, os.path.join(self.archivdir, 'paperlists'))
+            shutil.move(self.workfile, os.path.join(self.archivdir, 'processed'))
+            self.transmission.status = 'copied_to_uploaddir'
+        else:
+            # shutil.move(self.infile, os.path.join(self.faildir, 'original'))
+            shutil.move(self.paperlist.filename, os.path.join(self.faildir, 'paperlists'))
+            shutil.move(self.workfile, os.path.join(self.faildir, 'processed'))
 
 
 def main():
     """Main function to be called by cron."""
-    inputdir = "/usr/local/edi/transfer/softm/pull/new"
-    workdir = "/usr/local/edi/transfer/softm/pull/tmp"
-    outputdir = "/usr/local/edi/transfer/stratedi/push/new"
+    inputdir = "/usr/local/edi/transfer/softm/pull/new" # where original files are downloaded to
+    workdir = "/usr/local/edi/transfer/softm/pull/tmp" # where  generated files lie temporary
+    archivdir = "/usr/local/edi/transfer/softm/pull/archiv" # where files, paperlists and processed files will be archived
+    faildir = "/usr/local/edi/transfer/softm/pull/fail" # where failded files will be archived
+    outputdir = "/usr/local/edi/transfer/stratedi/push/new" # where processed files will be copied to be uploaded to stratedi
 
-    makedirhier(workdir)
+    for dir in [inputdir, archivdir, faildir, workdir, outputdir]:
+        makedirhier(dir)
 
-    # Process all files that are in django db right now
-    # TODO: limit this to unparsed (status=new or failed) objects
-    transmissions = SoftMTransmission.objects.all()
+    for dir in ['paperlists', 'processed']:
+        makedirhier(os.path.join(archivdir, dir))
+        makedirhier(os.path.join(faildir, dir))
+
+    transmissions = SoftMTransmission.objects.filter(status='new')
     for count, transmission in enumerate(transmissions.iterator()):
         transmission.status = "being parsed"
         filename = transmission.filename
+        print filename
 
         # TODO These are using other 'preisdimension', so skip them atm
         if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
@@ -725,17 +750,22 @@ def main():
 
         if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
             if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-                continue
-            continue
+                pass
+            pass
 
         if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 30.03.2009
             pass
+
+        if filename.upper().startswith('RG'):
+            continue
 
         print filename
         msg = "softm2cctop: "
         workfilename = os.path.join(workdir, filename)
         outputfilename = os.path.join(outputdir, filename)
         converter = SoftMConverter(os.path.join(inputdir, filename), workfilename, outputfilename, transmission)
+        converter.faildir = faildir
+        converter.archivdir = archivdir
 
         # Try parsing. If something fails this should be reported and
         # transmission.status  should be set to parsing_error
