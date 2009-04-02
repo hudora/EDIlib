@@ -636,9 +636,7 @@ class SoftMConverter(object):
         If we handle a collection of single invoices here, we have to split them into pieces and
         provide a header for them."""
 
-        import ipdb; ipdb.set_trace()
         infile = codecs.open(self.infile, 'r', 'cp850')
-        print infile
         if not infile:
             raise RuntimeError("Datei %s nicht vorhanden" % infile)
         self.softm_record_list = parse_to_objects(infile)
@@ -716,6 +714,7 @@ class SoftMConverter(object):
             shutil.move(self.paperlist.filename, os.path.join(self.archivdir, 'paperlists'))
             shutil.move(self.workfile, os.path.join(self.archivdir, 'processed'))
             self.transmission.status = 'copied_to_uploaddir'
+            self.transmission.save()
         else:
             # shutil.move(self.infile, os.path.join(self.faildir, 'original'))
             shutil.move(self.paperlist.filename, os.path.join(self.faildir, 'paperlists'))
@@ -741,7 +740,6 @@ def main():
     for count, transmission in enumerate(transmissions.iterator()):
         transmission.status = "being parsed"
         filename = transmission.filename
-        print filename
 
         # TODO These are using other 'preisdimension', so skip them atm
         if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
