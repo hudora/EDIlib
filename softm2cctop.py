@@ -7,38 +7,32 @@ Created by Maximillian Dornseif on 2008-10-31.
 Copyright (c) 2008 HUDORA. All rights reserved.
 """
 
+from decimal import Decimal
+import codecs
+import copy
 import os
 import os.path
-import sys
-import copy
-import pprint
 import shutil
-import codecs
-from decimal import Decimal
+import sys
 
 # From http://superjared.com/entry/django-and-crontab-best-friends/
-from django.core.management import setup_environ
-import settings
-setup_environ(settings)
+if __name__ == '__main__':
+    from django.core.management import setup_environ
+    import settings
+    setup_environ(settings)
+
 from django.db import connection
 
-from pymessaging import zwitscher
-
-#from django.db import transaction
-
-
-from huTools.fs import makedirhier
-
-from benedict.models import SoftMTransmission
 from benedict import iln
-
-from edilib.cctop.invoic import interchangeheader000, transaktionskopf100, transaktionsreferenz111
-from edilib.cctop.invoic import addressen119, zahlungsbedingungen120, rechnungsposition500, zusatzkosten140
-from edilib.cctop.invoic import belegsummen900, belegabschlaege913, rechnungsliste990
-from edilib.softm import parse_to_objects
-
+from benedict.models import SoftMTransmission
 from benedict.models import log_action, ADDITION, CHANGE
 from benedict.tools.paperlist import Paperlist
+from edilib.cctop.invoic import addressen119, zahlungsbedingungen120, rechnungsposition500, zusatzkosten140
+from edilib.cctop.invoic import belegsummen900, belegabschlaege913, rechnungsliste990
+from edilib.cctop.invoic import interchangeheader000, transaktionskopf100, transaktionsreferenz111
+from edilib.softm import parse_to_objects
+from huTools.fs import makedirhier
+from pymessaging import zwitscher
 
 
 class SplitMarker(object):
@@ -103,8 +97,6 @@ class SoftMConverter(object):
         # Paperlist
         if self.is_invoicelist:
             self.paperlistfile = workfile.lower().replace('txt', 'paper.txt')
-            print self.paperlistfile
-            print 'x' * 30
             self.paperlist = Paperlist(self.paperlistfile)
 
     @property
@@ -191,7 +183,6 @@ class SoftMConverter(object):
 
         rechnr = str(f1.rechnungsnr)
         self.referenced_invoices.append(rechnr)
-        print "Rechnungsnummer: ", rechnr,
 
         rec100.belegnr = f1.rechnungsnr
         rec100.belegdatum = f1.rechnungsdatum
@@ -201,12 +192,6 @@ class SoftMConverter(object):
                                             rechn_datum=str(rec100.belegdatum)[:10]))
 
         # Gutschrift oder Rechnung?
-        print "\tBELEGART: ", f1.belegart # 380 (Rechnung), 381 (Gutschrift),  83 (Wertgutschrift) oder 84 (Wertbelastung)
-        # print "Skontobetrag: ", f1.skontobetrag1_ust1
-        #print "USt fuer Skonto1:", f1.ust1_fuer_skonto
-        #print "USt fuer Skonto2:", f1.ust2_fuer_skonto
-        #print "Skonto%:", f1.skonto1
-
         rec100.transaktionsart = f1.belegart.lstrip('0')
         self._set_transaktionsart(rec100.transaktionsart)
 
@@ -215,7 +200,6 @@ class SoftMConverter(object):
         rec111.auftragsdatum = f1.auftragsdatum
         rec111.lieferdatum = f1.liefertermin
         rec111.lieferscheinnr = f1.lieferscheinnr
-        # print "Lieferscheinnr", f1.lieferscheinnr
         rec111.lieferscheindatum = f1.lieferscheindatum
         rec111.rechnungslistennr = f1.rechnungsliste
         rec111.rechnungslistendatum = f1.rechnungslistendatum
@@ -289,7 +273,6 @@ class SoftMConverter(object):
         rec140.skontotage = f1.skontotage1
         rec140.skontodatum = f1.skontodatum1
 
-        # pprint.pprint(f1.__dict__)
         # Nicht genutzte Felder aus SoftM
         # f1.
         # f1.ust1_fuer_skonto', fieldclass=DecimalFieldNoDot, precision=2),
@@ -416,12 +399,7 @@ class SoftMConverter(object):
         rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
         rec900.skontofaehiger_betrag = abs(f9.skontofaehig)
 
-        #print("rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag")
-        #print((rec900.nettowarenwert_gesamt, rec900.steuerpflichtiger_betrag, rec900.rechnungsendbetrag, rec900.mwst_gesamtbetrag, rec900.skontofaehiger_betrag))
-        #print
         # Ist das nur Zuschlaege oder Zuschlaege + Rabatte?
-        #print "Rabatt=8.50 2%", f9.kopfrabatt1, f9.kopfrabatt1_prozent
-        #print "gesamtrabatt=8.49", f9.summe_rabatte
         # Dies ist "Vorzeichenbehaftet" - siehe http://cybernetics.hudora.biz/intern/fogbugz/default.php?4554
         # rec900.zu_und_abschlage = -1 * f9.summe_rabatte
 
@@ -429,9 +407,7 @@ class SoftMConverter(object):
         rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte
 
         paperlist_warenwert = rec900.steuerpflichtiger_betrag
-        #print "paperlist_warenwert", paperlist_warenwert
         paperlist_skonto = abs(f1.skontobetrag1_ust1)
-        #print "Skonto, USt Skonto", f1.skontobetrag1_ust1, f1.ust1_fuer_skonto
         if self.is_edeka:
             # Skonto wird fuer Edeka als Rabatt eingetragen, dazu erstmal auf Nettobetrag umrechnen
             skonto_netto = paperlist_skonto
@@ -443,9 +419,6 @@ class SoftMConverter(object):
 
             # Skonto zu den Rabatten zurechnen
             rec900.zu_und_abschlage -= skonto_netto
-
-            #print "Warenwert:", rec900.nettowarenwert_gesamt,
-            #print "Skonto:", skonto_netto
 
             # Steuerplfichtiger Betrag, MwSt und Endbetrag wg. Skonto auf Nettobetrag anpassen
             rec900.steuerpflichtiger_betrag -= skonto_netto
@@ -465,7 +438,6 @@ class SoftMConverter(object):
 
 
         if self.is_invoicelist:
-            #print "paperlist_warenwert", paperlist_warenwert
             self.paperlist.collect_invoice_info(
                     dict(skonto=paperlist_skonto, warenwert=paperlist_warenwert,
                          rechnungsendbetrag=rec900.rechnungsendbetrag, umsatzsteuer=rec900.mwst_gesamtbetrag))
@@ -514,10 +486,8 @@ class SoftMConverter(object):
 
             # process position
             netto, brutto = self._convert_invoice_position(dict(position))
-            # print("netto: %f \t brutto: %f" % (netto, brutto)),
             nettosum += netto
             bruttosum += brutto
-            # print("nettosum: %f \t bruttosum: %f" % (nettosum, bruttosum))
 
         self._convert_invoice_footer(softm_records, nettosum, bruttosum)
 
@@ -598,9 +568,6 @@ class SoftMConverter(object):
             rec990.steuerpflichtiger_betrag = self.steuerpflichtiger_betrag_total
             rec990.mwst = self.mwst_gesamtbetrag_total
             rec990.reli_zu_und_abschlaege = self.zu_und_abschlage_total
-
-        #print "(rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)"
-        #print (rec990.rechnungslistenendbetrag, rec990.steuerpflichtiger_betrag, rec990.mwst, rec990.reli_zu_und_abschlaege)
 
         # Footer information for paperlist
         self.paperlist.update_header(dict(rechnungslistennr=rec990.rechnungslistennr))
@@ -757,7 +724,6 @@ def main():
         if filename.upper().startswith('RG'):
             continue
 
-        print filename
         msg = "softm2cctop: "
         workfilename = os.path.join(workdir, filename)
         outputfilename = os.path.join(outputdir, filename)
