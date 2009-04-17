@@ -35,6 +35,13 @@ from huTools.fs import makedirhier
 from pymessaging import zwitscher
 
 
+def zwitscherwrapper(msg, username):
+    if os.environ.get('PYTHONUNITTEST', None):
+        print("%s: '%s'" % (username, msg))
+    else:
+        zwitscher(msg=msg, username=username)
+
+
 class SplitMarker(object):
     """Helper class for marking a place inside of the collection of records."""
     TAG = "SPLIT HERE"
@@ -47,10 +54,15 @@ class SplitMarker(object):
 def get_list_id():
     "Get next list id from database sequence"
 
-    cursor = connection.cursor()
-    cursor.execute("SELECT nextval('benedict_invoice_list_seq');")
-    listid, = cursor.fetchone()
-    return listid
+    if os.environ.get('PYTHONUNITTEST', None):
+        idstr = os.environ.get('xxxxyyyyyNumber', '5651')
+        os.environ['xxxxyyyyyNumber'] = str(int(idstr)+1)
+        return idstr
+    else:
+        cursor = connection.cursor()
+        cursor.execute("SELECT nextval('benedict_invoice_list_seq');")
+        listid, = cursor.fetchone()
+        return listid
 
 
 class SoftMConverter(object):
@@ -661,7 +673,7 @@ class SoftMConverter(object):
 
         # TODO erstmal nur EDEKA in den upload ordner kopieren
         if self.is_edeka:
-            # HACK only files w/ higehr number than 627 (First non testing file that was sent to
+            # HACK only files w/ higher number than 627 (First non testing file that was sent to
             # stratedi)
             filename = os.path.basename(self.workfile)
             assert(filename.startswith('RL'))
@@ -675,7 +687,7 @@ class SoftMConverter(object):
                 self.paperlist.printlist()
                 shutil.copy(self.workfile, self.uploaddir)
                 msg = "#INVOICE %r copied to upload area." % os.path.basename(self.workfile)
-                zwitscher(msg, username='edi')
+                zwitscherwrapper(msg, username='edi')
         if self.transmission.status == 'ok':
             # shutil.move(self.infile, os.path.join(self.archivdir, 'original'))
             shutil.move(self.paperlist.filename, os.path.join(self.archivdir, 'paperlists'))
@@ -686,6 +698,29 @@ class SoftMConverter(object):
             # shutil.move(self.infile, os.path.join(self.faildir, 'original'))
             shutil.move(self.paperlist.filename, os.path.join(self.faildir, 'paperlists'))
             shutil.move(self.workfile, os.path.join(self.faildir, 'processed'))
+
+
+def softm2cctop(infile, workfilename, outputdir, transmission, faildir, archivdir):
+    """Calls the converter directly. Useful for testing purpose."""
+    converter = SoftMConverter(infile, workfilename, outputdir, transmission)
+
+    converter.faildir = faildir
+    converter.archivdir = archivdir
+
+    # Try parsing. If something fails this should be reported and
+    # transmission.status  should be set to parsing_error
+    try:
+        converter.convert()
+    except:
+        (klass, error_obj, tback) = sys.exc_info()
+        msg = "failed w/ msg: %s" % error_obj.message
+        converter.passed(False, msg)
+        raise
+    else:
+        converter.passed()
+    finally:
+        converter.finish()
+
 
 
 def main():
@@ -726,8 +761,8 @@ def main():
 
         msg = "softm2cctop: "
         workfilename = os.path.join(workdir, filename)
-        outputfilename = os.path.join(outputdir, filename)
-        converter = SoftMConverter(os.path.join(inputdir, filename), workfilename, outputfilename, transmission)
+        # outputfilename = os.path.join(outputdir, filename)
+        converter = SoftMConverter(os.path.join(inputdir, filename), workfilename, outputdir, transmission)
         converter.faildir = faildir
         converter.archivdir = archivdir
 
