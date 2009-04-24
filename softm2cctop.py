@@ -35,11 +35,11 @@ from huTools.fs import makedirhier
 from pymessaging import zwitscher
 
 
-def zwitscherwrapper(msg, username):
+def zwitscherwrapper(text, username):
     if os.environ.get('PYTHONUNITTEST', None):
         print("%s: '%s'" % (username, msg))
     else:
-        zwitscher(msg=msg, username=username)
+        zwitscher(text=text, username=username)
 
 
 class SplitMarker(object):
