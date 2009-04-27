@@ -37,7 +37,7 @@ from pymessaging import zwitscher
 
 def zwitscherwrapper(text, username):
     if os.environ.get('PYTHONUNITTEST', None):
-        print("%s: '%s'" % (username, msg))
+        print("%s: '%s'" % (username, text))
     else:
         zwitscher(text=text, username=username)
 
@@ -707,6 +707,10 @@ def softm2cctop(infile, workfilename, outputdir, transmission, faildir, archivdi
     converter.faildir = faildir
     converter.archivdir = archivdir
 
+    for dir in ['paperlists', 'processed']:
+        makedirhier(os.path.join(archivdir, dir))
+        makedirhier(os.path.join(faildir, dir))
+
     # Try parsing. If something fails this should be reported and
     # transmission.status  should be set to parsing_error
     try:
@@ -720,7 +724,6 @@ def softm2cctop(infile, workfilename, outputdir, transmission, faildir, archivdi
         converter.passed()
     finally:
         converter.finish()
-
 
 
 def main():

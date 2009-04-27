@@ -169,7 +169,11 @@ Per Fax an %(empf_fax)s
         printcommand = '/usr/local/bin/lpr -P%s -o landscape -o cpi=18 -o lpi=8 -o page-left=60'
         printcommand += ' -H printserver.local.hudora.biz -# 2 %r'
         printcommand %= ('DruckerLerdorf', self.filename.encode('utf-8'))
-        os.system(printcommand)
+
+        if os.environ.get('PYTHONUNITTEST', None):
+            print(printcommand)
+        else:
+            os.system(printcommand)
 
     def update_header_from_rec000(self, rec000):
         """Headerinformationen aus einem SoftM 000-record auslesen."""
