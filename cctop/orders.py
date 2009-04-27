@@ -121,6 +121,55 @@ class TransaktionskopfHandler(object):
                 'bestelldatum': self.parser.auftragsdatum}
 
 
+TRANSAKTIONSREFERENZ111 = [
+    dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="111"),
+    # 111-02 Angebots-Nummer K an 35 4 38
+    # 111-03 Angebots-Datum K an 8 39 46 YYYYMMDD
+    # 111-04 Werbe- oder Aktionsnummer K an 35 47 81
+    dict(length=35, startpos=47, endpos=81, name='werbe_aktionsnr'),
+    # 111-05 Nummer der Preisliste K an 35 82 116
+    # dict(length=35, startpos=117, endpos=151, name='auftragsnr'), # Kundenbestellnummer?
+    # dict(length=8, startpos=152, endpos=159, name='auftragsdatum', fieldclass=DateField),
+    # 111-08 Interne Auftragsnummer K an 35 160 194
+    # 111-09 Internes Auftragsdatum K an 8 195 202 YYYYMMDD
+    # dict(length=8, startpos=203, endpos=210, name='lieferdatum', fieldclass=DateField),
+    # dict(length=35, startpos=211, endpos=245, name='lieferscheinnr'),
+    # dict(length=8, startpos=246, endpos=253, name='lieferscheindatum', fieldclass=DateField),
+    # dict(length=35, startpos=254, endpos=288, name='rechnungslistennr'),
+    # dict(length=8, startpos=289, endpos=296, name='rechnungslistendatum', fieldclass=DateField),
+    # dict(length=35, startpos=297, endpos=331, name='abkommensnr'),
+    # 111-16 Kontonummer K an 35 332 366
+    # 111-17 Leistungszeitraum bis D an 8 367 374 YYYYMMDD
+    # 111-18 Rechnungs-/Referenznummer (bei Gutschrift) K an 35 375 409
+    # 111-19 Rechnungs-/Referenzdatum (bei Gutschrift) K an 8 410 417 YYYYMMDD
+    # 111-20 Retourennummer (bei Gutschrift) K an 35 418 452
+    # 111-21 Retourendatum (bei Gutschrift) K an 8 453 460 YYYYMMDD
+    # dict(length=140, startpos=461, endpos=600, name='filler', fieldclass=FixedField, default=' '*140),
+]
+
+# fix since this is not in python notation fix "off by one" errors
+for feld in TRANSAKTIONSREFERENZ111:
+    feld['startpos'] -= 1
+
+
+class TransaktionsreferenzHandler(object):
+    """Validates if parsed record is well formed."""
+
+    def __init__(self, parser):
+        self.parser = parser
+
+    def validate(self, previousparsers):
+        """Executes Validation and raises Exceptions on failures."""
+
+        if previousparsers[-1].satzart not in ['100']:
+            raise MalformedFileException("Transaktionsterminsatz can only follow a Transaktionskopf. " +
+                                         (" Previous records = %r" % previousparsers))
+
+    def contribute_to_order(self, orderdict):
+        """Return a dict contributing to the OrderProtocol."""
+        return {'werbe_aktionsnr': self.parser.werbe_aktionsnr}
+
+
 transaktionstermine = [ # kopiert von satzart 515
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="115"),
     # die folgenden Felder verwenden wir nicht
@@ -171,7 +220,7 @@ class TransaktionsterminHandler(object):
     def validate(self, previousparsers):
         """Executes Validation and raises Exceptions on failures."""
 
-        if previousparsers[-1].satzart not in ['100']:
+        if previousparsers[-1].satzart not in ['100', '111']:
             raise MalformedFileException("Transaktionsterminsatz can only follow a Transaktionskopf. " +
                                          (" Previous records = %r" % previousparsers))
 
@@ -409,7 +458,7 @@ auftragsposition = [
     dict(startpos=166, endpos=200, length=35, name='artikelbezeichnung2', doc="IMD-7008"),
     dict(startpos=201, endpos=235, length=35, name='artikelgroesse', fieldclass=FixedField,
         default=' ' * 35, doc="IMD-7008"),
-    dict(startpos=236, endpos=270, length=35, name='artikelfarbe', fieldclass=FixedField,
+    dict(startpos=236, endpos=270, length=35, name='artikelfarbe',# fieldclass=FixedField,
         default=' ' * 35, doc="IMD-7008"),
     dict(startpos=271, endpos=285, length=15, name='bestellmenge', fieldclass=DecimalField,
         precision=3, doc="QTY-6060"),
@@ -639,6 +688,7 @@ class AbschlaegeHandler(object):
 ordersparser = {
     '000': generate_field_datensatz_class(INTERCHANGEHEADER000, name='interchangeheader', length=512),
     '100': generate_field_datensatz_class(transaktionskopf, name='transaktionskopf', length=512),
+    '111': generate_field_datensatz_class(TRANSAKTIONSREFERENZ111, name='transaktionsreferenz', length=512),
     '115': generate_field_datensatz_class(transaktionstermine, name='transaktionstermine', length=512),
     '119': generate_field_datensatz_class(addressen, name='addresse', length=512),
     '120': generate_field_datensatz_class(ZAHLUNGSBEDINGUNGEN120, name='zahlungsbedingungen', length=512),
@@ -654,6 +704,7 @@ ordersparser = {
 recordhandlers = {
     '000': InterchangeheaderHandler,
     '100': TransaktionskopfHandler,
+    '111': TransaktionsreferenzHandler,
     '115': TransaktionsterminHandler,
     '119': AddressenHandler,
     '120': ZahlungsbedingungenHandler,

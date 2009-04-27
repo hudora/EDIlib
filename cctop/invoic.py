@@ -72,35 +72,35 @@ for feld in TRANSAKTIONSKOPF100:
     feld['startpos'] -= 1
 transaktionskopf100 = generate_field_datensatz_class(TRANSAKTIONSKOPF100, name='transaktionskopf', length=600)
 
-TRANSAKTINSREFERENZ111 = [
+TRANSAKTIONSREFERENZ111 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="111"),
-    # 111-02 Angebots-Nummer K an 35 4 38 
-    # 111-03 Angebots-Datum K an 8 39 46 YYYYMMDD 
-    # 111-04 Werbe- oder Aktionsnummer K an 35 47 81 
-    # 111-05 Nummer der Preisliste K an 35 82 116 
+    # 111-02 Angebots-Nummer K an 35 4 38
+    # 111-03 Angebots-Datum K an 8 39 46 YYYYMMDD
+    # 111-04 Werbe- oder Aktionsnummer K an 35 47 81
+    # 111-05 Nummer der Preisliste K an 35 82 116
     dict(length=35, startpos=117, endpos=151, name='auftragsnr'), # Kundenbestellnummer?
     dict(length=8, startpos=152, endpos=159, name='auftragsdatum', fieldclass=DateField),
-    # 111-08 Interne Auftragsnummer K an 35 160 194 
-    # 111-09 Internes Auftragsdatum K an 8 195 202 YYYYMMDD 
+    # 111-08 Interne Auftragsnummer K an 35 160 194
+    # 111-09 Internes Auftragsdatum K an 8 195 202 YYYYMMDD
     dict(length=8, startpos=203, endpos=210, name='lieferdatum', fieldclass=DateField),
     dict(length=35, startpos=211, endpos=245, name='lieferscheinnr'),
     dict(length=8, startpos=246, endpos=253, name='lieferscheindatum', fieldclass=DateField),
     dict(length=35, startpos=254, endpos=288, name='rechnungslistennr'),
     dict(length=8, startpos=289, endpos=296, name='rechnungslistendatum', fieldclass=DateField),
     dict(length=35, startpos=297, endpos=331, name='abkommensnr'),
-    # 111-16 Kontonummer K an 35 332 366 
-    # 111-17 Leistungszeitraum bis D an 8 367 374 YYYYMMDD 
-    # 111-18 Rechnungs-/Referenznummer (bei Gutschrift) K an 35 375 409 
-    # 111-19 Rechnungs-/Referenzdatum (bei Gutschrift) K an 8 410 417 YYYYMMDD 
-    # 111-20 Retourennummer (bei Gutschrift) K an 35 418 452 
-    # 111-21 Retourendatum (bei Gutschrift) K an 8 453 460 YYYYMMDD 
+    # 111-16 Kontonummer K an 35 332 366
+    # 111-17 Leistungszeitraum bis D an 8 367 374 YYYYMMDD
+    # 111-18 Rechnungs-/Referenznummer (bei Gutschrift) K an 35 375 409
+    # 111-19 Rechnungs-/Referenzdatum (bei Gutschrift) K an 8 410 417 YYYYMMDD
+    # 111-20 Retourennummer (bei Gutschrift) K an 35 418 452
+    # 111-21 Retourendatum (bei Gutschrift) K an 8 453 460 YYYYMMDD
     dict(length=140, startpos=461, endpos=600, name='filler', fieldclass=FixedField, default=' '*140),
 ]
 
 # fix since this is not in python notation fix "off by one" errors
-for feld in TRANSAKTINSREFERENZ111:
+for feld in TRANSAKTIONSREFERENZ111:
     feld['startpos'] -= 1
-transaktionsreferenz111 = generate_field_datensatz_class(TRANSAKTINSREFERENZ111,
+transaktionsreferenz111 = generate_field_datensatz_class(TRANSAKTIONSREFERENZ111,
                                                          name='transaktionsreferenz', length=600)
 
 
@@ -117,9 +117,9 @@ ADDRESSEN119 = [
     dict(startpos=7, endpos=19, length=13, name='iln',
         doc="NAD-3039"),
     dict(startpos=20, endpos=54, length=35, name='name1',
-        doc="NAD-3036"),                                 
+        doc="NAD-3036"),
     dict(startpos=55, endpos=89, length=35, name='name2',
-        doc="NAD-3036"),                                 
+        doc="NAD-3036"),
     dict(startpos=90, endpos=124, length=35, name='name3',
         doc="NAD-3036"),
     dict(startpos=125, endpos=159, length=35, name='strasse1',
@@ -141,15 +141,15 @@ ADDRESSEN119 = [
     dict(startpos=347, endpos=381, length=35, name='ustdid',
         doc="RFF-1154"),
     dict(startpos=382, endpos=416, length=35, name='partnerabteilung',
-        doc="CTA-3412"),           
+        doc="CTA-3412"),
     dict(startpos=417, endpos=451, length=35, name='steuernr',
         doc="RFF-1154 - Muss für Lieferant/Zahlungsleistender"),
     dict(startpos=452, endpos=471, length=20, name='ansprechpartner',
-        doc="CTA-3412"),           
+        doc="CTA-3412"),
     dict(startpos=472, endpos=491, length=20, name='tel',
-        doc="COM-3148"),           
+        doc="COM-3148"),
     dict(startpos=492, endpos=511, length=20, name='fax',
-        doc="COM-3148"),           
+        doc="COM-3148"),
     dict(startpos=512, endpos=514, length=3, name='weeekennzeichen', fieldclass=FixedField, default='XA ',
         doc='"XA" = WEEE-Reg.-Nr.'),
     dict(startpos=515, endpos=549, length=35, name='weeenr',
@@ -377,8 +377,8 @@ BELEGABSCHLAEGE913 = [
          fieldclass=DecimalField, precision=2, doc='Zu-/Abschlag als Betrag (2 NK-St.)'),
     dict(length=15, startpos=44, endpos=58, name='menge_naturalrabatt', fieldclass=IntegerField, default=1,
          doc='913-08 Menge Naturalrabatt / Mengenzuschlag K n 15 44 58 (2 NK-St.)'),
-    # 913-09 Zu-/Abschlag je Einheit D n 15 59 73 (2 NK-St.) 
-    # 913-10 Zu-/Abschlagbasis D n 18 74 91 (2 NK-St.) 
+    # 913-09 Zu-/Abschlag je Einheit D n 15 59 73 (2 NK-St.)
+    # 913-10 Zu-/Abschlagbasis D n 18 74 91 (2 NK-St.)
     dict(length=35, startpos=92, endpos=126, name='text',
          doc='913-11 Art des Zu-/Abschlages, Text'),
     dict(length=474, startpos=127, endpos=600, name='filler', fieldclass=FixedField, default=' '*474,
@@ -408,19 +408,19 @@ RECHNUNGSLISTE990 = [
     dict(length=3, startpos=172, endpos=174, name='waehrungskennzeichen',
          fieldclass=FixedField, default="EUR"),
     #dict(length=8, startpos=175, endpos=182, name='valutadatum', fieldclass=DateField),
-    #990-13 Fälligkeitsdatum (Rechnungsdatum ist Referenzdatum) (12) D an 8 183 190 YYYYMMDD 
+    #990-13 Fälligkeitsdatum (Rechnungsdatum ist Referenzdatum) (12) D an 8 183 190 YYYYMMDD
     dict(length=18, startpos=191, endpos=208, name='rechnungslistenendbetrag',
          fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=209, endpos=226, name='mwst', fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=227, endpos=244, name='nettowarenwert', fieldclass=DecimalField, precision=2),
     dict(length=18, startpos=245, endpos=262, name='steuerpflichtiger_betrag',
          fieldclass=DecimalField, precision=2, doc='990-17 ReLi-Steuerpflichtiger Betrag, gesamt'),
-    #990-18 ReLi-Skontofähiger Betrag, gesamt D n 18 263 280 (2 NK-Stellen) 
+    #990-18 ReLi-Skontofähiger Betrag, gesamt D n 18 263 280 (2 NK-Stellen)
     dict(length=18, startpos=281, endpos=298, name='reli_zu_und_abschlaege',
          fieldclass=DecimalField, precision=2, doc='990-19 ReLi-Belegzu- / Abschläge, gesamt (Vorzeichen)'),
-    #990-20 MWSt.-Satz D n 5 299 303 (2 NK-Stellen) 
-    #990-21 Abrechnungszeitraum - Beginn D an 8 304 311 YYYYMMDD 
-    #990-22 Abrechnungszeitraum - Ende D an 8 312 319 YYYYMMDD 
+    #990-20 MWSt.-Satz D n 5 299 303 (2 NK-Stellen)
+    #990-21 Abrechnungszeitraum - Beginn D an 8 304 311 YYYYMMDD
+    #990-22 Abrechnungszeitraum - Ende D an 8 312 319 YYYYMMDD
     dict(length=281, startpos=320, endpos=600, name='Filler', fieldclass=FixedField, default=" " * 281),
 ]
 
