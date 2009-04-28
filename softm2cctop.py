@@ -24,7 +24,7 @@ if __name__ == '__main__':
 from django.db import connection
 
 from benedict import iln
-from benedict.models import SoftMTransmission
+from benedict.models import SoftMTransmission, EdiPartner
 from benedict.models import log_action, ADDITION, CHANGE
 from benedict.tools.paperlist import Paperlist
 from edilib.cctop.invoic import addressen119, zahlungsbedingungen120, rechnungsposition500, zusatzkosten140
@@ -56,6 +56,11 @@ def get_list_id():
 
     if os.environ.get('PYTHONUNITTEST', None):
         idstr = os.environ.get('xxxxyyyyyNumber', '5651')
+        os.environ['xxxxyyyyyNumber'] = str(int(idstr)+1)
+        return idstr
+
+    if settings.DATABASE_ENGINE == 'sqlite3':
+        idstr = os.environ.get('xxxxyyyyyNumber', '1')
         os.environ['xxxxyyyyyNumber'] = str(int(idstr)+1)
         return idstr
     else:
@@ -163,6 +168,10 @@ class SoftMConverter(object):
         rec000.testkennzeichen = xh.testkennzeichen
 
         self.iln_rechnungsempfaenger = rec000.empfaenger_iln
+        self.transmission.destination_iln = self.iln_rechnungsempfaenger
+        self.transmission.save()
+        log_action(self.transmission, CHANGE, message='Set destination_iln from record 000')
+
         if self.is_invoicelist:
             self.paperlist.update_header_from_rec000(rec000) #dict(hudora_iln=rec000.sender_iln, empf_iln=''))
         self.stratedi_records.extend([rec000])
@@ -580,6 +589,12 @@ class SoftMConverter(object):
             rec990.steuerpflichtiger_betrag = self.steuerpflichtiger_betrag_total
             rec990.mwst = self.mwst_gesamtbetrag_total
             rec990.reli_zu_und_abschlaege = self.zu_und_abschlage_total
+            # Vorzeichen rumdrehen, wenn es sich um eine Gutschrift handelt
+            if self.is_credit:
+                rec990.rechnungslistenendbetrag *= -1
+                rec990.steuerpflichtiger_betrag *= -1
+                rec990.mwst *= -1
+                rec990.reli_zu_und_abschlaege *= -1
 
         # Footer information for paperlist
         self.paperlist.update_header(dict(rechnungslistennr=rec990.rechnungslistennr))
@@ -671,8 +686,9 @@ class SoftMConverter(object):
         self.transmission.save()
         log_action(self.transmission, CHANGE, message=self.transmissionlogmessage)
 
-        # TODO erstmal nur EDEKA in den upload ordner kopieren
-        if self.is_edeka:
+        print "ILN:", self.iln_rechnungsempfaenger
+        partner = EdiPartner.objects.get(destination_iln=self.iln_rechnungsempfaenger)
+        if partner.invoic_live:
             # HACK only files w/ higher number than 627 (First non testing file that was sent to
             # stratedi)
             filename = os.path.basename(self.workfile)
@@ -688,16 +704,19 @@ class SoftMConverter(object):
                 shutil.copy(self.workfile, self.uploaddir)
                 msg = "#INVOICE %r copied to upload area." % os.path.basename(self.workfile)
                 zwitscherwrapper(msg, username='edi')
-        if self.transmission.status == 'ok':
-            # shutil.move(self.infile, os.path.join(self.archivdir, 'original'))
-            shutil.move(self.paperlist.filename, os.path.join(self.archivdir, 'paperlists'))
-            shutil.move(self.workfile, os.path.join(self.archivdir, 'processed'))
-            self.transmission.status = 'copied_to_uploaddir'
-            self.transmission.save()
+                if self.transmission.status == 'ok':
+                    # shutil.move(self.infile, os.path.join(self.archivdir, 'original'))
+                    shutil.move(self.paperlist.filename, os.path.join(self.archivdir, 'paperlists'))
+                    shutil.move(self.workfile, os.path.join(self.archivdir, 'processed'))
+                    self.transmission.status = 'copied_to_uploaddir'
+                    self.transmission.save()
+                else:
+                    # shutil.move(self.infile, os.path.join(self.faildir, 'original'))
+                    shutil.move(self.paperlist.filename, os.path.join(self.faildir, 'paperlists'))
+                    shutil.move(self.workfile, os.path.join(self.faildir, 'processed'))
         else:
-            # shutil.move(self.infile, os.path.join(self.faildir, 'original'))
-            shutil.move(self.paperlist.filename, os.path.join(self.faildir, 'paperlists'))
-            shutil.move(self.workfile, os.path.join(self.faildir, 'processed'))
+            self.transmission.status = 'new'
+            self.transmission.save()
 
 
 def softm2cctop(infile, workfilename, outputdir, transmission, faildir, archivdir):
@@ -734,6 +753,13 @@ def main():
     faildir = "/usr/local/edi/transfer/softm/pull/fail" # where failded files will be archived
     outputdir = "/usr/local/edi/transfer/stratedi/push/new" # where processed files will be copied to be uploaded to stratedi
 
+    #debug:
+    inputdir = "/tmp/benedict_tmp/new" # where original files are downloaded to
+    workdir = "/tmp/benedict_tmp/tmp" # where  generated files lie temporary
+    archivdir = "/tmp/benedict_tmp/archiv" # where files, paperlists and processed files will be archived
+    faildir = "/tmp/benedict_tmp/fail" # where failded files will be archived
+    outputdir = "/tmp/benedict_tmp/upload" # where processed files will be copied to be uploaded to stratedi
+
     for dir in [inputdir, archivdir, faildir, workdir, outputdir]:
         makedirhier(dir)
 
@@ -742,49 +768,19 @@ def main():
         makedirhier(os.path.join(faildir, dir))
 
     transmissions = SoftMTransmission.objects.filter(status='new')
+    #transmissions = SoftMTransmission.objects.filter(id='167')
     for count, transmission in enumerate(transmissions.iterator()):
         transmission.status = "being parsed"
         filename = transmission.filename
-
-        # TODO These are using other 'preisdimension', so skip them atm
-        if filename.upper() in ['RL00614_UPDATED.txt'.upper(),
-                                'RL00602_UPDATED.txt'.upper()]:
-            pass # continue
-
-        if filename.upper() != 'RL00627_UPDATED.txt'.upper(): # zusaetzliche Rabatte!
-            if filename.upper() != 'RL00603_UPDATED.txt'.upper(): # sent to stratedi 19.03.2009
-                pass
-            pass
-
-        if filename.upper() != 'RG00105_UPDATED.txt'.upper(): # sent to stratedi 30.03.2009
-            pass
-
         if filename.upper().startswith('RG'):
             continue
+        print filename
 
-        msg = "softm2cctop: "
+        if filename.upper() not in ['RL00430.txt'.upper(),
+                                'RL00668_UPDATED.txt'.upper()]:
+            pass
         workfilename = os.path.join(workdir, filename)
-        # outputfilename = os.path.join(outputdir, filename)
-        converter = SoftMConverter(os.path.join(inputdir, filename), workfilename, outputdir, transmission)
-        converter.faildir = faildir
-        converter.archivdir = archivdir
-
-        # Try parsing. If something fails this should be reported and
-        # transmission.status  should be set to parsing_error
-        try:
-            converter.convert()
-        except:
-            (klass, error_obj, tback) = sys.exc_info()
-            msg = "failed w/ msg: %s" % error_obj.message
-            converter.passed(False, msg)
-
-            if not '--tryall' in sys.argv:
-                raise
-        else:
-            converter.passed()
-
-        finally:
-            converter.finish()
+        softm2cctop(os.path.join(inputdir, filename), workfilename, outputdir, transmission, faildir, archivdir)
 
 
 if __name__ == '__main__':
