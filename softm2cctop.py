@@ -689,6 +689,12 @@ class SoftMConverter(object):
         print "ILN:", self.iln_rechnungsempfaenger
         partner = EdiPartner.objects.get(destination_iln=self.iln_rechnungsempfaenger)
         if partner.invoic_live:
+            # HACK: Gutschriften abschalten
+            if self.is_credit:
+                self.transmission.status = 'currently_disabled'
+                self.transmission.save()
+                log_action(self.transmission, CHANGE, message='Gutschriften derzeit deaktiviert.')
+                return
             # HACK only files w/ higher number than 627 (First non testing file that was sent to
             # stratedi)
             filename = os.path.basename(self.workfile)
@@ -754,11 +760,11 @@ def main():
     outputdir = "/usr/local/edi/transfer/stratedi/push/new" # where processed files will be copied to be uploaded to stratedi
 
     #debug:
-    inputdir = "/tmp/benedict_tmp/new" # where original files are downloaded to
-    workdir = "/tmp/benedict_tmp/tmp" # where  generated files lie temporary
-    archivdir = "/tmp/benedict_tmp/archiv" # where files, paperlists and processed files will be archived
-    faildir = "/tmp/benedict_tmp/fail" # where failded files will be archived
-    outputdir = "/tmp/benedict_tmp/upload" # where processed files will be copied to be uploaded to stratedi
+    #inputdir = "/tmp/benedict_tmp/new" # where original files are downloaded to
+    #workdir = "/tmp/benedict_tmp/tmp" # where  generated files lie temporary
+    #archivdir = "/tmp/benedict_tmp/archiv" # where files, paperlists and processed files will be archived
+    #faildir = "/tmp/benedict_tmp/fail" # where failded files will be archived
+    #outputdir = "/tmp/benedict_tmp/upload" # where processed files will be copied to be uploaded to stratedi
 
     for dir in [inputdir, archivdir, faildir, workdir, outputdir]:
         makedirhier(dir)
