@@ -694,7 +694,7 @@ class SoftMConverter(object):
             assert(filename.startswith('RL'))
             filename = filename.split('.')[0].split('_')[0]
             filename = filename[2:]
-            if int(filename) > 637: # letzte an Stratedi geschickte Datei
+            if int(filename) > 637 or os.environ.get('PYTHONUNITTEST', None): # letzte an Stratedi geschickte Datei
                 # TODO: Wenn mehrere Dateien erzeugt wurden (als Einzelrechnungen), dann hier Sclheife
                 # einbauen...Sollte auber auch für TRU nicht notwendig sein, da Umstellung auf
                 # Rechnungslisten.
