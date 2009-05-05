@@ -689,12 +689,6 @@ class SoftMConverter(object):
         print "ILN:", self.iln_rechnungsempfaenger
         partner = EdiPartner.objects.get(destination_iln=self.iln_rechnungsempfaenger)
         if partner.invoic_live:
-            # HACK: Gutschriften abschalten
-            if self.is_credit:
-                self.transmission.status = 'currently_disabled'
-                self.transmission.save()
-                log_action(self.transmission, CHANGE, message='Gutschriften derzeit deaktiviert.')
-                return
             # HACK only files w/ higher number than 627 (First non testing file that was sent to
             # stratedi)
             filename = os.path.basename(self.workfile)
