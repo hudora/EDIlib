@@ -159,7 +159,7 @@ Per Fax an %(empf_fax)s
                 paperlist += '\n' * 4
                 paperlist += '\n'.join(self.comments)
 
-        print self.filename
+        #print self.filename
         codecs.open(self.filename, "w", 'utf-8').write(paperlist)
 
     def printlist(self):

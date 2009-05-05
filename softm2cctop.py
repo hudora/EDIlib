@@ -686,7 +686,6 @@ class SoftMConverter(object):
         self.transmission.save()
         log_action(self.transmission, CHANGE, message=self.transmissionlogmessage)
 
-        print "ILN:", self.iln_rechnungsempfaenger
         partner = EdiPartner.objects.get(destination_iln=self.iln_rechnungsempfaenger)
         if partner.invoic_live:
             # HACK only files w/ higher number than 627 (First non testing file that was sent to
@@ -774,7 +773,7 @@ def main():
         filename = transmission.filename
         if filename.upper().startswith('RG'):
             continue
-        print filename
+        # print filename
 
         if filename.upper() not in ['RL00430.txt'.upper(),
                                 'RL00668_UPDATED.txt'.upper()]:
