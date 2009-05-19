@@ -426,6 +426,8 @@ class SoftMConverter(object):
 
         # Zuschlaege
         rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte
+        if self.is_credit:
+            rec900.zu_und_abschlage *= -1
 
         paperlist_warenwert = rec900.steuerpflichtiger_betrag
         paperlist_skonto = abs(f1.skontobetrag1_ust1)
@@ -465,18 +467,18 @@ class SoftMConverter(object):
         self.stratedi_records.append(rec900)
 
         # Rabatt 1
-        rec913a = belegabschlaege913()
-        rec913a.abschlag_prozent = f9.kopfrabatt1_prozent
-        rec913a.abschlag = f9.kopfrabatt1
         if f9.kopfrabatt1 > 0:
+            rec913a = belegabschlaege913()
+            rec913a.abschlag_prozent = f9.kopfrabatt1_prozent
+            rec913a.abschlag = f9.kopfrabatt1
             self.stratedi_records.append(rec913a)
 
         # Rabatt 2 - kaskadierender Rabatt (!?!)
-        rec913b = belegabschlaege913()
-        rec913b.kalkulationsfolgeanzeige = '002' # Rabatt auf rabattierten Endbetrag! FIXME: ist das immer so?
-        rec913b.abschlag_prozent = f9.kopfrabatt2_prozent
-        rec913b.abschlag = f9.kopfrabatt2
-        if f9.kopfrabatt1 > 0:
+        if f9.kopfrabatt2 > 0:
+            rec913b = belegabschlaege913()
+            rec913b.kalkulationsfolgeanzeige = '002' # Rabatt auf rabattierten Endbetrag! FIXME: ist das immer so?
+            rec913b.abschlag_prozent = f9.kopfrabatt2_prozent
+            rec913b.abschlag = f9.kopfrabatt2
             self.stratedi_records.append(rec913b)
 
     def _convert_invoice(self, softm_record_slice, config):
