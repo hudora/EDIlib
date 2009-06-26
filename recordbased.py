@@ -455,14 +455,12 @@ class TimeField(Field):
         super(TimeField, self).__init__(name, length, **kwargs)
 
     def __str__(self):
-        #import ipdb; ipdb.set_trace()
         if hasattr(self.value, 'strftime'):
             return self.value.strftime('%H:%M')
         return str(self.value)
 
     def format(self, value):
         """Formats the data according to the field's length, etc."""
-        #import ipdb; ipdb.set_trace()
         if hasattr(self._resolve(value), 'strftime'):
             ret = self._resolve(value).strftime('%H%M')
         else:
@@ -474,7 +472,6 @@ class TimeField(Field):
 
     def get_parsed(self, data):
         """Do the actual parsing."""
-        #import ipdb; ipdb.set_trace()
         try:
             return datetime.datetime(*time.strptime(data, "%H%M")[0:6]).time()
         except ValueError, msg:
