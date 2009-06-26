@@ -197,7 +197,7 @@ transaktionstermine = [ # kopiert von satzart 515
          default=' ' * 6, doc="DTM-2380"),
     dict(startpos=86, endpos=91, length=6, name='lieferwoche_zugesagt', fieldclass=FixedField,
          default=' ' * 6, doc="DTM-2380"),
-    dict(startpos=92, endpos=95, length=4, name='lieferuhrzeit',# fieldclass=FixedField,
+    dict(startpos=92, endpos=95, length=4, name='lieferuhrzeit', fieldclass=TimeField,
          default=' ' * 4, doc="DTM-2380"),
     dict(startpos=96, endpos=99, length=4, name='lieferuhrzeit_earliest', fieldclass=FixedField,
          default=' ' * 4, doc="DTM-2380"),
@@ -228,6 +228,7 @@ class TransaktionsterminHandler(object):
         """Return a dict contributing to the OrderProtocol."""
         return {'anlieferdatum_min': self.parser.lieferdatum_min,
                 'anlieferdatum_max': self.parser.lieferdatum_max,
+                'lieferuhrzeit': self.parser.lieferuhrzeit,
                 'anlieferdatum_bevorzugt': self.parser.lieferdatum_bevorzugt}
 
 
