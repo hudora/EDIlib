@@ -644,7 +644,7 @@ class BelegsummenHandler(object):
 ABSCHLAEGE913 = [
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="913"),
     dict(startpos=4, endpos=6, length=3, name='kennzeichen', choices=['A']),
-    dict(startpos=7, endpos=9, length=3, name='art', choices=['GRB', 'RCH', 'AA ', 'DI ']),
+    dict(startpos=7, endpos=9, length=3, name='art', choices=['GRB', 'RCH', 'AA ', 'DI ', 'WHE', 'REC']),
     dict(startpos=10, endpos=12, length=3, name='kalkulationsfolgeanzeige', fieldclass=FixedField,
          default=' ' * 3),
     dict(startpos=13, endpos=17, length=5, name='mwstsatz'),
