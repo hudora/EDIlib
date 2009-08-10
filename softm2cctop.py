@@ -775,11 +775,11 @@ def main():
         filename = transmission.filename
         if filename.upper().startswith('RG'):
             continue
-        # print filename
-
-        if filename.upper() not in ['RL00430.txt'.upper(),
-                                'RL00668_UPDATED.txt'.upper()]:
-            pass
+        if not filename.upper().startswith('RL'):
+            print 'Unbekannte SoftM - Rechnungsdatei ausgelassen:', filename
+            transmission.status = u'unparsed'
+            transmission.save()
+            continue
         workfilename = os.path.join(workdir, filename)
         softm2cctop(os.path.join(inputdir, filename), workfilename, outputdir, transmission, faildir, archivdir)
 
