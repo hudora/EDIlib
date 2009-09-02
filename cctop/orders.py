@@ -8,7 +8,7 @@ Created by Maximillian Dornseif 2008-08-12."""
 import datetime
 from edilib.recordbased import generate_field_datensatz_class, FixedField, DecimalField, IntegerField
 from edilib.recordbased import DateField, EanField, TimeField
-
+from decimal import Decimal
 
 class BenedictException(RuntimeError):
     """Baseclass for more detailed exceptions."""
@@ -628,9 +628,11 @@ class BelegsummenHandler(object):
         summe = 0
         for parser in previousparsers:
             if parser.satzart == '500':
-                summe += (parser.nettostueckpreis * parser.bestellmenge)
-        if summe != self.parser.gesamtbetrag:
-            raise MalformedFileException("sums do not validate (%d|%d) %r: %r"
+                summe += (parser.nettostueckpreis * parser.bestellmenge).quantize(Decimal('.01'))
+        # wg. Rundungsdifferenzen hier nur auf die erste Nachkommastelle genau vergleichen
+        # FIXME ist das überhaupt noch notwending, solange die Aufträge ohne Preise importiert werden
+        if summe.quantize(Decimal('0.1')) != self.parser.gesamtbetrag.quantize(Decimal('0.1')):
+            raise MalformedFileException("sums do not validate (%s|%s) %r: %r"
                     % (summe, self.parser.gesamtbetrag, self.parser, previousparsers))
 
     def contribute_to_order(self, dummy):
