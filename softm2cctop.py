@@ -32,7 +32,7 @@ from edilib.cctop.invoic import belegsummen900, belegabschlaege913, rechnungslis
 from edilib.cctop.invoic import interchangeheader000, transaktionskopf100, transaktionsreferenz111
 from edilib.softm import parse_to_objects
 from huTools.fs import makedirhier
-from pymessaging import zwitscher
+from cs.zwitscher import zwitscher
 
 
 def zwitscherwrapper(text, username):
