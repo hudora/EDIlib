@@ -94,6 +94,7 @@ class SoftMConverter(object):
         self.referenced_invoices = []
         self.iln_rechnungsempfaenger = None
         self.skontonetto_total = Decimal()
+        self.summe_fracht_leergut_verpackung = Decimal()
         self.last_mwst = None
         self.zu_und_abschlage_total = Decimal()
         self.steuerpflichtiger_betrag_total = Decimal()
@@ -183,6 +184,7 @@ class SoftMConverter(object):
         f1 = invoice_records['F1']
         f2 = invoice_records['F2']
         f3 = invoice_records['F3']
+        f9 = invoice_records['F9']
 
         if self.is_invoicelist:
             r1 = invoice_records['R1']
@@ -288,11 +290,13 @@ class SoftMConverter(object):
             skonto_netto /= 119
             skonto_netto = skonto_netto.quantize(Decimal('.01')) # FIXME: ich glaube so arbeiten Kaufmänner?!?
             rec140.skontobetrag = skonto_netto
-        # rec140.frachtbetrag = f1.xxx
+        rec140.frachtbetrag = f9.versandkosten1
         # rec140.verpackungsbetrag = f1.xxx
         # rec140.versicherungsbetrag = f1.xxx
         rec140.skontotage = f1.skontotage1
         rec140.skontodatum = f1.skontodatum1
+
+        self.summe_fracht_leergut_verpackung += f9.versandkosten1 # TODO: verpackung etc. falls es das gibt
 
         # Nicht genutzte Felder aus SoftM
         # f1.
@@ -425,7 +429,7 @@ class SoftMConverter(object):
         # rec900.zu_und_abschlage = -1 * f9.summe_rabatte
 
         # Zuschlaege
-        rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte
+        rec900.zu_und_abschlage =  f9.summe_zuschlaege - f9.summe_rabatte + f9.versandkosten1
         if self.is_credit:
             rec900.zu_und_abschlage *= -1
 
@@ -603,7 +607,7 @@ class SoftMConverter(object):
         self.paperlist.update_footer(dict(warenwert=abs(rec990.steuerpflichtiger_betrag+self.skontonetto_total),
                                           umsatzsteuer=abs(rec990.mwst), skonto = self.skontonetto_total,
                                           rechnungsendbetrag=abs(rec990.rechnungslistenendbetrag),
-                                          rechnungslistennr=rec990.rechnungslistennr))
+                                          rechnungslistennr=rec990.rechnungslistennr, leergut=self.summe_fracht_leergut_verpackung))
         self.stratedi_records.append(rec990)
 
     def _doconvert(self, additionalconfig=None):
@@ -754,12 +758,20 @@ def main():
     faildir = "/usr/local/edi/transfer/softm/pull/fail" # where failded files will be archived
     outputdir = "/usr/local/edi/transfer/stratedi/push/new" # where processed files will be copied to be uploaded to stratedi
 
-    #debug:
-    #inputdir = "/tmp/benedict_tmp/new" # where original files are downloaded to
-    #workdir = "/tmp/benedict_tmp/tmp" # where  generated files lie temporary
-    #archivdir = "/tmp/benedict_tmp/archiv" # where files, paperlists and processed files will be archived
-    #faildir = "/tmp/benedict_tmp/fail" # where failded files will be archived
-    #outputdir = "/tmp/benedict_tmp/upload" # where processed files will be copied to be uploaded to stratedi
+    # # debug vvvvv
+    # inputdir = "/tmp/benedict_tmp/new" # where original files are downloaded to
+    # workdir = "/tmp/benedict_tmp/tmp" # where  generated files lie temporary
+    # archivdir = "/tmp/benedict_tmp/archiv" # where files, paperlists and processed files will be archived
+    # faildir = "/tmp/benedict_tmp/fail" # where failded files will be archived
+    # outputdir = "/tmp/benedict_tmp/upload" # where processed files will be copied to be uploaded to stratedi
+    # transmission = SoftMTransmission.objects.create()
+    # filename = 'RL00993_UPDATED2.txt'
+    # for dir in [inputdir, archivdir, faildir, workdir, outputdir]:
+    #     makedirhier(dir)
+    # workfilename = os.path.join(workdir, filename)
+    # softm2cctop(os.path.join(inputdir, filename), workfilename, outputdir, transmission, faildir, archivdir)
+    # sys.exit(0)
+    # # ^^^^debug
 
     for dir in [inputdir, archivdir, faildir, workdir, outputdir]:
         makedirhier(dir)
