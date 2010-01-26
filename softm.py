@@ -374,29 +374,19 @@ FELDERF9 = [
  dict(length=16, startpos=139, endpos=154, name='Steuerbetrag 2', fieldclass=FixedField, default='000000000000000+'),
  dict(length=16, startpos=155, endpos=170, name='nettowarenwert1', fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=16, startpos=171, endpos=186, name='nettowarenwert2', fieldclass=FixedField, default='000000000000000+'),
+ dict(length=16, startpos=187, endpos=202, name='versandkosten1', fieldclass=DecimalFieldNoDotSigned, precision=3),
 
- # dict(length=15, startpos=176, endpos=190, name='Versandkosten 1', fieldclass=DecimalFieldNoDot,
- #      precision=3),
- # 15   15  3  187  201 Versandkosten 1
- #      1  0  202  202 Vorz. Versandkosten 1
- # dict(length=15, startpos=191, endpos=205, name='Versandkosten 2', fieldclass=DecimalFieldNoDot,
- #      precision=3),
- # 15   15  3  203  217 Versandkosten 2
- #      1  0  218  218 Vorz. Versandkosten 2
- # dict(length=15, startpos=206, endpos=220, name='Verpackungskosten 1', fieldclass=DecimalFieldNoDot,
- #      precision=3),
- # 15   15  3  219  233 Verpackungskosten 1
- #      1  0  234  234 Vorz. Verpackungsk. 1 
- # dict(length=15, startpos=221, endpos=235, name='Verpackungskosten 2', fieldclass=DecimalFieldNoDot,
- #      precision=3),
- # 15   15  3  235  249 Verpackungskosten 2
- #      1  0  250  250 Vorz. Verpackungsk. 2
- # dict(length=15, startpos=236, endpos=250, name='Nebenkosten 1', fieldclass=DecimalFieldNoDot, precision=3),
- #15   15  3  251  265 Nebenkosten 1
- #      1  0  266  266 Vorz. Nebenkosten 1
- # dict(length=15, startpos=251, endpos=265, name='Nebenkosten 2', fieldclass=DecimalFieldNoDot, precision=3),
- # 15   15  3  267  281 Nebenkosten 2
- #      1  0  282  282 Vorz. Nebenkosten 2
+ dict(length=16, startpos=203, endpos=218, fieldclass=FixedField, default='000000000000000+',
+      name="Versandkosten 2"),
+ dict(length=16, startpos=219, endpos=234, fieldclass=FixedField, default='000000000000000+',
+      name="Verpackungskosten 1"),
+ dict(length=16, startpos=235, endpos=250, fieldclass=FixedField, default='000000000000000+',
+      name="Verpackungskosten 2"),
+ dict(length=16, startpos=251, endpos=266, fieldclass=FixedField, default='000000000000000+',
+      name="Nebenkosten 1"),
+ dict(length=16, startpos=267, endpos=282, fieldclass=FixedField, default='000000000000000+',
+      name="Nebenkosten 2"),
+
  dict(length=16, startpos=283, endpos=298, name='summe_rabatte',
       fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=16, startpos=299, endpos=314, name='summe_zuschlaege',
