@@ -93,28 +93,28 @@ FELDERF1 = [
  dict(length=1, startpos=316, endpos=316, name='Vorzeichen Skontofähig 1'),
  dict(length=15, startpos=317, endpos=331, name='Skontofähig USt 2'),
  dict(length=1, startpos=332, endpos=332, name='Vorzeichen Skontofähig 2'),
- dict(length=8, startpos=333, endpos=340, name='skontodatum1'),
- dict(length=3, startpos=341, endpos=343, name='skontotage1'),
+ dict(length=8, startpos=333, endpos=340, name='skontodatum1', fieldclass=DateField),
+ dict(length=3, startpos=341, endpos=343, name='skontotage1', fieldclass=IntegerField),
  dict(length=5, startpos=344, endpos=348, name='skonto1', fieldclass=DecimalFieldNoDot, precision=2),
  dict(length=16, startpos=349, endpos=364, name='skontobetrag1_ust1',
      fieldclass=DecimalFieldNoDotSigned, precision=3),
  #dict(length=1, startpos=364, endpos=364, name='Vorzeichen Skontobetrag 1'),
  dict(length=15, startpos=365, endpos=379, name='Skontobetrag 1 USt 2'),
  dict(length=1, startpos=380, endpos=380, name='Vorzeichen Skontobetrag 12'),
- dict(length=8, startpos=381, endpos=388, name='Skontodatum 2'),
- dict(length=3, startpos=389, endpos=391, name='Skontotage 2'),
- dict(length=5, startpos=392, endpos=396, name='Skonto 2'),
+ dict(length=8, startpos=381, endpos=388, name='skontodatum2', fieldclass=DateField),
+ dict(length=3, startpos=389, endpos=391, name='skontotage2', fieldclass=IntegerField),
+ dict(length=5, startpos=392, endpos=396, name='skonto2', fieldclass=DecimalFieldNoDot, precision=2),
  dict(length=15, startpos=397, endpos=411, name='Skontobetrag 2 USt 1'),
  dict(length=1, startpos=412, endpos=412, name='Vorzeichen Skontobetrag 2 USt 1'),
  dict(length=15, startpos=413, endpos=427, name='Skontobetrag 2 USt 2'),
  dict(length=1, startpos=428, endpos=428, name='Vorzeichen Skontobetrag 2 USt 2'),
- dict(length=8, startpos=429, endpos=436, name='nettodatum'),
+ dict(length=8, startpos=429, endpos=436, name='nettodatum', fieldclass=DateField),
  dict(length=3, startpos=437, endpos=439, name='valutatage', fieldclass=IntegerField),
  dict(length=8, startpos=440, endpos=447, name='valutadatum', fieldclass=DateField),
  dict(length=2, startpos=448, endpos=449, name='Firma', fieldclass=FixedField, default='01'),
  dict(length=4, startpos=450, endpos=453, name='Abteilung'),
  dict(length=10, startpos=454, endpos=463, name='Bibliothek'),
- dict(length=3, startpos=464, endpos=466, name='nettotage'),
+ dict(length=3, startpos=464, endpos=466, name='nettotage', fieldclass=IntegerField),
  dict(length=14, startpos=467, endpos=480, name='steuernummer'),
  # TODO: there seems to be something in this field!
  dict(length=15, startpos=481, endpos=495, name='filler'), # fieldclass=FixedField, default=' ' * 15),
@@ -157,7 +157,7 @@ FELDERA1 = [
  dict(length=2, startpos=338, endpos=339, name='Firma'),
  dict(length=4, startpos=340, endpos=343, name='Abteilung'),
  dict(length=10, startpos=344, endpos=353, name='Bibliothek'),
- dict(length=142, startpos=354, endpos=495, name='Reserve'),
+ dict(length=142, startpos=354, endpos=495, name='ReserveX1'),
  dict(length=1, startpos=496, endpos=496, name='Status'),
 ]
 # fix difference in array counting between SoftM and Python
@@ -178,7 +178,7 @@ FELDERFA = [
  dict(length=3, startpos=227, endpos=229, name='rechnung_land', doc='119-12 bei StratEDI 119-02=IV'),
  dict(length=9, startpos=230, endpos=238, name='rechnung_plz', doc='119-10 bei StratEDI 119-02=IV'),
  dict(length=35, startpos=239, endpos=273, name='rechnung_ort', doc='119-11 bei StratEDI 119-02=IV'),
- dict(length=222, startpos=274, endpos=495, name='Reserve', fieldclass=FixedField, default=' '*222),
+ dict(length=222, startpos=274, endpos=495, name='ReserveX2', fieldclass=FixedField, default=' '*222),
  dict(length=1, startpos=496, endpos=496, name='Status'),
 ]
 # fix difference in array counting between SoftM and Python
@@ -209,7 +209,8 @@ FELDERF2 = [
  dict(length=17, startpos=361, endpos=377, name='verband_iln', fieldclass=EanField),
  dict(length=17, startpos=378, endpos=394, name='besteller_iln', fieldclass=EanField),
  dict(length=35, startpos=395, endpos=429, name='Bezogene Rechnungsnummer', fieldclass=IntegerField),
- dict(length=66, startpos=430, endpos=495, name='Reserve', fieldclass=FixedField, default=' '*66),
+ dict(length=50, startpos=430, endpos=479, name='ReserveX3', fieldclass=FixedField, default=' '*50),
+ dict(length=16, startpos=480, endpos=495, name='ReserveX3a'),
  dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
 ]
 
@@ -257,7 +258,7 @@ FELDERF3 = [
  dict(length=5, startpos=403, endpos=407, name='Anzahl Komponenten', fieldclass=IntegerField),
  dict(length=2, startpos=408, endpos=409, name='ursprungsland'),
  dict(length=1, startpos=410, endpos=410, name='bonuswuerdig'),
- dict(length=85, startpos=411, endpos=495, name='Reserve'),
+ dict(length=85, startpos=411, endpos=495, name='ReserveX4'),
  dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
 ]
 # fix difference in array counting between SoftM and Python
@@ -327,7 +328,7 @@ FELDERF4 = [
  dict(length=35, startpos=336, endpos=370, name='Gebindebezeichnung'),
  dict(length=5, startpos=371, endpos=375, name='Gebindeanzahl Rechnung'),
  dict(length=15, startpos=376, endpos=390, name='Volumen', fieldclass=DecimalFieldNoDot, precision=5),
- dict(length=105, startpos=391, endpos=495, name='Reserve'),
+ dict(length=105, startpos=391, endpos=495, name='ReserveX5'),
  dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
 ]
 # fix difference in array counting between SoftM and Python
@@ -364,9 +365,9 @@ FELDERF9 = [
  dict(length=16, startpos=81, endpos=96, name='skontoabzug', fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=16, startpos=97, endpos=112, name='mehrwertsteuer', fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=5, startpos=113, endpos=117, name='mwstsatz', fieldclass=DecimalFieldNoDot, precision=2),
- dict(length=16, startpos=118, endpos=133, name='Steuerbetrag 1', fieldclass=DecimalFieldNoDotSigned, precision=3),
- dict(length=5, startpos=134, endpos=138, name='Steuersatz 2', fieldclass=FixedField, default='00000'),
- dict(length=16, startpos=139, endpos=154, name='Steuerbetrag 2', fieldclass=FixedField, default='000000000000000+'),
+ dict(length=16, startpos=118, endpos=133, name='steuerbetrag1', fieldclass=DecimalFieldNoDotSigned, precision=3),
+ dict(length=5, startpos=134, endpos=138, name='steuersatz2', fieldclass=FixedField, default='00000'),
+ dict(length=16, startpos=139, endpos=154, name='steuerbetrag2', fieldclass=FixedField, default='000000000000000+'),
  dict(length=16, startpos=155, endpos=170, name='nettowarenwert1', fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=16, startpos=171, endpos=186, name='nettowarenwert2', fieldclass=FixedField, default='000000000000000+'),
  dict(length=16, startpos=187, endpos=202, name='versandkosten1', fieldclass=DecimalFieldNoDotSigned, precision=3),
@@ -398,11 +399,11 @@ FELDERF9 = [
  dict(length=15, startpos=347, endpos=361, name='kopfrabatt1', fieldclass=DecimalFieldNoDot, precision=3),
  dict(length=15, startpos=362, endpos=376, name='kopfrabatt2', fieldclass=DecimalFieldNoDot, precision=3),
  #fieldclass=FixedField, default='000000000000000'),
- dict(length=3, startpos=377, endpos=379, name='TxtSl Kopfrabatt 1'),
- dict(length=3, startpos=380, endpos=382, name='TxtSl Kopfrabatt 2'),
- dict(length=16, startpos=383, endpos=398, name='Kopfrabatt USt 1',
+ dict(length=3, startpos=377, endpos=379, name='TxtSlKopfrabatt1'),
+ dict(length=3, startpos=380, endpos=382, name='TxtSlKopfrabatt2'),
+ dict(length=16, startpos=383, endpos=398, name='KopfrabattUSt1',
       fieldclass=DecimalFieldNoDotSigned, precision=3),
- dict(length=16, startpos=399, endpos=414, name='Kopfrabatt USt 2',
+ dict(length=16, startpos=399, endpos=414, name='KopfrabattUSt2',
       fieldclass=FixedField, default='000000000000000+'),
  dict(length=11, startpos=415, endpos=425, name='Gesamtgewicht brutto', fieldclass=IntegerField),
  dict(length=11, startpos=426, endpos=436, name='Gesamtgewicht netto', fieldclass=IntegerField),
@@ -426,7 +427,7 @@ FELDERER = [
  dict(length=5, startpos=69, endpos=73, name='Positionsnummer'),
  dict(length=9, startpos=74, endpos=82, name='Rechnung'),
  dict(length=8, startpos=83, endpos=90, name='Rechnungsdatum'),
- dict(length=8, startpos=91, endpos=98, name='Valutadatum'),
+ dict(length=8, startpos=91, endpos=98, name='valutadatum'),
  dict(length=9, startpos=99, endpos=107, name='Lieferschein'),
  dict(length=8, startpos=108, endpos=115, name='Lieferdatum'),
  dict(length=9, startpos=116, endpos=124, name='Auftragsnummer'),
@@ -445,7 +446,7 @@ FELDERER = [
  dict(length=1, startpos=235, endpos=235, name='Vorzeichen Skonto-Abzug'),
  dict(length=2, startpos=236, endpos=237, name='Kz Mehrwertsteuer'),
  dict(length=5, startpos=238, endpos=242, name='Steuersatz in %'),
- dict(length=15, startpos=243, endpos=257, name='Steuerbetrag'),
+ dict(length=15, startpos=243, endpos=257, name='steuerbetrag'),
  dict(length=1, startpos=258, endpos=258, name='Vorzeichen Steuerbetrag'),
  dict(length=15, startpos=259, endpos=273, name='Provision 1'),
  dict(length=1, startpos=274, endpos=274, name='Vorzeichen Prov halbe Steuer'),
@@ -457,7 +458,7 @@ FELDERER = [
  dict(length=1, startpos=322, endpos=322, name='Vorzeichen Steuer zu Prov 1'),
  dict(length=15, startpos=323, endpos=337, name='Rechnungsendbetrag'),
  dict(length=1, startpos=338, endpos=338, name='Vorzeichen Endbetrag'),
- dict(length=157, startpos=339, endpos=495, name='Reserve'),
+ dict(length=157, startpos=339, endpos=495, name='ReserveX6'),
  dict(length=1, startpos=496, endpos=496, name='Status'),
 ]
 # fix difference in array counting between SoftM and Python
@@ -499,7 +500,7 @@ FELDERR2 = [
     #dict(length=5, startpos=69, endpos=73, name='Positionsnummer'),
     #dict(length=9, startpos=74, endpos=82, name='Rechnung'),
     #dict(length=8, startpos=83, endpos=90, name='Rechnungsdatum'),
-    #dict(length=8, startpos=91, endpos=98, name='Valutadatum'),
+    #dict(length=8, startpos=91, endpos=98, name='valutadatum'),
     #dict(length=9, startpos=99, endpos=107, name='Lieferschein'),
     #dict(length=8, startpos=108, endpos=115, name='Lieferdatum'),
     #dict(length=9, startpos=116, endpos=124, name='Auftragsnummer'),
@@ -508,16 +509,16 @@ FELDERR2 = [
     dict(length=3, startpos=153, endpos=155, name='waehrung'),
     dict(length=16, startpos=156, endpos=171, name='warenwert',
          fieldclass=DecimalFieldNoDotSigned, precision=3),
-    dict(length=15, startpos=172, endpos=186, name='Nebenkosten'),
+    dict(length=15, startpos=172, endpos=186, name='nebenkosten'),
     dict(length=1, startpos=187, endpos=187, name='Vorzeichen Nebenkosten'),
     dict(length=15, startpos=188, endpos=202, name='Verpackungskosten'),
     dict(length=1, startpos=203, endpos=203, name='Vorzeichen Verpackungskosten'),
-    dict(length=15, startpos=204, endpos=218, name='Versandkosten'),
+    dict(length=15, startpos=204, endpos=218, name='versandkosten'),
     dict(length=1, startpos=219, endpos=219, name='Vorzeichen Versandkosten'),
     dict(length=16, startpos=220, endpos=235, name='skonto_abzug', fieldclass=DecimalFieldNoDotSigned, precision=3),
     # dict(length=1, startpos=235, endpos=235, name='Vorzeichen Skonto-Abzug'),
     dict(length=2, startpos=236, endpos=237, name='Kz Mehrwertsteuer'),
-    dict(length=5, startpos=238, endpos=242, name='Steuersatz in %'),
+    dict(length=5, startpos=238, endpos=242, name='steuersatz_prozent'),
     dict(length=16, startpos=243, endpos=258, name='mwst', fieldclass=DecimalFieldNoDotSigned, precision=3),
     # dict(length=1, startpos=258, endpos=258, name='Vorzeichen Steuerbetrag'),
     dict(length=15, startpos=259, endpos=273, name='Provision 1'),
@@ -567,7 +568,7 @@ FELDERTEXT = [
  dict(length=60, startpos=301, endpos=360, name='Textzeile 6'),
  dict(length=60, startpos=361, endpos=420, name='Textzeile 7'),
  dict(length=60, startpos=421, endpos=480, name='Textzeile 8'),
- dict(length=15, startpos=481, endpos=495, name='Reserve'),
+ dict(length=15, startpos=481, endpos=495, name='ReserveX7'),
  dict(length= 1, startpos=496, endpos=496, name='Status'),
 ]
 # fix difference in array counting between SoftM and Python
@@ -602,4 +603,28 @@ def parse_to_objects(lines):
     for lineno, rawline in enumerate(lines):
         lineno += 1 # in python 2.6 use enumerate(lines, start=1):
 
-        # remove newline & EOF#!/usr/bin/env python
+        # remove newline & EOF
+        line = rawline.rstrip('\r\n').strip(' \x1a')
+        if not line:
+            # skip empty lines
+            continue
+        # remove erstellungsdatum
+        erstellungsdatum = line[519:]
+        line = line[:519]
+        # remove line-header
+        line = line[19:]
+        # pad line if it is to short now
+        line = "% 500s" % line
+        satzart, version, data = line[:2], line[2:4], line[4:]
+        satzklasse = satzresolver.get(satzart, None)
+        if satzklasse:
+            satz = satzklasse()
+            satz.parse(data)
+            ret.append((satzart, satz, ))
+        else:
+            print "Zeile:", lineno + ":", repr(satzart), repr(version), repr(erstellungsdatum),
+            print len(line), len(data)
+            print "unbekannter Satz:", satzart, version
+            print repr(rawline)
+            raise "unbekannter Satz: %s %s" % (str(satzart), str(version), )
+    return ret
