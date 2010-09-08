@@ -403,7 +403,7 @@ class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
 class DateField(Field):
     """Field encoding a date as YYYYMMDD.
 
-    Default value should be a datetime dbject or an callable returning a datetime object.
+    Default value should be a date dbject or an callable returning a date object.
     """
 
     formatstr = '%Y%m%d'
@@ -436,7 +436,7 @@ class DateField(Field):
             # This would result in an invalid date, return dummy date
             return self._resolve(self.default)
         try:
-            return datetime.datetime(*time.strptime(data, self.__class__.formatstr)[0:6])
+            return datetime.date(*time.strptime(data, self.__class__.formatstr)[0:3])
         except ValueError, msg:
             raise InvalidData("%r - %s" % (data, msg))
 

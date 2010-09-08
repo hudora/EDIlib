@@ -228,7 +228,7 @@ F2satzklasse = generate_field_datensatz_class(FELDERF2, name='F2kopfdatenzusatz'
 
 doctext = 'Rechnungs-Position (XOO00EF3)'
 FELDERF3 = [
- dict(length=5, startpos=1, endpos=5, name='positionsnr', doc='500-02 bei StratEDI'),
+ dict(length=5, startpos=1, endpos=5, name='positionsnr', fieldclass=IntegerField, doc='500-02 bei StratEDI'),
  dict(length=35, startpos=6, endpos=40, name='artnr', doc='500-05 bei StratEDI'),
  dict(length=35, startpos=41, endpos=75, name='artnr_kunde', doc='500-06 bei StratEDI'),
  dict(length=35, startpos=76, endpos=110, name='ean', fieldclass=EanField, doc='500-04 bei StratEDI'),
@@ -375,9 +375,9 @@ FELDERF9 = [
  dict(length=16, startpos=203, endpos=218, fieldclass=FixedField, default='000000000000000+',
       name="Versandkosten 2"),
  dict(length=16, startpos=219, endpos=234, fieldclass=FixedField, default='000000000000000+',
-      name="Verpackungskosten 1"),
+      name="Verpackungskosten1"),
  dict(length=16, startpos=235, endpos=250, fieldclass=FixedField, default='000000000000000+',
-      name="Verpackungskosten 2"),
+      name="Verpackungskosten2"),
  dict(length=16, startpos=251, endpos=266, fieldclass=FixedField, default='000000000000000+',
       name="Nebenkosten 1"),
  dict(length=16, startpos=267, endpos=282, fieldclass=FixedField, default='000000000000000+',
@@ -398,7 +398,6 @@ FELDERF9 = [
  #     1  0     Vorzeichen Kopfrabatt 2
  dict(length=15, startpos=347, endpos=361, name='kopfrabatt1', fieldclass=DecimalFieldNoDot, precision=3),
  dict(length=15, startpos=362, endpos=376, name='kopfrabatt2', fieldclass=DecimalFieldNoDot, precision=3),
- #fieldclass=FixedField, default='000000000000000'),
  dict(length=3, startpos=377, endpos=379, name='TxtSlKopfrabatt1'),
  dict(length=3, startpos=380, endpos=382, name='TxtSlKopfrabatt2'),
  dict(length=16, startpos=383, endpos=398, name='KopfrabattUSt1',
@@ -560,14 +559,14 @@ R3satzklasse = generate_field_datensatz_class(FELDERR3, name='R3verbandsrechnung
                                               length=496, doc=doctext)
 
 FELDERTEXT = [
- dict(length=60, startpos=1, endpos= 60, name='Textzeile 1'),
- dict(length=60, startpos= 61, endpos=120, name='Textzeile 2'),
- dict(length=60, startpos=121, endpos=180, name='Textzeile 3'),
- dict(length=60, startpos=181, endpos=240, name='Textzeile 4'),
- dict(length=60, startpos=241, endpos=300, name='Textzeile 5'),
- dict(length=60, startpos=301, endpos=360, name='Textzeile 6'),
- dict(length=60, startpos=361, endpos=420, name='Textzeile 7'),
- dict(length=60, startpos=421, endpos=480, name='Textzeile 8'),
+ dict(length=60, startpos=1, endpos= 60, name='textzeile1'),
+ dict(length=60, startpos= 61, endpos=120, name='textzeile2'),
+ dict(length=60, startpos=121, endpos=180, name='textzeile3'),
+ dict(length=60, startpos=181, endpos=240, name='textzeile4'),
+ dict(length=60, startpos=241, endpos=300, name='textzeile5'),
+ dict(length=60, startpos=301, endpos=360, name='textzeile6'),
+ dict(length=60, startpos=361, endpos=420, name='textzeile7'),
+ dict(length=60, startpos=421, endpos=480, name='textzeile8'),
  dict(length=15, startpos=481, endpos=495, name='ReserveX7'),
  dict(length= 1, startpos=496, endpos=496, name='Status'),
 ]
@@ -582,22 +581,27 @@ def parse_to_objects(lines):
     satzresolver = dict(XH=XHsatzklasse,
         F1=F1satzklasse,
         F2=F2satzklasse,
-        F8=F8satzklasse,
-        F9=F9satzklasse,
         F3=F3satzklasse,
-        F4=F4satzklasse,
+        F4=F4satzklasse, # Rabatte
+        # F5 - Zuschlaege
+        F6=generate_field_datensatz_class(FELDERTEXT, name='komponenteninfo', length=496),
+        # F7 Chargen
+        F8=F8satzklasse, # Bankverbindung
+        F9=F9satzklasse, # Rechnungsende
         # ER=ERsatzklasse,
         A1=A1satzklasse,
         R1=R1satzklasse,
         R2=R2satzklasse,
         R3=R3satzklasse,
         FA=FAsatzklasse,
+        FR=generate_field_datensatz_class(FELDERTEXT, name='positionsrabatttext', length=496),
         FP=generate_field_datensatz_class(FELDERTEXT, name='positionstext', length=496),
-        FK=generate_field_datensatz_class(FELDERTEXT, name='versandbedingungen', length=496),
-        FE=generate_field_datensatz_class(FELDERTEXT, name='lieferbedingungen', length=496),
-        F6=generate_field_datensatz_class(FELDERTEXT, name='rechnungspositionstexte', length=496),
-        FX=generate_field_datensatz_class(FELDERTEXT, name='kopfrabatt', length=496),
-        FR=generate_field_datensatz_class(FELDERTEXT, name='positionsrabatt', length=496),
+        FK=generate_field_datensatz_class(FELDERTEXT, name='kopftext', length=496),
+        FX=generate_field_datensatz_class(FELDERTEXT, name='kopfrabatttext', length=496),
+        FE=generate_field_datensatz_class(FELDERTEXT, name='endtexte', length=496),
+        # FV Versandarttexte
+        # FL Lieferbedingungstexte
+        # FN Nebenkosten
         )
     ret = []
     for lineno, rawline in enumerate(lines):
