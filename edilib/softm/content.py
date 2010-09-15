@@ -175,7 +175,7 @@ class SoftMConverter(object):
         for k in ['FK', 'FE', 'FX', 'FV', 'FL', 'FN']:
             if k in invoice_records:
                 zeile = []
-                 for i in range(1,9):
+                for i in range(1,9):
                      text = getattr(invoice_records[k], 'textzeile%d' % i).strip()
                      if text:
                          zeile.append(text.strip())
@@ -276,8 +276,8 @@ class SoftMConverter(object):
         while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F1':
             tmp_softm_record_list.pop(0)
 
-        # create sub-part of whole invoice (list) that represents one single
-        # invoice
+        # create sub-part of whole invoice (list) that represents one single invoice
+        invoices = []
         while tmp_softm_record_list:
             # slice of segment until the next F1
             invoice = [tmp_softm_record_list.pop(0)]
@@ -285,23 +285,17 @@ class SoftMConverter(object):
                 invoice.append(tmp_softm_record_list.pop(0))
 
             # process invoice
-            from pprint import pprint
-            invoice = self._convert_invoice(invoice)
+            invoices.append(self._convert_invoice(invoice))
+        return invoices
 
-            import huTools.structured
-            print huTools.structured.dict2xml(invoice, 'rechnung', {'orderlines': 'orderline'})
-
-    def convert(self, filename):
+    def convert(self, data):
         """Parse INVOICE file and save result in workfile."""
 
         # If we handle a collection of single invoices here, we have to split them into pieces and
         # provide a header for them.
 
-        infile = codecs.open(filename, 'r', 'cp850')
-        if not infile:
-            raise RuntimeError("Datei %s nicht vorhanden" % infile)
-        self.softm_record_list = edilib.softm.structure.parse_to_objects(infile)
-        self._convert_invoices()
+        self.softm_record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))
+        return self._convert_invoices()
 
 
 def main():
