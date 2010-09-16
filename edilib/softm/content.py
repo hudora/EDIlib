@@ -95,32 +95,29 @@ class SoftMConverter(object):
             auftragsdatum=f1.auftragsdatum,
             rechnungsdatum=f1.rechnungsdatum,
             leistungsdatum=f1.liefertermin,
-            lieferscheinnr=f1.lieferscheinnr,
             infotext_kunde=' '.join([f1.eigene_iln_beim_kunden.strip(), f1.lieferantennummer.strip(), f1.ustdid_rechnungsempfaenger.strip(), str(f1.kundenbestelldatum)]), # was ist mit auftragstexten?
 
             versandkosten = f9.versandkosten1,
             warenwert = abs(f9.warenwert),
             abschlag_prozent=f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent,
             # summe_zuschlaege=f9.summe_zuschlaege,
-            rechnungsbetrag='?',
+            rechnungsbetrag='?5',
             rechnung_steuranteil=f9.mehrwertsteuer,
-            steuer_prozent='?',
-            zu_zahlen = abs(f9.gesamtbetrag),
+            steuer_prozent='?4',
+            zu_zahlen=abs(f9.gesamtbetrag),
 
             zahlungstage=f1.nettotage,
-            zahlungsdatum='?',
+            zahlungsdatum='?3',
 
             skonto_prozent = f1.skonto1,
             skontotage = f1.skontotage1,
             
-            zu_zahlen_bei_skonto='?',
-            
+            zu_zahlen_bei_skonto=abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1),
             valutatage=f1.valutatage,
             valutadatum=f1.valutadatum,
             skontofaehig=f9.skontofaehig,
             steuerpflichtig1=f9.steuerpflichtig1,
-            skontoabzug='?',
-            steuerbetrag1=f9.steuerbetrag1,
+            skontoabzug='?1',
             nettowarenwert1=f9.nettowarenwert1,
             )
         
@@ -129,8 +126,8 @@ class SoftMConverter(object):
             zahlungsdatum=f1.nettodatum,
             skontodatum = f1.skontodatum1,
             skontobetrag = abs(f1.skontobetrag1_ust1),
-            rechnungsbetrag_bei_skonto=f9.skontoabzug,
-            rechung_steueranteil_bei_skonto='?',
+            # rechnungsbetrag_bei_skonto=f9.skontoabzug, # excl. skonto
+            rechung_steueranteil_bei_skonto='?6',
         )
         
         kopf['lieferadresse'] = dict(
@@ -157,6 +154,9 @@ class SoftMConverter(object):
             kopf['transaktionsart'] = 'Gutschrift'
         else:
             raise ValueError("%s: Belegart %s unbekannt" % (rechnungsnr, f1.belegart.lstrip('0')))
+
+        if f1.lieferscheinnr and int(f1.lieferscheinnr):
+            kopf['lieferscheinnr'] = f1.lieferscheinnr
 
         #rec900.steuerpflichtiger_betrag = abs(f9.steuerpflichtig1)
         #rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
@@ -207,13 +207,15 @@ class SoftMConverter(object):
             menge=f3.menge,
             artnr=f3.artnr,
             kundenartnr=f3.artnr_kunde,
-            ean=f3.ean,
             name=f3.artikelbezeichnung.strip(),
             infotext_kunde=' '.join([f3.artnr_kunde.strip(),
                                      f3.artikelbezeichnung_kunde.strip()]).strip(),
             einzelpreis = abs(f3.verkaufspreis),
             positionswert = abs(f3.wert_netto), # - incl rabatte?
         )
+        
+        if f3.ean and int(f3.ean):
+            line['ean']=f3.ean
         
         # FP = positionstext
         # FR = positionsrabatttext
