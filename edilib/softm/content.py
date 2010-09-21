@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # encoding: utf-8
 """
-softm2cctop convert SoftM INVOICE to StratEDI INVOICE records.
+convert SoftM INVOICE to VerySimpleInvoiceProtocol.
 
 Created by Maximillian Dornseif on 2008-10-31.
 Copyright (c) 2008, 2010 HUDORA. All rights reserved.
@@ -15,6 +15,7 @@ import os
 import os.path
 import shutil
 import sys
+
 
 class SoftMConverter(object):
     """Converts SoftM INVOICE files to very Simple Invoice Protocol."""
@@ -32,51 +33,54 @@ class SoftMConverter(object):
         f3 = invoice_records['F3']
         f9 = invoice_records['F9']
 
-        # erfasst_von - Name der Person oder des Prozesses (bei EDI), der den Auftrag in das System eingespeist hat.
+        # erfasst_von - Name der Person oder des Prozesses, der den Auftrag in das System eingespeist hat.
         # F8 = Kontodaten
-
 
 # <Bezogene Rechnungsnummer: 0>
 # <verband: 0>,
 
-# <Skontofähig USt 1: u'000000000053550'>, 
+# <Skontofähig USt 1: u'000000000053550'>,
 # <waehrung: 'EUR'>,
 # <ust1_fuer_skonto: Decimal('19.00')>,
-# <ust2_fuer_skonto: Decimal('0.00')>, 
-# <eigene_iln_beim_kunden: u'4005998000007'>, 
-# <nettodatum: datetime.date(2009, 4, 7)>, 
+# <ust2_fuer_skonto: Decimal('0.00')>,
+# <eigene_iln_beim_kunden: u'4005998000007'>,
+# <nettodatum: datetime.date(2009, 4, 7)>,
 # <liefertermin: datetime.date(2009, 1, 21)>,
-# <skonto1: Decimal('3.00')>, 
+# <skonto1: Decimal('3.00')>,
 # <skontobetrag1_ust1: Decimal('-1.610')>,
-# <steuernummer: u'12657370941'>, 
+# <steuernummer: u'12657370941'>,
 
-# <gesamtbetrag: Decimal('-53.550')>, 
-# <warenwert: Decimal('-45.000')>, 
-# <nettowarenwert1: Decimal('-45.000')>, 
-# <summe_rabatte:Decimal('0.000')>, 
-# <skontofaehig: Decimal('0.000')>, 
-# <summe_zuschlaege: Decimal('0.000')>, 
-# <steuerpflichtig1: Decimal('-45.000')>, 
-# <kopfrabatt1_prozent: Decimal('0.000')>, 
+# <gesamtbetrag: Decimal('-53.550')>,
+# <warenwert: Decimal('-45.000')>,
+# <nettowarenwert1: Decimal('-45.000')>,
+# <summe_rabatte:Decimal('0.000')>,
+# <skontofaehig: Decimal('0.000')>,
+# <summe_zuschlaege: Decimal('0.000')>,
+# <steuerpflichtig1: Decimal('-45.000')>,
+# <kopfrabatt1_prozent: Decimal('0.000')>,
 # <steuerpflichtig USt 2: '000000000000000+'>,
 # <kopfrabatt2_prozent: Decimal('0.000')>,
 # <skontoabzug: Decimal('1.610')>,
-# <kopfrabatt1_vorzeichen: '+'>, 
-# <kopfrabatt2_vorzeichen: '+'>, 
-# <kopfrabatt1: Decimal('0.000')>, 
-# <versandkosten1: Decimal('0.000')>, 
-# <mehrwertsteuer: Decimal('-8.550')>, 
+# <kopfrabatt1_vorzeichen: '+'>,
+# <kopfrabatt2_vorzeichen: '+'>,
+# <kopfrabatt1: Decimal('0.000')>,
+# <versandkosten1: Decimal('0.000')>,
+# <mehrwertsteuer: Decimal('-8.550')>,
 # <kopfrabatt2: Decimal('0.000')>,
-# <steuerbetrag1: Decimal('-8.550')>, 
-# <TxtSlKopfrabatt1: ''>, 
-# <TxtSlKopfrabatt2: ''>, 
+# <steuerbetrag1: Decimal('-8.550')>,
+# <TxtSlKopfrabatt1: ''>,
+# <TxtSlKopfrabatt2: ''>,
 # <KopfrabattUSt1: Decimal('0.000')>>
+
+        kundennr = f1.rechnungsempfaenger
+        if not kundennr.startswith('SC'):
+            kundennr = 'SC%s' % kundennr
 
         rechnungsnr=str(f1.rechnungsnr)
         if not rechnungsnr.startswith('RG'):
             rechnungsnr = 'RG%s' % rechnungsnr
         self.guid = rechnungsnr
-        
+
         kopf = dict(
             guid=self.guid,
             iln=f1.iln_rechnungsempfaenger,
@@ -85,18 +89,19 @@ class SoftMConverter(object):
             name2=fa.rechnung_name2,
             name3=fa.rechnung_name3,
             strasse=fa.rechnung_strasse,
-            land=fa.rechnung_land, 
-            plz=fa.rechnung_plz, 
-            ort=fa.rechnung_ort, 
-            rechnungsnr=str(f1.rechnungsnr),
+            land=fa.rechnung_land,
+            plz=fa.rechnung_plz,
+            ort=fa.rechnung_ort,
+            rechnungsnr=rechnungsnr,
             auftragsnr=f1.auftragsnr,
             kundenauftragsnr=f1.kundenbestellnummer,
             # <kundenbestelldatum: datetime.date(2008, 12, 16)>
             auftragsdatum=f1.auftragsdatum,
             rechnungsdatum=f1.rechnungsdatum,
             leistungsdatum=f1.liefertermin,
-            infotext_kunde=' '.join([f1.eigene_iln_beim_kunden.strip(), f1.lieferantennummer.strip(), f1.ustdid_rechnungsempfaenger.strip(), str(f1.kundenbestelldatum)]), # was ist mit auftragstexten?
-
+            # was ist mit auftragstexten?
+            infotext_kunde=' '.join([f1.eigene_iln_beim_kunden.strip(), f1.lieferantennummer.strip(),
+                                     f1.ustdid_rechnungsempfaenger.strip(), str(f1.kundenbestelldatum)]),
             versandkosten = f9.versandkosten1,
             warenwert = abs(f9.warenwert),
             abschlag_prozent=f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent,
@@ -111,7 +116,7 @@ class SoftMConverter(object):
 
             skonto_prozent = f1.skonto1,
             skontotage = f1.skontotage1,
-            
+
             zu_zahlen_bei_skonto=abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1),
             valutatage=f1.valutatage,
             valutadatum=f1.valutadatum,
@@ -120,7 +125,7 @@ class SoftMConverter(object):
             skontoabzug='?1',
             nettowarenwert1=f9.nettowarenwert1,
             )
-        
+
         kopf['hint'] = dict(
             abschlag=f9.summe_rabatte, # = f9.kopfrabatt1 + f9.kopfrabatt2,
             zahlungsdatum=f1.nettodatum,
@@ -129,7 +134,7 @@ class SoftMConverter(object):
             # rechnungsbetrag_bei_skonto=f9.skontoabzug, # excl. skonto
             rechung_steueranteil_bei_skonto='?6',
         )
-        
+
         kopf['lieferadresse'] = dict(
             kundennr=f2.warenempfaenger,
             iln=f2.liefer_iln,
@@ -165,7 +170,7 @@ class SoftMConverter(object):
         #rec900.zu_und_abschlage = f9.summe_zuschlaege - f9.summe_rabatte + f9.versandkosten1
         #if self.is_credit:
         #    rec900.zu_und_abschlage *= -1
-    
+
 
 
         # FK = versandbedingungen und so
@@ -175,10 +180,10 @@ class SoftMConverter(object):
         for k in ['FK', 'FE', 'FX', 'FV', 'FL', 'FN']:
             if k in invoice_records:
                 zeile = []
-                for i in range(1,9):
-                     text = getattr(invoice_records[k], 'textzeile%d' % i).strip()
-                     if text:
-                         zeile.append(text.strip())
+                for i in range(1, 9):
+                    text = getattr(invoice_records[k], 'textzeile%d' % i).strip()
+                    if text:
+                        zeile.append(text.strip())
                 if zeile:
                     zeilen.append(' '.join(zeile))
         if zeilen:
@@ -213,17 +218,17 @@ class SoftMConverter(object):
             einzelpreis = abs(f3.verkaufspreis),
             positionswert = abs(f3.wert_netto), # - incl rabatte?
         )
-        
+
         if f3.ean and int(f3.ean):
             line['ean']=f3.ean
-        
+
         # FP = positionstext
         # FR = positionsrabatttext
         zeilen = []
         for k in [u'FP', u'FR']:
             if k in position_records.keys():
                 zeile = []
-                for i in range(1,9):
+                for i in range(1, 9):
                     text = getattr(position_records[k], 'textzeile%d' % i).strip()
                     if text:
                         zeilen.append(text)
