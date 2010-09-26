@@ -44,8 +44,6 @@ See docstrings for further explanation.
 
 """
 
-from pkg_resources import require
-require("huTools")
 
 import datetime
 import time

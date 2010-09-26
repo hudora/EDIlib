@@ -14,7 +14,7 @@ import edilib.softm.structure
 import os
 import os.path
 import shutil
-import softm.tools
+import husoftm.tools
 import sys
 
 
@@ -90,7 +90,7 @@ class SoftMConverter(object):
             name2=fa.rechnung_name2,
             name3=fa.rechnung_name3,
             strasse=fa.rechnung_strasse,
-            land=softm.tools.land2iso(fa.rechnung_land),
+            land=husoftm.tools.land2iso(fa.rechnung_land),
             plz=fa.rechnung_plz,
             ort=fa.rechnung_ort,
             rechnungsnr=rechnungsnr,
@@ -145,7 +145,7 @@ class SoftMConverter(object):
             strasse1 = f2.liefer_strasse,
             plz = f2.liefer_plz,
             ort = f2.liefer_ort,
-            land = softm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
+            land = husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
             #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
         )
         if not kopf['lieferadresse']['iln']:
