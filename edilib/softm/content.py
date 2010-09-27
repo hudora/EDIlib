@@ -73,7 +73,7 @@ class SoftMConverter(object):
 # <TxtSlKopfrabatt2: ''>,
 # <KopfrabattUSt1: Decimal('0.000')>>
 
-        kundennr = f1.rechnungsempfaenger
+        kundennr = str(f1.rechnungsempfaenger)
         if not kundennr.startswith('SC'):
             kundennr = 'SC%s' % kundennr
 
@@ -84,8 +84,7 @@ class SoftMConverter(object):
 
         kopf = dict(
             guid=self.guid,
-            iln=f1.iln_rechnungsempfaenger,
-            kundennr=f1.rechnungsempfaenger,
+            kundennr=kundennr,
             name1=fa.rechnung_name1,
             name2=fa.rechnung_name2,
             name3=fa.rechnung_name3,
@@ -101,8 +100,10 @@ class SoftMConverter(object):
             rechnungsdatum=f1.rechnungsdatum,
             leistungsdatum=f1.liefertermin,
             # was ist mit auftragstexten?
-            infotext_kunde=' '.join([f1.eigene_iln_beim_kunden.strip(), f1.lieferantennummer.strip(),
-                                     f1.ustdid_rechnungsempfaenger.strip(), str(f1.kundenbestelldatum)]),
+            infotext_kunde=' '.join([str(x) for x in (f1.eigene_iln_beim_kunden.strip(),
+                                                      f1.lieferantennummer.strip(),
+                                                      f1.ustdid_rechnungsempfaenger.strip(),
+                                                      f1.kundenbestelldatum) if x]),
             versandkosten = f9.versandkosten1,
             warenwert = abs(f9.warenwert),
             abschlag_prozent=f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent,
@@ -138,7 +139,6 @@ class SoftMConverter(object):
 
         kopf['lieferadresse'] = dict(
             kundennr=f2.warenempfaenger,
-            iln=f2.liefer_iln,
             name1 = f2.liefer_name1,
             name2 = f2.liefer_name2,
             name3 = f2.liefer_name3,
@@ -148,10 +148,16 @@ class SoftMConverter(object):
             land = husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
             #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
         )
-        if not kopf['lieferadresse']['iln']:
-            kopf['lieferadresse']['iln'] = f2.iln_warenempfaenger
-        if not kopf['lieferadresse']['iln']:
-            kopf['lieferadresse']['iln'] = f2.f2.besteller_iln
+
+        if f2.liefer_iln and f2.liefer_iln != '0':
+            kopf['lieferadresse']['iln'] = str(f2.liefer_iln)
+        elif f2.iln_warenempfaenger and f2.iln_warenempfaenger != '0':
+            kopf['lieferadresse']['iln'] = str(f2.iln_warenempfaenger)
+        elif f2.besteller_iln and f2.besteller_iln != '0':
+            kopf['lieferadresse']['iln'] = str(f2.besteller_iln)
+
+        if f1.iln_rechnungsempfaenger and f1.iln_rechnungsempfaenger != '0':
+            kopf['iln'] = str(f1.iln_rechnungsempfaenger)
 
         # Gutschrift oder Rechnung?
         if f1.belegart.lstrip('0') in ['380', '84']:
@@ -162,7 +168,7 @@ class SoftMConverter(object):
             raise ValueError("%s: Belegart %s unbekannt" % (rechnungsnr, f1.belegart.lstrip('0')))
 
         if f1.lieferscheinnr and int(f1.lieferscheinnr):
-            kopf['lieferscheinnr'] = f1.lieferscheinnr
+            kopf['lieferscheinnr'] = str(f1.lieferscheinnr)
 
         #rec900.steuerpflichtiger_betrag = abs(f9.steuerpflichtig1)
         #rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
@@ -171,8 +177,6 @@ class SoftMConverter(object):
         #rec900.zu_und_abschlage = f9.summe_zuschlaege - f9.summe_rabatte + f9.versandkosten1
         #if self.is_credit:
         #    rec900.zu_und_abschlage *= -1
-
-
 
         # FK = versandbedingungen und so
         # FX = kopfrabatt
@@ -200,6 +204,10 @@ class SoftMConverter(object):
             print kopf
             raise ValueError("%s ist nicht in EURO - das ist nicht unterstützt" % (rechnungsnr))
 
+        # ungenutzte Felder entfernen
+        for k in kopf.keys():
+            if kopf[k] == '':
+                del kopf[k]
         return kopf
 
     def _convert_invoice_position(self, position_records):
@@ -214,8 +222,8 @@ class SoftMConverter(object):
             artnr=f3.artnr,
             kundenartnr=f3.artnr_kunde,
             name=f3.artikelbezeichnung.strip(),
-            infotext_kunde=' '.join([f3.artnr_kunde.strip(),
-                                     f3.artikelbezeichnung_kunde.strip()]).strip(),
+            infotext_kunde=' '.join([x for x in (f3.artnr_kunde.strip(),
+                                                 f3.artikelbezeichnung_kunde.strip()) if x]),
             einzelpreis = abs(f3.verkaufspreis),
             positionswert = abs(f3.wert_netto), # - incl rabatte?
         )
@@ -241,6 +249,12 @@ class SoftMConverter(object):
         if f3.wert_netto != f3.wert_brutto:
             print line
             raise ValueError("%s hat Positionsrabatt - das ist nicht unterstützt" % (rechnungsnr))
+
+        # ungenutzte Felder entfernen
+        for k in kopf.keys():
+            if line[k] == '':
+                del line[k]
+
         return line
 
     def _convert_invoice(self, softm_record_slice):
