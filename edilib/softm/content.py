@@ -251,7 +251,7 @@ class SoftMConverter(object):
             raise ValueError("%s hat Positionsrabatt - das ist nicht unterstützt" % (rechnungsnr))
 
         # ungenutzte Felder entfernen
-        for k in kopf.keys():
+        for k in line.keys():
             if line[k] == '':
                 del line[k]
 
