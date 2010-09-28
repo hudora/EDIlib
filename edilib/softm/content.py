@@ -134,7 +134,7 @@ class SoftMConverter(object):
             skontodatum = f1.skontodatum1,
             skontobetrag = abs(f1.skontobetrag1_ust1),
             # rechnungsbetrag_bei_skonto=f9.skontoabzug, # excl. skonto
-            rechung_steueranteil_bei_skonto='?6',
+            rechnung_steueranteil_bei_skonto='?6',
         )
 
         kopf['lieferadresse'] = dict(
