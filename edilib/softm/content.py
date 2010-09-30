@@ -110,11 +110,10 @@ class SoftMConverter(object):
             # summe_zuschlaege=f9.summe_zuschlaege,
             rechnungsbetrag='?5',
             rechnung_steuranteil=f9.mehrwertsteuer,
-            steuer_prozent='?4',
+            steuer_prozent='19',
             zu_zahlen=abs(f9.gesamtbetrag),
 
             zahlungstage=f1.nettotage,
-            zahlungsdatum='?3',
 
             skonto_prozent = f1.skonto1,
             skontotage = f1.skontotage1,
@@ -125,7 +124,6 @@ class SoftMConverter(object):
             skontofaehig=f9.skontofaehig,
             steuerpflichtig1=f9.steuerpflichtig1,
             skontoabzug='?1',
-            nettowarenwert1=f9.nettowarenwert1,
             )
 
         kopf['hint'] = dict(
@@ -292,7 +290,7 @@ class SoftMConverter(object):
 
         # now we have to extract the per invoice records from self.softm_record_list
         # every position starts with a F1 record
-        tmp_softm_record_list = copy.deepcopy(self.softm_record_list)
+        tmp_softm_record_list = copy.copy(self.softm_record_list)
 
         # remove everything until we hit the first F1
         while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F1':
