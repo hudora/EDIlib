@@ -115,8 +115,8 @@ class SoftMConverter(object):
 
             zahlungstage=f1.nettotage,
 
-            skonto_prozent = f1.skonto1,
-            skontotage = f1.skontotage1,
+            skonto_prozent=f1.skonto1,
+            skontotage=f1.skontotage1,
 
             zu_zahlen_bei_skonto=abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1),
             valutatage=f1.valutatage,
@@ -129,21 +129,25 @@ class SoftMConverter(object):
         kopf['hint'] = dict(
             abschlag=f9.summe_rabatte, # = f9.kopfrabatt1 + f9.kopfrabatt2,
             zahlungsdatum=f1.nettodatum,
-            skontodatum = f1.skontodatum1,
-            skontobetrag = abs(f1.skontobetrag1_ust1),
+            skontodatum=f1.skontodatum1,
+            skontobetrag=abs(f1.skontobetrag1_ust1),
             # rechnungsbetrag_bei_skonto=f9.skontoabzug, # excl. skonto
             rechnung_steueranteil_bei_skonto='?6',
         )
 
+        warenempfaenger = str(f2.warenempfaenger)
+        if not warenempfaenger.startswith('SC'):
+            warenempfaenger = 'SC%s' % warenempfaenger
+
         kopf['lieferadresse'] = dict(
-            kundennr=f2.warenempfaenger,
-            name1 = f2.liefer_name1,
-            name2 = f2.liefer_name2,
-            name3 = f2.liefer_name3,
-            strasse1 = f2.liefer_strasse,
-            plz = f2.liefer_plz,
-            ort = f2.liefer_ort,
-            land = husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
+            kundennr=warenempfaenger,
+            name1=f2.liefer_name1,
+            name2=f2.liefer_name2,
+            name3=f2.liefer_name3,
+            strasse1=f2.liefer_strasse,
+            plz=f2.liefer_plz,
+            ort=f2.liefer_ort,
+            land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
             #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
         )
 
