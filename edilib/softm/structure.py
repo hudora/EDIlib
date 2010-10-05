@@ -88,7 +88,7 @@ FELDERF1 = [
       doc='ISO Währungsschlüssel'),
  dict(length=5, startpos=291, endpos=295, name='ust1_fuer_skonto', fieldclass=DecimalFieldNoDot, precision=2),
  dict(length=5, startpos=296, endpos=300, name='ust2_fuer_skonto', fieldclass=DecimalFieldNoDot, precision=2),
- dict(length=15, startpos=301, endpos=315, name='Skontofähig USt 1'),
+ dict(length=15, startpos=301, endpos=315, name='skontofaehig_ust1'),
  # FIXME: warum laufen ab hier die Spalten anders als in der SoftM Doku???
  dict(length=1, startpos=316, endpos=316, name='Vorzeichen Skontofähig 1'),
  dict(length=15, startpos=317, endpos=331, name='Skontofähig USt 2'),

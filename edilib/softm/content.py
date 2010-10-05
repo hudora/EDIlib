@@ -49,7 +49,7 @@ class SoftMConverter(object):
 # <liefertermin: datetime.date(2009, 1, 21)>,
 # <skonto1: Decimal('3.00')>,
 # <skontobetrag1_ust1: Decimal('-1.610')>,
-# <steuernummer: u'12657370941'>,
+
 
 # <gesamtbetrag: Decimal('-53.550')>,
 # <warenwert: Decimal('-45.000')>,
@@ -93,46 +93,51 @@ class SoftMConverter(object):
             plz=fa.rechnung_plz,
             ort=fa.rechnung_ort,
             rechnungsnr=rechnungsnr,
-            auftragsnr=f1.auftragsnr,
+            auftragsnr=str(f1.auftragsnr),
             kundenauftragsnr=f1.kundenbestellnummer,
             # <kundenbestelldatum: datetime.date(2008, 12, 16)>
             auftragsdatum=f1.auftragsdatum,
             rechnungsdatum=f1.rechnungsdatum,
             leistungsdatum=f1.liefertermin,
-            # was ist mit auftragstexten?
-            infotext_kunde=' '.join([str(x) for x in (f1.eigene_iln_beim_kunden.strip(),
+            infotext_kunde=' '.join([str(x) for x in (#f1.eigene_iln_beim_kunden.strip(),
                                                       f1.lieferantennummer.strip(),
-                                                      f1.ustdid_rechnungsempfaenger.strip(),
-                                                      f1.kundenbestelldatum) if x]),
-            versandkosten = f9.versandkosten1,
-            warenwert = abs(f9.warenwert),
+                                                      ) if x]),
+            versandkosten = int(f9.versandkosten1*100),
+            warenwert = int(abs(f9.warenwert)*100), # in cent
             abschlag_prozent=f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent,
             # summe_zuschlaege=f9.summe_zuschlaege,
-            rechnungsbetrag='?5',
-            rechnung_steuranteil=f9.mehrwertsteuer,
+            # rechnungsbetrag='?5',
+            rechnung_steuranteil=int(f9.mehrwertsteuer*100),
             steuer_prozent='19',
-            zu_zahlen=abs(f9.gesamtbetrag),
+            zu_zahlen=int(abs(f9.gesamtbetrag)*100), # in cent
 
             zahlungstage=f1.nettotage,
 
             skonto_prozent=f1.skonto1,
             skontotage=f1.skontotage1,
 
-            zu_zahlen_bei_skonto=abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1),
+            zu_zahlen_bei_skonto=int((abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1))*100), # in cent
             valutatage=f1.valutatage,
             valutadatum=f1.valutadatum,
-            skontofaehig=f9.skontofaehig,
-            steuerpflichtig1=f9.steuerpflichtig1,
-            skontoabzug='?1',
+            # debug
+            skontofaehig=int(abs(f9.skontofaehig)*100),  # TODO: in cent?
+            steuerpflichtig1=int(abs(f9.steuerpflichtig1)*100), # TODO: in cent?
+            #skontofaehig=f9.skontofaehig,
+            skontoabzug=f9.skontoabzug,
             )
 
         kopf['hint'] = dict(
-            abschlag=f9.summe_rabatte, # = f9.kopfrabatt1 + f9.kopfrabatt2,
+            abschlag=int(f9.summe_rabatte*100), # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
             zahlungsdatum=f1.nettodatum,
             skontodatum=f1.skontodatum1,
-            skontobetrag=abs(f1.skontobetrag1_ust1),
-            # rechnungsbetrag_bei_skonto=f9.skontoabzug, # excl. skonto
-            rechnung_steueranteil_bei_skonto='?6',
+            skontobetrag=int(abs(f9.skontoabzug)*100),
+            # rechnungsbetrag_bei_skonto=, # excl. skonto
+            rechnung_steueranteil_bei_skonto=kopf['zu_zahlen_bei_skonto']/1.19,
+            steuernr_kunde=' '.join([f1.ustdid_rechnungsempfaenger, f1.steuernummer]).strip(),
+            # debug
+            skontofaehig_ust1=f1.skontofaehig_ust1,
+            skonto1=f1.skonto1,
+            skontobetrag1_ust1=f1.skontobetrag1_ust1,
         )
 
         warenempfaenger = str(f2.warenempfaenger)
@@ -210,6 +215,10 @@ class SoftMConverter(object):
         for k in kopf.keys():
             if kopf[k] == '':
                 del kopf[k]
+        # ungenutzte Felder entfernen
+        for k in kopf['hint'].keys():
+            if kopf['hint'][k] == '':
+                del kopf['hint'][k]
         return kopf
 
     def _convert_invoice_position(self, position_records):
@@ -220,14 +229,15 @@ class SoftMConverter(object):
 
         line = dict(
             guid="%s-%s" % (self.guid, f3.positionsnr),
-            menge=f3.menge,
+            menge=int(f3.menge),
             artnr=f3.artnr,
             kundenartnr=f3.artnr_kunde,
             name=f3.artikelbezeichnung.strip(),
-            infotext_kunde=' '.join([x for x in (f3.artnr_kunde.strip(),
-                                                 f3.artikelbezeichnung_kunde.strip()) if x]),
-            einzelpreis = abs(f3.verkaufspreis),
-            positionswert = abs(f3.wert_netto), # - incl rabatte?
+            infotext_kunde=f3.artikelbezeichnung_kunde.strip(),
+            einzelpreis = int(abs(f3.verkaufspreis)*100),
+            positionswert = int(abs(f3.wert_netto)*100), # - incl rabatte?, in cent
+            # debug:
+            skontierfaehig=f3.skontierfaehig,
         )
 
         if f3.ean and int(f3.ean):
@@ -242,9 +252,9 @@ class SoftMConverter(object):
                 for i in range(1, 9):
                     text = getattr(position_records[k], 'textzeile%d' % i).strip()
                     if text:
-                        zeilen.append(text)
+                        zeile.append(text)
                 if zeile:
-                    zeilen.append(' '.join(zeile))
+                    zeilen.append(' '.join(zeile).strip())
         if zeilen:
             line['infotext_kunde'] = ' '.join([line['infotext_kunde']] + zeilen).strip()
 
@@ -332,7 +342,7 @@ def main():
         converter = SoftMConverter()
         converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
 
-# RG821130 ist nen tolles Beispiel für ne gutschrift
+# RG821130 ist nen tolles Beispiel für ne Gutschrift
 
 if __name__ == '__main__':
     main()
