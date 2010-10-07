@@ -132,7 +132,7 @@ class SoftMConverter(object):
             skontodatum=f1.skontodatum1,
             skontobetrag=int(abs(f9.skontoabzug)*100),
             # rechnungsbetrag_bei_skonto=, # excl. skonto
-            rechnung_steueranteil_bei_skonto=kopf['zu_zahlen_bei_skonto']/1.19,
+            rechnung_steueranteil_bei_skonto=kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19),
             steuernr_kunde=' '.join([f1.ustdid_rechnungsempfaenger, f1.steuernummer]).strip(),
             # debug
             skontofaehig_ust1=f1.skontofaehig_ust1,
@@ -149,7 +149,7 @@ class SoftMConverter(object):
             name1=f2.liefer_name1,
             name2=f2.liefer_name2,
             name3=f2.liefer_name3,
-            strasse1=f2.liefer_strasse,
+            strasse=f2.liefer_strasse,
             plz=f2.liefer_plz,
             ort=f2.liefer_ort,
             land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
