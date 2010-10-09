@@ -25,12 +25,11 @@ class SoftMConverter(object):
         self.softm_record_list = None # whole set of records from SoftM
 
     def _convert_invoice_head(self, invoice_records):
-        """Converts SoftM F1, F2 and varius others."""
+        """Converts SoftM F1 and varius others."""
 
         # needed entries from SoftM
         fa = invoice_records['FA']
         f1 = invoice_records['F1']
-        f2 = invoice_records['F2']
         f3 = invoice_records['F3']
         f9 = invoice_records['F9']
 
@@ -52,7 +51,6 @@ class SoftMConverter(object):
 
 
 # <gesamtbetrag: Decimal('-53.550')>,
-# <warenwert: Decimal('-45.000')>,
 # <nettowarenwert1: Decimal('-45.000')>,
 # <summe_rabatte:Decimal('0.000')>,
 # <skontofaehig: Decimal('0.000')>,
@@ -65,7 +63,6 @@ class SoftMConverter(object):
 # <kopfrabatt1_vorzeichen: '+'>,
 # <kopfrabatt2_vorzeichen: '+'>,
 # <kopfrabatt1: Decimal('0.000')>,
-# <versandkosten1: Decimal('0.000')>,
 # <mehrwertsteuer: Decimal('-8.550')>,
 # <kopfrabatt2: Decimal('0.000')>,
 # <steuerbetrag1: Decimal('-8.550')>,
@@ -83,6 +80,8 @@ class SoftMConverter(object):
         self.guid = rechnungsnr
 
         kopf = dict(
+            # absenderadresse
+            # erfasst_von
             guid=self.guid,
             kundennr=kundennr,
             name1=fa.rechnung_name1,
@@ -106,7 +105,7 @@ class SoftMConverter(object):
             warenwert = int(abs(f9.warenwert)*100), # in cent
             abschlag_prozent=f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent,
             # summe_zuschlaege=f9.summe_zuschlaege,
-            # rechnungsbetrag='?5',
+            # rechnungsbetrag='?5', - Rechnungsbetrag ohne Steuer und Abzüge als String mit zwei Nachkommastellen. Entspricht warenwert - Abschlag
             rechnung_steuranteil=int(f9.mehrwertsteuer*100),
             steuer_prozent='19',
             zu_zahlen=int(abs(f9.gesamtbetrag)*100), # in cent
@@ -133,35 +132,40 @@ class SoftMConverter(object):
             skontobetrag=int(abs(f9.skontoabzug)*100),
             # rechnungsbetrag_bei_skonto=, # excl. skonto
             rechnung_steueranteil_bei_skonto=kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19),
-            steuernr_kunde=' '.join([f1.ustdid_rechnungsempfaenger, f1.steuernummer]).strip(),
             # debug
             skontofaehig_ust1=f1.skontofaehig_ust1,
             skonto1=f1.skonto1,
             skontobetrag1_ust1=f1.skontobetrag1_ust1,
+            steuernr_kunde=str(f1.ustdid_rechnungsempfaenger or f1.steuernummer),
+            steuernr_lieferant='DE123241519', # Hardcoded - Ugs
         )
+            
+        if 'F2' in invoice_records:
+            # manchmal wird KEINE Lieferadresse mitgegeben
+            f2 = invoice_records['F2']
 
-        warenempfaenger = str(f2.warenempfaenger)
-        if not warenempfaenger.startswith('SC'):
-            warenempfaenger = 'SC%s' % warenempfaenger
-
-        kopf['lieferadresse'] = dict(
-            kundennr=warenempfaenger,
-            name1=f2.liefer_name1,
-            name2=f2.liefer_name2,
-            name3=f2.liefer_name3,
-            strasse=f2.liefer_strasse,
-            plz=f2.liefer_plz,
-            ort=f2.liefer_ort,
-            land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
-            #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
-        )
-
-        if f2.liefer_iln and f2.liefer_iln != '0':
-            kopf['lieferadresse']['iln'] = str(f2.liefer_iln)
-        elif f2.iln_warenempfaenger and f2.iln_warenempfaenger != '0':
-            kopf['lieferadresse']['iln'] = str(f2.iln_warenempfaenger)
-        elif f2.besteller_iln and f2.besteller_iln != '0':
-            kopf['lieferadresse']['iln'] = str(f2.besteller_iln)
+            warenempfaenger = str(f2.warenempfaenger)
+            if not warenempfaenger.startswith('SC'):
+                warenempfaenger = 'SC%s' % warenempfaenger
+            
+            kopf['lieferadresse'] = dict(
+                kundennr=warenempfaenger,
+                name1=f2.liefer_name1,
+                name2=f2.liefer_name2,
+                name3=f2.liefer_name3,
+                strasse=f2.liefer_strasse,
+                plz=f2.liefer_plz,
+                ort=f2.liefer_ort,
+                land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
+                #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
+            )
+            
+            if f2.liefer_iln and f2.liefer_iln != '0':
+                kopf['lieferadresse']['iln'] = str(f2.liefer_iln)
+            elif f2.iln_warenempfaenger and f2.iln_warenempfaenger != '0':
+                kopf['lieferadresse']['iln'] = str(f2.iln_warenempfaenger)
+            elif f2.besteller_iln and f2.besteller_iln != '0':
+                kopf['lieferadresse']['iln'] = str(f2.besteller_iln)
 
         if f1.iln_rechnungsempfaenger and f1.iln_rechnungsempfaenger != '0':
             kopf['iln'] = str(f1.iln_rechnungsempfaenger)
@@ -233,20 +237,41 @@ class SoftMConverter(object):
             artnr=f3.artnr,
             kundenartnr=f3.artnr_kunde,
             name=f3.artikelbezeichnung.strip(),
-            infotext_kunde=f3.artikelbezeichnung_kunde.strip(),
-            einzelpreis = int(abs(f3.verkaufspreis)*100),
-            positionswert = int(abs(f3.wert_netto)*100), # - incl rabatte?, in cent
-            # debug:
-            skontierfaehig=f3.skontierfaehig,
+            infotext_kunde=[f3.artikelbezeichnung_kunde],
+            einzelpreis=int(abs(f3.verkaufspreis)*100),
+            warenwert=int(abs(f3.wert_netto)*100),
+            zu_zahlen=int(abs(f3.wert_brutto)*100),
+            abschlag=int(f4.positionsrabatt_gesamt*100)
         )
 
         if f3.ean and int(f3.ean):
             line['ean']=f3.ean
 
-        # FP = positionstext
+        if f4.textschluessel3:
+            raise ValueError("%s hat mehr als 2 Positionsrabatte - das ist nicht unterstützt" % (rechnungsnr))
+
+        rabattep = {} # %
+        rabatteb = {} # Betraege
+        rabattet = {} # Texte
+        texte = []
         # FR = positionsrabatttext
+        for i in range(1,9):
+            if 'FR' in position_records.keys():
+                rabattet[i] = getattr(position_records['FR'], 'textzeile%d' % i).strip()
+            if getattr(f4, 'rabattkennzeichen%d' % i) == '0':
+                rabattep[i] = getattr(f4, 'positionsrabatt%dp' % i)
+                if rabattep[i]:
+                    line['infotext_kunde'].append("%s: %s %%" % (rabattet[i], rabattep[i]))
+            elif getattr(f4, 'rabattkennzeichen%d' % i) == '1':
+                rabatteb[i] = getattr(f4, 'rabattbetrag%d' % i)
+                if rabatteb[i]:
+                    line['infotext_kunde'].append("%s: %.2f E" % (rabattet[i], float(str(rabatteb[i]))))
+            else:
+                raise ValueError("%s hat nicht unterstütztes Rabattkennzeichen" % (rechnungsnr))
+
+        # FP = positionstext
         zeilen = []
-        for k in [u'FP', u'FR']:
+        for k in [u'FP']:
             if k in position_records.keys():
                 zeile = []
                 for i in range(1, 9):
@@ -254,13 +279,9 @@ class SoftMConverter(object):
                     if text:
                         zeile.append(text)
                 if zeile:
-                    zeilen.append(' '.join(zeile).strip())
-        if zeilen:
-            line['infotext_kunde'] = ' '.join([line['infotext_kunde']] + zeilen).strip()
+                    line['infotext_kunde'].append(' '.join(zeile).strip())
 
-        if f3.wert_netto != f3.wert_brutto:
-            print line
-            raise ValueError("%s hat Positionsrabatt - das ist nicht unterstützt" % (rechnungsnr))
+        line['infotext_kunde'] = ', '.join([x for x in line['infotext_kunde'] if x])
 
         # ungenutzte Felder entfernen
         for k in line.keys():
@@ -334,13 +355,13 @@ class SoftMConverter(object):
 
 def main():
     converter = SoftMConverter()
-    converter.convert('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/RG00994.TXT')
-    for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
-        if not f.startswith('RG'):
-            continue
-        # print f, os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f)
-        converter = SoftMConverter()
-        converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
+    print converter.convert(open('/Users/md/Downloads/RG01112-3.TXT.rdp').read())
+    #for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
+    #    if not f.startswith('RG'):
+    #        continue
+    #    # print f, os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f)
+    #    converter = SoftMConverter()
+    #    converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
 
 # RG821130 ist nen tolles Beispiel für ne Gutschrift
 

@@ -268,67 +268,68 @@ F3satzklasse = generate_field_datensatz_class(FELDERF3, name='F3positionsdaten',
 
 doctext = 'Rechnungs-Position Rabatte (XOO00EF4)'
 FELDERF4 = [
+    # Seems the SoftM doku is off by one here
  dict(length=5, startpos=1, endpos=5, name='Position'),
- dict(length=15, startpos=6, endpos=20, name='positionsrabatt_gesamt',
+ dict(length=16, startpos=6, endpos=21, name='positionsrabatt_gesamt',
+      fieldclass=DecimalFieldNoDotSigned, precision=3),
+ dict(length=15, startpos=22, endpos=36, name='positionsrabatt1p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=15, startpos=21, endpos=35, name='Positionsrabatt 1 in %',
+ dict(length=1,  startpos=37, endpos=37, name='rabattkennzeichen1'),
+  # 0 = Rabatt in Prozent
+  # 1 = Rabatt als Betrag
+ dict(length=16, startpos=38, endpos=53, name='rabattbetrag1', fieldclass=DecimalFieldNoDotSigned, precision=3),
+# dict(length=3, startpos=54, endpos=56, name='TxtSl Rabatt 1'),
+ dict(length=15, startpos=57, endpos=71, name='positionsrabatt2p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=36, endpos=36, name='Rabattkennzeichen 1'),
- dict(length=15, startpos=37, endpos=51, name='Rabattbetrag 1'), #, fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=52, endpos=52, name='Vorzeichen Rabatt 1'),
- dict(length=3, startpos=53, endpos=55, name='TxtSl Rabatt 1'),
- dict(length=15, startpos=56, endpos=70, name='Positionsrabatt 2 in %',
+ dict(length=1, startpos=72, endpos=72, name='rabattkennzeichen2'),
+ dict(length=16, startpos=73, endpos=88, name='rabattbetrag2', fieldclass=DecimalFieldNoDotSigned, precision=3),
+# dict(length=3, startpos=89, endpos=91, name='TxtSl Rabatt 2'),
+ dict(length=15, startpos=92, endpos=106, name='positionsrabatt3p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=71, endpos=71, name='Rabattkennzeichen 2'),
- dict(length=15, startpos=72, endpos=86, name='Rabattbetrag 2', fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=87, endpos=87, name='Vorzeichen Rabatt 2'),
- dict(length=3, startpos=88, endpos=90, name='TxtSl Rabatt 2'),
- dict(length=15, startpos=91, endpos=105, name='Positionsrabatt 3 in %',
+ dict(length=1, startpos=107, endpos=107, name='rabattkennzeichen3'),
+ dict(length=15, startpos=108, endpos=122, name='Rabattbetrag 3',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=106, endpos=106, name='Rabattkennzeichen 3'),
- dict(length=15, startpos=107, endpos=121, name='Rabattbetrag 3',
+ dict(length=1, startpos=123, endpos=123, name='Vorzeichen Rabatt 3'),
+ dict(length=3, startpos=124, endpos=126, name='textschluessel3'),
+ dict(length=15, startpos=127, endpos=141, name='positionsrabatt4p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=122, endpos=122, name='Vorzeichen Rabatt 3'),
- dict(length=3, startpos=123, endpos=125, name='TxtSl Rabatt 3'),
- dict(length=15, startpos=126, endpos=140, name='Positionsrabatt 4 in %',
+ dict(length=1, startpos=142, endpos=142, name='rabattkennzeichen4'),
+ dict(length=15, startpos=143, endpos=157, name='Rabattbetrag 4',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=141, endpos=141, name='Rabattkennzeichen 4'),
- dict(length=15, startpos=142, endpos=156, name='Rabattbetrag 4',
+ dict(length=1, startpos=158, endpos=158, name='Vorzeichen Rabatt 4'),
+ dict(length=3, startpos=159, endpos=161, name='TxtSl Rabatt 4'),
+ dict(length=15, startpos=162, endpos=176, name='positionsrabatt5p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=157, endpos=157, name='Vorzeichen Rabatt 4'),
- dict(length=3, startpos=158, endpos=160, name='TxtSl Rabatt 4'),
- dict(length=15, startpos=161, endpos=175, name='Positionsrabatt 5 in %',
+ dict(length=1, startpos=177, endpos=177, name='rabattkennzeichen5'),
+ dict(length=15, startpos=178, endpos=192, name='Rabattbetrag 5',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=176, endpos=176, name='Rabattkennzeichen 5'),
- dict(length=15, startpos=177, endpos=191, name='Rabattbetrag 5',
+ dict(length=1, startpos=193, endpos=193, name='Vorzeichen Rabatt 5'),
+ dict(length=3, startpos=194, endpos=196, name='TxtSl Rabatt 5'),
+ dict(length=15, startpos=197, endpos=211, name='positionsrabatt6p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=192, endpos=192, name='Vorzeichen Rabatt 5'),
- dict(length=3, startpos=193, endpos=195, name='TxtSl Rabatt 5'),
- dict(length=15, startpos=196, endpos=210, name='Positionsrabatt 6 in %',
+ dict(length=1, startpos=212, endpos=212, name='rabattkennzeichen6'),
+ dict(length=15, startpos=213, endpos=227, name='Rabattbetrag 6',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=211, endpos=211, name='Rabattkennzeichen 6'),
- dict(length=15, startpos=212, endpos=226, name='Rabattbetrag 6',
+ dict(length=1, startpos=228, endpos=228, name='Vorzeichen Rabatt 6'),
+ dict(length=3, startpos=229, endpos=231, name='TxtSl Rabatt 6'),
+ dict(length=15, startpos=232, endpos=246, name='positionsrabatt7p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=227, endpos=227, name='Vorzeichen Rabatt 6'),
- dict(length=3, startpos=228, endpos=230, name='TxtSl Rabatt 6'),
- dict(length=15, startpos=231, endpos=245, name='Positionsrabatt 7 in %',
+ dict(length=1, startpos=247, endpos=247, name='rabattkennzeichen7'),
+ dict(length=15, startpos=248, endpos=262, name='Rabattbetrag 7',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=246, endpos=246, name='Rabattkennzeichen 7'),
- dict(length=15, startpos=247, endpos=261, name='Rabattbetrag 7',
+ dict(length=1, startpos=263, endpos=263, name='Vorzeichen Rabatt 7'),
+ dict(length=3, startpos=264, endpos=266, name='TxtSl Rabatt 7'),
+ dict(length=15, startpos=267, endpos=281, name='positionsrabatt8p',
       fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=262, endpos=262, name='Vorzeichen Rabatt 7'),
- dict(length=3, startpos=263, endpos=265, name='TxtSl Rabatt 7'),
- dict(length=15, startpos=266, endpos=280, name='Positionsrabatt 8 in %',
-      fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=281, endpos=281, name='Rabattkennzeichen 8'),
- dict(length=15, startpos=282, endpos=296, name='Rabattbetrag 8', fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=1, startpos=297, endpos=297, name='Vorzeichen Rabatt 8'),
- dict(length=3, startpos=298, endpos=300, name='TxtSl Rabatt 8'),
- dict(length=35, startpos=301, endpos=335, name='Gebinde'),
- dict(length=35, startpos=336, endpos=370, name='Gebindebezeichnung'),
- dict(length=5, startpos=371, endpos=375, name='Gebindeanzahl Rechnung'),
- dict(length=15, startpos=376, endpos=390, name='Volumen', fieldclass=DecimalFieldNoDot, precision=5),
- dict(length=105, startpos=391, endpos=495, name='ReserveX5'),
+ dict(length=1, startpos=282, endpos=282, name='rabattkennzeichen8'),
+ dict(length=15, startpos=283, endpos=297, name='Rabattbetrag 8', fieldclass=DecimalFieldNoDot, precision=3),
+ dict(length=1, startpos=298, endpos=298, name='Vorzeichen Rabatt 8'),
+ dict(length=3, startpos=299, endpos=301, name='TxtSl Rabatt 8'),
+ dict(length=35, startpos=302, endpos=336, name='Gebinde'),
+ dict(length=35, startpos=337, endpos=371, name='Gebindebezeichnung'),
+ dict(length=5, startpos=372, endpos=376, name='Gebindeanzahl Rechnung'),
+ dict(length=15, startpos=377, endpos=391, name='Volumen', fieldclass=DecimalFieldNoDot, precision=5),
+ dict(length=104, startpos=392, endpos=495, name='ReserveX5'),
  dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
 ]
 # fix difference in array counting between SoftM and Python
@@ -604,8 +605,9 @@ def parse_to_objects(lines):
         # FN Nebenkosten
         )
     ret = []
-    for lineno, rawline in enumerate(lines):
-        lineno += 1 # in python 2.6 use enumerate(lines, start=1):
+    lineno = 0
+    for rawline in lines:
+        lineno += 1
 
         # remove newline & EOF
         line = rawline.rstrip('\r\n').strip(' \x1a')
@@ -626,9 +628,9 @@ def parse_to_objects(lines):
             satz.parse(data)
             ret.append((satzart, satz, ))
         else:
-            print "Zeile:", lineno + ":", repr(satzart), repr(version), repr(erstellungsdatum),
+            print "Zeile %s:" %  lineno, repr(satzart), repr(version), repr(erstellungsdatum),
             print len(line), len(data)
             print "unbekannter Satz:", satzart, version
             print repr(rawline)
-            raise "unbekannter Satz: %s %s" % (str(satzart), str(version), )
+            raise RuntimeError("unbekannter Satz: %r %r" % (str(satzart), str(version)))
     return ret
