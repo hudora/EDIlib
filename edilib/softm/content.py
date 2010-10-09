@@ -270,7 +270,6 @@ class SoftMConverter(object):
                 raise ValueError("%s hat nicht unterstütztes Rabattkennzeichen" % (rechnungsnr))
 
         # FP = positionstext
-        zeilen = []
         for k in [u'FP']:
             if k in position_records.keys():
                 zeile = []
