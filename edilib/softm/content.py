@@ -3,6 +3,10 @@
 """
 convert SoftM INVOICE to VerySimpleInvoiceProtocol.
 
+Leider wird die EDI-Invoice Schnittstelle von SoftM nur unvollständig versorgt. So fehlen bei Auftraägen mit
+abweichender Lieferadresse nicht nur die Lieferadresse, sondern auch die Auftragsnummer und das
+Leistungsdatum.
+
 Created by Maximillian Dornseif on 2008-10-31.
 Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 """
@@ -112,34 +116,38 @@ class SoftMConverter(object):
 
             zahlungstage=f1.nettotage,
 
-            skonto_prozent=f1.skonto1,
-            skontotage=f1.skontotage1,
 
-            zu_zahlen_bei_skonto=int((abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1))*100), # in cent
-            valutatage=f1.valutatage,
-            valutadatum=f1.valutadatum,
             # debug
-            skontofaehig=int(abs(f9.skontofaehig)*100),  # TODO: in cent?
-            steuerpflichtig1=int(abs(f9.steuerpflichtig1)*100), # TODO: in cent?
-            #skontofaehig=f9.skontofaehig,
-            skontoabzug=f9.skontoabzug,
+            #skontofaehig=int(abs(f9.skontofaehig)*100),  # TODO: in cent?
+            #steuerpflichtig1=int(abs(f9.steuerpflichtig1)*100), # TODO: in cent?
+            #skontoabzug=f9.skontoabzug,
             )
+
+        if f1.valutatage:
+            kopf['valutatage'] = f1.valutatage,
+            kopf['valutadatum'] = f1.valutadatum
 
         kopf['hint'] = dict(
             abschlag=int(f9.summe_rabatte*100), # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
             zahlungsdatum=f1.nettodatum,
-            skontodatum=f1.skontodatum1,
-            skontobetrag=int(abs(f9.skontoabzug)*100),
             # rechnungsbetrag_bei_skonto=, # excl. skonto
-            rechnung_steueranteil_bei_skonto=kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19),
             # debug
-            skontofaehig_ust1=f1.skontofaehig_ust1,
-            skonto1=f1.skonto1,
-            skontobetrag1_ust1=f1.skontobetrag1_ust1,
+            #skontofaehig_ust1=f1.skontofaehig_ust1,
+            #skonto1=f1.skonto1,
+            #skontobetrag1_ust1=f1.skontobetrag1_ust1,
             steuernr_kunde=str(f1.ustdid_rechnungsempfaenger or f1.steuernummer),
-            steuernr_lieferant='DE123241519', # Hardcoded - Ugs
+            steuernr_lieferant=f1.ustdid_absender
         )
             
+        if f1.skontotage1:
+            kopf['skontotage'] = f1.skontotage1
+            kopf['skonto_prozent'] = f1.skonto1
+            # in cent
+            kopf['zu_zahlen_bei_skonto'] = int((abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1))*100)
+            kopf['hint']['skontodatum'] = f1.skontodatum1
+            kopf['hint']['skontobetrag'] = int(abs(f9.skontoabzug)*100)
+            kopf['hint']['rechnung_steueranteil_bei_skonto'] = kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19)
+
         if 'F2' in invoice_records:
             # manchmal wird KEINE Lieferadresse mitgegeben
             f2 = invoice_records['F2']
