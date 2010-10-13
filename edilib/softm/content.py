@@ -14,6 +14,7 @@ Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 from decimal import Decimal
 import codecs
 import copy
+import datetime
 import edilib.softm.structure
 import os
 import os.path
@@ -55,7 +56,6 @@ class SoftMConverter(object):
 
 
 # <gesamtbetrag: Decimal('-53.550')>,
-# <nettowarenwert1: Decimal('-45.000')>,
 # <summe_rabatte:Decimal('0.000')>,
 # <skontofaehig: Decimal('0.000')>,
 # <summe_zuschlaege: Decimal('0.000')>,
@@ -69,7 +69,6 @@ class SoftMConverter(object):
 # <kopfrabatt1: Decimal('0.000')>,
 # <mehrwertsteuer: Decimal('-8.550')>,
 # <kopfrabatt2: Decimal('0.000')>,
-# <steuerbetrag1: Decimal('-8.550')>,
 # <TxtSlKopfrabatt1: ''>,
 # <TxtSlKopfrabatt2: ''>,
 # <KopfrabattUSt1: Decimal('0.000')>>
@@ -107,28 +106,24 @@ class SoftMConverter(object):
                                                       ) if x]),
             versandkosten = int(f9.versandkosten1*100),
             warenwert = int(abs(f9.warenwert)*100), # in cent
-            abschlag_prozent=f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent,
+
             # summe_zuschlaege=f9.summe_zuschlaege,
             # rechnungsbetrag='?5', - Rechnungsbetrag ohne Steuer und Abzüge als String mit zwei Nachkommastellen. Entspricht warenwert - Abschlag
             rechnung_steuranteil=int(f9.mehrwertsteuer*100),
-            steuer_prozent='19',
-            zu_zahlen=int(abs(f9.gesamtbetrag)*100), # in cent
+            steuer_prozent="19",
+            # Der Betrag, denn der Kund eZahlen muss - es sei denn, er zieht Skonto
+            zu_zahlen=int(f9.gesamtbetrag*100), # in cent
+            # Rechnungsbetrag ohne Steuer und Abz<C3><BC>ge als String mit zwei Nachkommastellen.
+            # Entspricht warenwert - abschlag oder zu_zahlen - rechnung_steuranteil
+            rechnungsbetrag=int((f9.gesamtbetrag-f9.mehrwertsteuer)*100),
 
             zahlungstage=f1.nettotage,
-
-
-            # debug
             #skontofaehig=int(abs(f9.skontofaehig)*100),  # TODO: in cent?
             #steuerpflichtig1=int(abs(f9.steuerpflichtig1)*100), # TODO: in cent?
             #skontoabzug=f9.skontoabzug,
             )
 
-        if f1.valutatage:
-            kopf['valutatage'] = f1.valutatage,
-            kopf['valutadatum'] = f1.valutadatum
-
         kopf['hint'] = dict(
-            abschlag=int(f9.summe_rabatte*100), # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
             zahlungsdatum=f1.nettodatum,
             # rechnungsbetrag_bei_skonto=, # excl. skonto
             # debug
@@ -136,14 +131,31 @@ class SoftMConverter(object):
             #skonto1=f1.skonto1,
             #skontobetrag1_ust1=f1.skontobetrag1_ust1,
             steuernr_kunde=str(f1.ustdid_rechnungsempfaenger or f1.steuernummer),
-            steuernr_lieferant=f1.ustdid_absender
+            steuernr_lieferant=str(f1.ustdid_absender),
         )
-            
+
+        if f1.valutatage:
+            kopf['valutatage'] = f1.valutatage,
+            kopf['valutadatum'] = f1.valutadatum
+
+        if f9.summe_rabatte:
+            text1 = f9.kopfrabatt1_text
+            if f9.kopfrabatt1_prozent:
+                text1 = "%s (%s %%)" % (text1, f9.kopfrabatt1_prozent)
+            text2 = f9.kopfrabatt2_text
+            if f9.kopfrabatt2_prozent:
+                text2 = "%s (%s %%)" % (text2, f9.kopfrabatt2_prozent)
+            kopf['abschlag_text'] = ', '.join([text1, text2])
+            kopf['abschlag'] = int(f9.summe_rabatte*100), # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
+            kopf['hint']['abschlag_prozent']="%.2f" % float(str(f9.kopfrabatt1_prozent+f9.kopfrabatt2_prozent)),
+            # 'kopfrabatt1_vorzeichen', fieldclass=FixedField, default='+'),
+            # 'kopfrabatt2_vorzeichen', fieldclass=FixedField, default='+'),
+
         if f1.skontotage1:
             kopf['skontotage'] = f1.skontotage1
             kopf['skonto_prozent'] = f1.skonto1
             # in cent
-            kopf['zu_zahlen_bei_skonto'] = int((abs(f9.gesamtbetrag)-abs(f1.skontobetrag1_ust1))*100)
+            kopf['zu_zahlen_bei_skonto'] = int((f9.gesamtbetrag-f1.skontobetrag1_ust1)*100)
             kopf['hint']['skontodatum'] = f1.skontodatum1
             kopf['hint']['skontobetrag'] = int(abs(f9.skontoabzug)*100)
             kopf['hint']['rechnung_steueranteil_bei_skonto'] = kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19)
@@ -192,10 +204,6 @@ class SoftMConverter(object):
         #rec900.steuerpflichtiger_betrag = abs(f9.steuerpflichtig1)
         #rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
         #rec900.skontofaehiger_betrag = abs(f9.skontofaehig)
-        #rec900.zu_und_abschlage = -1 * f9.summe_rabatte
-        #rec900.zu_und_abschlage = f9.summe_zuschlaege - f9.summe_rabatte + f9.versandkosten1
-        #if self.is_credit:
-        #    rec900.zu_und_abschlage *= -1
 
         # FK = versandbedingungen und so
         # FX = kopfrabatt
@@ -231,6 +239,7 @@ class SoftMConverter(object):
         for k in kopf['hint'].keys():
             if kopf['hint'][k] == '':
                 del kopf['hint'][k]
+        kopf['_parsed_at'] = datetime.datetime.now()
         return kopf
 
     def _convert_invoice_position(self, position_records):
@@ -246,10 +255,10 @@ class SoftMConverter(object):
             kundenartnr=f3.artnr_kunde,
             name=f3.artikelbezeichnung.strip(),
             infotext_kunde=[f3.artikelbezeichnung_kunde],
-            einzelpreis=int(abs(f3.verkaufspreis)*100),
-            warenwert=int(abs(f3.wert_netto)*100),
-            zu_zahlen=int(abs(f3.wert_brutto)*100),
-            abschlag=int(f4.positionsrabatt_gesamt*100)
+            einzelpreis=int(f3.verkaufspreis*100),
+            warenwert=int(f3.wert_netto*100),
+            zu_zahlen=int(f3.wert_brutto*100),
+            abschlag=-1*int(f4.positionsrabatt_gesamt*100)
         )
 
         if f3.ean and int(f3.ean):
@@ -261,7 +270,7 @@ class SoftMConverter(object):
         rabattep = {} # %
         rabatteb = {} # Betraege
         rabattet = {} # Texte
-        texte = []
+        abschlagtext = []
         # FR = positionsrabatttext
         for i in range(1,9):
             if 'FR' in position_records.keys():
@@ -269,13 +278,14 @@ class SoftMConverter(object):
             if getattr(f4, 'rabattkennzeichen%d' % i) == '0':
                 rabattep[i] = getattr(f4, 'positionsrabatt%dp' % i)
                 if rabattep[i]:
-                    line['infotext_kunde'].append("%s: %s %%" % (rabattet[i], rabattep[i]))
+                     abschlagtext.append("%s: %s %%" % (rabattet[i], rabattep[i]))
             elif getattr(f4, 'rabattkennzeichen%d' % i) == '1':
                 rabatteb[i] = getattr(f4, 'rabattbetrag%d' % i)
                 if rabatteb[i]:
-                    line['infotext_kunde'].append("%s: %.2f E" % (rabattet[i], float(str(rabatteb[i]))))
+                    abschlagtext.append("%s: %.2f Euro" % (rabattet[i], -1 * float(str(rabatteb[i]))))
             else:
                 raise ValueError("%s hat nicht unterstütztes Rabattkennzeichen" % (rechnungsnr))
+        line['abschlagtext'] = ', '.join(abschlagtext)
 
         # FP = positionstext
         for k in [u'FP']:

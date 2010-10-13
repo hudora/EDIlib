@@ -399,8 +399,8 @@ FELDERF9 = [
  #     1  0     Vorzeichen Kopfrabatt 2
  dict(length=15, startpos=347, endpos=361, name='kopfrabatt1', fieldclass=DecimalFieldNoDot, precision=3),
  dict(length=15, startpos=362, endpos=376, name='kopfrabatt2', fieldclass=DecimalFieldNoDot, precision=3),
- dict(length=3, startpos=377, endpos=379, name='TxtSlKopfrabatt1'),
- dict(length=3, startpos=380, endpos=382, name='TxtSlKopfrabatt2'),
+ dict(length=3, startpos=377, endpos=379, name='kopfrabatt1_text'),
+ dict(length=3, startpos=380, endpos=382, name='kopfrabatt2_text'),
  dict(length=16, startpos=383, endpos=398, name='KopfrabattUSt1',
       fieldclass=DecimalFieldNoDotSigned, precision=3),
  dict(length=16, startpos=399, endpos=414, name='KopfrabattUSt2',
