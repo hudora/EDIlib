@@ -253,7 +253,7 @@ class IntegerField(Field):
         try:
             return int(data.strip())
         except ValueError, msg:
-            raise InvalidData(msg)
+            raise InvalidData("%s: %s" % (self.name, msg))
 
 
 class IntegerFieldZeropadded(IntegerField):
@@ -392,10 +392,15 @@ class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
         data = "%s.%s" % (data[:-(self.precision+1)], data[-(self.precision+1):-1])
 
         if data:
-            if sign == '-':
-                self.set(Decimal(data.strip()) * -1)
-            else:
-                self.set(Decimal(data.strip()))
+            try:
+                if sign == '-':
+                    self.set(Decimal(data.strip()) * -1)
+                elif sign in ['+', ' ']:
+                    self.set(Decimal(data.strip()))
+                else:
+                    raise InvalidData("%s: sign %r in %r is not allowed" % (self.name, sign, data))
+            except Exception, msg:
+                raise InvalidData("%s: %s" % (self.name, msg))
 
 
 class DateField(Field):
