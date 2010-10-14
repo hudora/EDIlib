@@ -158,7 +158,7 @@ class SoftMConverter(object):
             kopf['zu_zahlen_bei_skonto'] = int((f9.gesamtbetrag-f1.skontobetrag1_ust1)*100)
             kopf['hint']['skontodatum'] = f1.skontodatum1
             kopf['hint']['skontobetrag'] = int(abs(f9.skontoabzug)*100)
-            kopf['hint']['rechnung_steueranteil_bei_skonto'] = kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19)
+            kopf['hint']['steueranteil_bei_skonto'] = kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19)
 
         if 'F2' in invoice_records:
             # manchmal wird KEINE Lieferadresse mitgegeben
