@@ -139,15 +139,15 @@ class SoftMConverter(object):
             kopf['valutadatum'] = f1.valutadatum
 
         if f9.summe_rabatte:
-            text1 = f9.kopfrabatt1_text
-            if f9.kopfrabatt1_prozent:
+            text1 = f9.kopfrabatt1_text.strip()
+            if text1 and f9.kopfrabatt1_prozent:
                 text1 = "%s (%s %%)" % (text1, f9.kopfrabatt1_prozent)
-            text2 = f9.kopfrabatt2_text
-            if f9.kopfrabatt2_prozent:
+            text2 = f9.kopfrabatt2_text.strip()
+            if text2 and f9.kopfrabatt2_prozent:
                 text2 = "%s (%s %%)" % (text2, f9.kopfrabatt2_prozent)
             kopf['abschlag_text'] = ', '.join([text1, text2])
-            kopf['abschlag'] = int(f9.summe_rabatte*100), # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
-            kopf['hint']['abschlag_prozent']="%.2f" % float(str(f9.kopfrabatt1_prozent+f9.kopfrabatt2_prozent)),
+            kopf['abschlag'] = int(f9.summe_rabatte*100) # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
+            kopf['hint']['abschlag_prozent'] = "%.2f" % float(str(f9.kopfrabatt1_prozent+f9.kopfrabatt2_prozent))
             # 'kopfrabatt1_vorzeichen', fieldclass=FixedField, default='+'),
             # 'kopfrabatt2_vorzeichen', fieldclass=FixedField, default='+'),
 
