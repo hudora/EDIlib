@@ -145,7 +145,7 @@ class SoftMConverter(object):
             text2 = f9.kopfrabatt2_text.strip()
             if text2 and f9.kopfrabatt2_prozent:
                 text2 = "%s (%s %%)" % (text2, f9.kopfrabatt2_prozent)
-            kopf['abschlag_text'] = ', '.join([text1, text2])
+            kopf['abschlag_text'] = ', '.join([x for x in [text1, text2] if x])
             kopf['abschlag'] = int(f9.summe_rabatte*100) # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
             kopf['hint']['abschlag_prozent'] = "%.2f" % float(str(f9.kopfrabatt1_prozent+f9.kopfrabatt2_prozent))
             # 'kopfrabatt1_vorzeichen', fieldclass=FixedField, default='+'),
