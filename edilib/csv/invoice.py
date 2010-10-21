@@ -10,7 +10,7 @@ from cStringIO import StringIO
 import csv
 
 
-def export_csv(invoice):
+def export_csv(invoice, delimiter=';'):
     """Exportiere Rechnung im SimpleInvoiceProtocol als CSV"""
     
     def create_row(recordtype, obj):
@@ -41,8 +41,12 @@ def export_csv(invoice):
                 objname, attr = attr.split('/')
                 obj = obj.get(objname, {})
             
-            value = unicode(obj.get(attr, ''))
-            row.append(value.encode('iso8859-1'))
+            try:
+                value = obj.get(attr, '')
+                value = unicode(value).encode('iso8859-1')
+            except UnicodeDecodeError, exception:
+                raise RuntimeError(u"Error in Record %s, field %s: %s" % (recordtype, attr, str(exception)))
+            row.append(value)
         
         return row
     
@@ -50,7 +54,7 @@ def export_csv(invoice):
     guid = invoice.get('guid', '').encode('iso8859-1')
     
     fileobj = StringIO()
-    writer = csv.writer(fileobj, dialect='excel')
+    writer = csv.writer(fileobj, delimiter=delimiter)
     
     # Schreibe Satz (L)ieferant
     writer.writerow(create_row('L', invoice))
