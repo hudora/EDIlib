@@ -138,7 +138,7 @@ def invoice_to_INVOICD09A(invoice):
         p.append("QTY+47:%(menge)s:'" % od)
         p.append("DTM+35:%(leistungsdatum)s:102'" % param)
         if 'abschlag' in od and od['abschlag']:
-            k.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % od)
+            p.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % od)
         p.append("MOA+77:%(zu_zahlen)s'" % od) # - Rechnungsbetrag (Gesamtpositionsbetrag zuzüglich Zuschläge und MWSt, abzüglich Abschläge) (DE5025 = 77); Mussfeld 77     Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
         p.append("MOA+66:%(warenwert)s'" % od) # 66 Goods item total Net price x quantity for the line item.
         # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
