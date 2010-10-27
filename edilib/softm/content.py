@@ -82,6 +82,10 @@ class SoftMConverter(object):
             rechnungsnr = 'RG%s' % rechnungsnr
         self.guid = rechnungsnr
 
+        auftragsnr = str(f1.auftragsnr)
+        if auftragsnr and not auftragsnr.startswith('SO'):
+            auftragsnr = 'SO%s' % auftragsnr.lstrip('SO')
+
         kopf = dict(
             # absenderadresse
             # erfasst_von
@@ -95,7 +99,7 @@ class SoftMConverter(object):
             plz=fa.rechnung_plz,
             ort=fa.rechnung_ort,
             rechnungsnr=rechnungsnr,
-            auftragsnr=str(f1.auftragsnr),
+            auftragsnr=auftragsnr,
             kundenauftragsnr=f1.kundenbestellnummer,
             # <kundenbestelldatum: datetime.date(2008, 12, 16)>
             auftragsdatum=f1.auftragsdatum,
