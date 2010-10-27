@@ -169,4 +169,4 @@ def invoice_to_INVOICD09A(invoice):
 #UNZ+1+%(14streferenza)s'
 
     envelope.extend(k)
-    return '\n'.join(envelope)
+    return '\n'.join(envelope).encode('iso-8859-1')
