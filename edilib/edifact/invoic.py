@@ -168,5 +168,9 @@ def invoice_to_INVOICD09A(invoice):
 #UNT+%(segmentzahl)+%(14streferenzb)s'
 #UNZ+1+%(14streferenza)s'
 
+
     envelope.extend(k)
+    envelope.append("UNT+%d+%s'" % (len(k)+1, param['unhnr']))
+    envelope.append("UNZ+1+%(uebertragungsnr)s'" % param)
+
     return '\n'.join(envelope).encode('iso-8859-1')
