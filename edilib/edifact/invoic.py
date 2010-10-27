@@ -112,7 +112,7 @@ def invoice_to_INVOICD09A(invoice):
     k.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
     k.append("NAD+BY+%(iln)s::9++%(name1)s:%(name2)s:%(name3)s+%(strasse)s+%(ort)s++%(plz)s+%(land)s'" % param)
     k.append("RFF+AVC:%(kundennr)s'" % param)
-    k.append("RFF+VA:%(hint_steuernr_kunde)s" % param)
+    k.append("RFF+VA:%(hint_steuernr_kunde)s'" % param)
     k.append("CUX+2:EUR:4'")
     # Lieferanschrift
     # NAD+DP+9012345000028::9'
