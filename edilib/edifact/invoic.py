@@ -34,7 +34,7 @@ def date_to_EDIFACT(d):
 
 
 def invoice_to_INVOICD09A(invoice):
-    param = dict(absenderadresse_iln='FIXME',
+    param = dict(absenderadresse_iln='4005998000007',
                  absenderadresse_name1='HUDORA GmbH',
                  absenderadresse_name2='Fakturierung',
                  absenderadresse_name3='',
@@ -50,7 +50,7 @@ def invoice_to_INVOICD09A(invoice):
          leistungsdatum=date_to_EDIFACT(invoice['leistungsdatum']),
          date=date_to_EDIFACT(datetime.date.today()),
          time=datetime.datetime.now().strftime('%H%M'),
-         absenderadresse_iln='FIXME',
+         absenderadresse_iln='4005998000007',
         ))
 
     for key in "name1 name2 name3 strasse ort plz".split():
