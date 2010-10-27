@@ -143,6 +143,7 @@ def invoice_to_INVOICD09A(invoice):
         p.append("MOA+66:%(warenwert)s'" % od) # 66 Goods item total Net price x quantity for the line item.
         # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
         # abschlag_prozent
+
         # einzelpreis* - Preis von einer Einheit ohne Mehrwertsteuer
         # - Gebindewert (DE5025 = 35E); Mussfeld *); N 11+2 MOA+35E:500'
         p.append("PRI+INV:%(einzelpreis)s'" % od)  # INV        Invoice price Referenced price taken from an invoice.
@@ -155,7 +156,12 @@ def invoice_to_INVOICD09A(invoice):
 
     for p in positionen:
         k.extend(p)
+
     # VERSANDKOSTEN
+    # 64    Freight charge - Amount to be paid for moving goods, by whatever means, from one place to another, inclusive discounts,
+    # allowances, rebates, adjustment factors and additional cost relating to freight costs (UN/ECE Recommendation no 23).
+    k.append("MOA+64:%(versandkosten)s'" % invoice)
+
 
 #UNS+S'
 #MOA+124:%(mwst)s' # 124        Tax amount Tax imposed by government or other official authority related to the weight/volume charge or valuation charge.
