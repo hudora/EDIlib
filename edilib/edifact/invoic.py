@@ -15,7 +15,6 @@ Copyright (c) 2010 HUDORA. All rights reserved.
 #
 # Beispiel aus http://www.exite-info.at/files_at/REWE_INVOIC_Lieferscheindetail.pdf
 
-
 import copy
 import datetime
 import time
@@ -34,6 +33,11 @@ def date_to_EDIFACT(d):
 
 
 def invoice_to_INVOICD09A(invoice):
+    """
+    Convert from a dictionary in SimpleInvoiceProtocol format to edifact d09a format.
+
+    Returns a (latin-1) encoded bytestream which must not be re-encoded, because the encoding is codified in the header.
+    """
     param = dict(absenderadresse_iln='4005998000007',
                  absenderadresse_name1='HUDORA GmbH',
                  absenderadresse_name2='Fakturierung',
@@ -61,7 +65,7 @@ def invoice_to_INVOICD09A(invoice):
             param[key] = param.encode('iso-8859-1', '.').replace('+', '?+').replace(':', '?:').replace("'", "?'")
     for key in param.get('hint', {}):
         if hasattr(param['hint'][key], 'encode'):
-            param['hint_' + key] =  param['hint'][key].encode('iso-8859-1', '.').replace('+', '?+').replace(':', '?:').replace("'", "?'")
+            param['hint_' + key] = param['hint'][key].encode('iso-8859-1', '.').replace('+', '?+').replace(':', '?:').replace("'", "?'")
 
     envelope = []
     envelope.append("UNA:+.? '")
@@ -149,7 +153,7 @@ def invoice_to_INVOICD09A(invoice):
         p.append("PRI+INV:%(einzelpreis)s'" % od)  # INV        Invoice price Referenced price taken from an invoice.
         p.append("TAX+7+VAT+++:::19+S'")
         if 'bestellnr' in od:
-            p.append("RFF+ON:%(bestellnr)s'"  % od)
+            p.append("RFF+ON:%(bestellnr)s'" % od)
         if 'lieferscheinnr' in od:
             p.append("RFF+DQ:%(lieferscheinnr)s'" % od)
         positionen.append(p)
@@ -160,8 +164,8 @@ def invoice_to_INVOICD09A(invoice):
     # VERSANDKOSTEN
     # 64    Freight charge - Amount to be paid for moving goods, by whatever means, from one place to another, inclusive discounts,
     # allowances, rebates, adjustment factors and additional cost relating to freight costs (UN/ECE Recommendation no 23).
-    k.append("MOA+64:%(versandkosten)s'" % invoice)
-
+    if invoice.get('versandkosten'):
+        k.append("MOA+64:%(versandkosten)s'" % invoice)
 
 #UNS+S'
 #MOA+124:%(mwst)s' # 124        Tax amount Tax imposed by government or other official authority related to the weight/volume charge or valuation charge.
@@ -174,9 +178,8 @@ def invoice_to_INVOICD09A(invoice):
 #UNT+%(segmentzahl)+%(14streferenzb)s'
 #UNZ+1+%(14streferenza)s'
 
-
     envelope.extend(k)
     envelope.append("UNT+%d+%s'" % (len(k)+1, param['unhnr']))
     envelope.append("UNZ+1+%(uebertragungsnr)s'" % param)
 
-    return '\n'.join(envelope).encode('iso-8859-1')
+    return u'\n'.join(envelope).encode('iso-8859-1')
