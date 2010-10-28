@@ -15,7 +15,6 @@ Copyright (c) 2010 HUDORA. All rights reserved.
 #
 # Beispiel aus http://www.exite-info.at/files_at/REWE_INVOIC_Lieferscheindetail.pdf
 
-
 import copy
 import datetime
 import time
@@ -34,7 +33,12 @@ def date_to_EDIFACT(d):
 
 
 def invoice_to_INVOICD09A(invoice):
-    param = dict(absenderadresse_iln='FIXME',
+    """
+    Convert from a dictionary in SimpleInvoiceProtocol format to edifact d09a format.
+
+    Returns a (latin-1) encoded bytestream which must not be re-encoded, because the encoding is codified in the header.
+    """
+    param = dict(absenderadresse_iln='4005998000007',
                  absenderadresse_name1='HUDORA GmbH',
                  absenderadresse_name2='Fakturierung',
                  absenderadresse_name3='',
@@ -50,7 +54,7 @@ def invoice_to_INVOICD09A(invoice):
          leistungsdatum=date_to_EDIFACT(invoice['leistungsdatum']),
          date=date_to_EDIFACT(datetime.date.today()),
          time=datetime.datetime.now().strftime('%H%M'),
-         absenderadresse_iln='FIXME',
+         absenderadresse_iln='4005998000007',
         ))
 
     for key in "name1 name2 name3 strasse ort plz".split():
@@ -61,7 +65,7 @@ def invoice_to_INVOICD09A(invoice):
             param[key] = param.encode('iso-8859-1', '.').replace('+', '?+').replace(':', '?:').replace("'", "?'")
     for key in param.get('hint', {}):
         if hasattr(param['hint'][key], 'encode'):
-            param['hint_' + key] =  param['hint'][key].encode('iso-8859-1', '.').replace('+', '?+').replace(':', '?:').replace("'", "?'")
+            param['hint_' + key] = param['hint'][key].encode('iso-8859-1', '.').replace('+', '?+').replace(':', '?:').replace("'", "?'")
 
     envelope = []
     envelope.append("UNA:+.? '")
@@ -112,7 +116,7 @@ def invoice_to_INVOICD09A(invoice):
     k.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
     k.append("NAD+BY+%(iln)s::9++%(name1)s:%(name2)s:%(name3)s+%(strasse)s+%(ort)s++%(plz)s+%(land)s'" % param)
     k.append("RFF+AVC:%(kundennr)s'" % param)
-    k.append("RFF+VA:%(hint_steuernr_kunde)s" % param)
+    k.append("RFF+VA:%(hint_steuernr_kunde)s'" % param)
     k.append("CUX+2:EUR:4'")
     # Lieferanschrift
     # NAD+DP+9012345000028::9'
@@ -137,25 +141,31 @@ def invoice_to_INVOICD09A(invoice):
             p.append("IMD+F++::::%(artnr)s'" % od)
         p.append("QTY+47:%(menge)s:'" % od)
         p.append("DTM+35:%(leistungsdatum)s:102'" % param)
-        if 'abschlag' in od:
-            k.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % od)
+        if 'abschlag' in od and od['abschlag']:
+            p.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % od)
         p.append("MOA+77:%(zu_zahlen)s'" % od) # - Rechnungsbetrag (Gesamtpositionsbetrag zuzüglich Zuschläge und MWSt, abzüglich Abschläge) (DE5025 = 77); Mussfeld 77     Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
         p.append("MOA+66:%(warenwert)s'" % od) # 66 Goods item total Net price x quantity for the line item.
         # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
         # abschlag_prozent
+
         # einzelpreis* - Preis von einer Einheit ohne Mehrwertsteuer
         # - Gebindewert (DE5025 = 35E); Mussfeld *); N 11+2 MOA+35E:500'
         p.append("PRI+INV:%(einzelpreis)s'" % od)  # INV        Invoice price Referenced price taken from an invoice.
         p.append("TAX+7+VAT+++:::19+S'")
         if 'bestellnr' in od:
-            p.append("RFF+ON:%(bestellnr)s'"  % od)
+            p.append("RFF+ON:%(bestellnr)s'" % od)
         if 'lieferscheinnr' in od:
             p.append("RFF+DQ:%(lieferscheinnr)s'" % od)
         positionen.append(p)
 
     for p in positionen:
         k.extend(p)
+
     # VERSANDKOSTEN
+    # 64    Freight charge - Amount to be paid for moving goods, by whatever means, from one place to another, inclusive discounts,
+    # allowances, rebates, adjustment factors and additional cost relating to freight costs (UN/ECE Recommendation no 23).
+    if invoice.get('versandkosten'):
+        k.append("MOA+64:%(versandkosten)s'" % invoice)
 
 #UNS+S'
 #MOA+124:%(mwst)s' # 124        Tax amount Tax imposed by government or other official authority related to the weight/volume charge or valuation charge.
@@ -169,4 +179,7 @@ def invoice_to_INVOICD09A(invoice):
 #UNZ+1+%(14streferenza)s'
 
     envelope.extend(k)
-    return '\n'.join(envelope)
+    envelope.append("UNT+%d+%s'" % (len(k)+1, param['unhnr']))
+    envelope.append("UNZ+1+%(uebertragungsnr)s'" % param)
+
+    return u'\n'.join(envelope).encode('iso-8859-1')
