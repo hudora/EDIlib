@@ -10,7 +10,7 @@ from cStringIO import StringIO
 import csv
 
 
-def export_csv(invoice, delimiter=';'):
+def invoice_to_csv(invoice, delimiter=';'):
     """Exportiere Rechnung im SimpleInvoiceProtocol als CSV"""
     
     def create_row(recordtype, obj):
