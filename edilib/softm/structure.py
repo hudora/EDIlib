@@ -165,6 +165,196 @@ for feld in FELDERA1:
     feld['startpos'] = feld['startpos'] - 1
 A1satzklasse = generate_field_datensatz_class(FELDERA1, name='A1auftragskopf', length=496, doc=doctext)
 
+
+doctext = 'Auftrags-Lieferdaten (XOO00EA2)'
+FELDERA2 = [
+    dict(length=17, startpos=1, endpos=17, name='ILN-Warenempfänger'),
+    dict(length=17, startpos=18, endpos=34, name='Warenempfänger'),
+    dict(length=17, startpos=35, endpos=51, name='eigene ILN beim WaEmpf'),
+    dict(length=17, startpos=52, endpos=68, name='unsere LiNr beim WaEmpf'),
+    dict(length=17, startpos=69, endpos=85, name='unsere LiNr beim WaEmpf'),
+    dict(length=35, startpos=86, endpos=120, name='LfAdr: Name 1'),
+    dict(length=35, startpos=121, endpos=155, name='LfAdr: Name 2'),
+    dict(length=35, startpos=156, endpos=190, name='LfAdr: Name 3'),
+    dict(length=35, startpos=191, endpos=225, name='LfAdr: Name 4'),
+    dict(length=35, startpos=226, endpos=260, name='LfAdr: Strasse'),
+    dict(length=3, startpos=261, endpos=263, name='LfAdr: Länderkennzeichen'),
+    dict(length=9, startpos=264, endpos=272, name='LfAdr: Postleitzahl'),
+    dict(length=35, startpos=273, endpos=307, name='LfAdr: Ort'),
+    dict(length=30, startpos=308, endpos=337, name='Lagerbezeichnung'),
+    dict(length=3, startpos=338, endpos=340, name='Versandart'),
+    dict(length=3, startpos=341, endpos=343, name='Lieferbedingung'),
+    dict(length=17, startpos=344, endpos=360, name='Verband'),
+    dict(length=17, startpos=361, endpos=377, name='ILN Verband'),
+    dict(length=1, startpos=496, endpos=496, name='Status'),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA2:
+    feld['startpos'] = feld['startpos'] - 1
+A2satzklasse = generate_field_datensatz_class(FELDERA2, name='A2auftragslieferdaten', length=496, doc=doctext)
+
+
+doctext = 'Auftrags-Position (XOO00EA3)'
+FELDERA3 = [
+    dict(length=5, startpos=1, endpos=5, name='Position'),
+    dict(length=35, startpos=6, endpos=40, name='Artikel'),
+    dict(length=35, startpos=41, endpos=75, name='ArtikelNr Kunde'),
+    dict(length=35, startpos=76, endpos=110, name='EAN'),
+    dict(length=35, startpos=111, endpos=145, name='Zolltarifnummer'),
+    dict(length=70, startpos=146, endpos=215, name='Artikelbezeichnung'),
+    dict(length=70, startpos=216, endpos=285, name='Artikelbezeichnung Kunde'),
+    dict(length=15, startpos=286, endpos=300, name='Menge'),
+    dict(length=3, startpos=301, endpos=303, name='Mengeneinheit'),
+    dict(length=15, startpos=304, endpos=318, name='Verkaufspreis'),
+    dict(length=1, startpos=319, endpos=319, name='Vorzeichen Verkaufspreis'),
+    dict(length=3, startpos=320, endpos=322, name='Mengeneinheit Preis'),
+    dict(length=1, startpos=323, endpos=323, name='Preisdimension'),
+    dict(length=15, startpos=324, endpos=338, name='Positionswert Netto'),
+    dict(length=15, startpos=339, endpos=353, name='Positionswert Brutto'),
+    dict(length=1, startpos=354, endpos=354, name='Vorzeichen Positionswert'),
+    dict(length=2, startpos=355, endpos=356, name='Kz Mehrwertsteuer'),
+    dict(length=5, startpos=357, endpos=361, name='Steuersatz in %'),
+    dict(length=15, startpos=362, endpos=376, name='Steuerbetrag'),
+    dict(length=1, startpos=377, endpos=377, name='Skontierfähig'),
+    dict(length=11, startpos=378, endpos=388, name='Gewicht/Brutto'),    
+    dict(length=11, startpos=389, endpos=399, name='Gewicht/Netto'),
+    dict(length=1, startpos=400, endpos=400, name=' Komponentenauflösung'),
+    dict(length=5, startpos=401, endpos=405, name='Anzahl Komponenten'),
+    dict(length=2, startpos=406, endpos=407, name='ISO Ursprungsland'),
+    dict(length=8, startpos=408, endpos=415, name='Liefertermin'),
+    dict(length=8, startpos=416, endpos=423, name='Kundenwunschtermin'),
+    dict(length=1, startpos=496, endpos=496, name='Status'),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA3:
+    feld['startpos'] = feld['startpos'] - 1
+A3satzklasse = generate_field_datensatz_class(FELDERA3, name='A3auftragsposition', length=496, doc=doctext)
+
+
+
+doctext = 'Auftrags-Positionsrabatte (XOO00EA4)'
+FELDERA4 = [
+    dict(length=5, startpos=1, endpos=5, name='Position'),
+    dict(length=15, startpos=6, endpos=20, name='Positionsrabatt Gesamt'),
+    dict(length=15, startpos=21, endpos=35, name='Positionsrabatt 1 in %'),
+    dict(length=1, startpos=36, endpos=36, name='Rabattkennzeichen 1'),
+    dict(length=15, startpos=37, endpos=51, name='Rabattbetrag 1'),
+    dict(length=1, startpos=52, endpos=52, name='Vorzeichen Rabatt 1'),
+    dict(length=3, startpos=53, endpos=55, name='TxtSl Rabatt 1'),
+    dict(length=15, startpos=56, endpos=70, name='Positionsrabatt 2 in %'),
+    dict(length=1, startpos=71, endpos=71, name='Rabattkennzeichen 2'),
+    dict(length=15, startpos=72, endpos=86, name='Rabattbetrag 2'),
+    dict(length=1, startpos=87, endpos=87, name='Vorzeichen Rabatt 2'),
+    dict(length=3, startpos=88, endpos=90, name='TxtSl Rabatt 2'),
+    dict(length=15, startpos=91, endpos=105, name='Positionsrabatt 3 in %'),
+    dict(length=1, startpos=106, endpos=106, name='Rabattkennzeichen 3'),
+    dict(length=15, startpos=107, endpos=121, name='Rabattbetrag 3'),
+    dict(length=1, startpos=122, endpos=122, name='Vorzeichen Rabatt 3'),
+    dict(length=3, startpos=123, endpos=125, name='TxtSl Rabatt 3'),
+    dict(length=15, startpos=126, endpos=140, name='Positionsrabatt 4 in %'),
+    dict(length=1, startpos=141, endpos=141, name='Rabattkennzeichen 4'),
+    dict(length=15, startpos=142, endpos=156, name='Rabattbetrag 4'),
+    dict(length=1, startpos=157, endpos=157, name='Vorzeichen Rabatt 4'),
+    dict(length=3, startpos=158, endpos=160, name='TxtSl Rabatt 4'),
+    dict(length=15, startpos=161, endpos=175, name='Positionsrabatt 5 in %'),
+    dict(length=1, startpos=176, endpos=176, name='Rabattkennzeichen 5'),
+    dict(length=15, startpos=177, endpos=191, name='Rabattbetrag 5'),
+    dict(length=1, startpos=192, endpos=192, name='Vorzeichen Rabatt 5'),
+    dict(length=3, startpos=193, endpos=195, name='TxtSl Rabatt 5'),
+    dict(length=15, startpos=196, endpos=210, name='Positionsrabatt 6 in %'),
+    dict(length=1, startpos=211, endpos=211, name='Rabattkennzeichen 6'),
+    dict(length=15, startpos=212, endpos=226, name='Rabattbetrag 6'),
+    dict(length=1, startpos=227, endpos=227, name='Vorzeichen Rabatt 6'),
+    dict(length=3, startpos=228, endpos=230, name='TxtSl Rabatt 6'),
+    dict(length=15, startpos=231, endpos=245, name='Positionsrabatt 7 in %'),
+    dict(length=1, startpos=246, endpos=246, name='Rabattkennzeichen 7'),
+    dict(length=15, startpos=247, endpos=261, name='Rabattbetrag 7'),
+    dict(length=1, startpos=262, endpos=262, name='Vorzeichen Rabatt 7'),
+    dict(length=3, startpos=263, endpos=265, name='TxtSl Rabatt 7'),
+    dict(length=15, startpos=266, endpos=280, name='Positionsrabatt 8 in %'),
+    dict(length=1, startpos=281, endpos=281, name='Rabattkennzeichen 8'),
+    dict(length=15, startpos=282, endpos=296, name='Rabattbetrag 8'),
+    dict(length=1, startpos=297, endpos=297, name='Vorzeichen Rabatt 8'),
+    dict(length=3, startpos=298, endpos=300, name='TxtSl Rabatt 8'),
+    dict(length=35, startpos=301, endpos=335, name='Gebinde'),
+    dict(length=35, startpos=336, endpos=370, name='Gebindebezeichnung'),
+    dict(length=5, startpos=371, endpos=375, name='Gebindeanzahl Auftrag'),
+    dict(length=15, startpos=376, endpos=390, name='Volumen'),
+    dict(length=1, startpos=496, endpos=496, name='Status'),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA4:
+    feld['startpos'] = feld['startpos'] - 1
+A4satzklasse = generate_field_datensatz_class(FELDERA4, name='A4auftragspositionsrabatte', length=496, doc=doctext)
+
+
+doctext = 'Bankverbindung (XOO00EA8)'
+FELDERA8 = [
+    dict(length=35, startpos=1, endpos=35, name='Bankkonto-Nummer'),
+    dict(length=15, startpos=36, endpos=50, name='Bankleitzahl'),
+    dict(length=35, startpos=51, endpos=85, name='Name-1 der Bank'),
+    dict(length=35, startpos=86, endpos=120, name='Name-2 der Bank'),
+    dict(length=35, startpos=121, endpos=155, name='Straße'),
+    dict(length=35, startpos=156, endpos=190, name='PLZ / Ort'),
+    dict(length=1, startpos=496, endpos=496, name='Status'),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA8:
+    feld['startpos'] = feld['startpos'] - 1
+A8satzklasse = generate_field_datensatz_class(FELDERA8, name='A8bankverbundung', length=496, doc=doctext)
+
+
+doctext = 'Auftrags-Endedaten (XOO00EA9)'
+FELDERA9 = [
+    dict(length=15, startpos=1, endpos=15, name='AB-Gesamtbetrag'),
+    dict(length=15, startpos=16, endpos=30, name='Nettowarenwert'),
+    dict(length=15, startpos=31, endpos=45, name='Skontofähig'),
+    dict(length=15, startpos=46, endpos=60, name='steuerpflichtig USt 1'),
+    dict(length=15, startpos=61, endpos=75, name='steuerpflichtig USt 2'),
+    dict(length=15, startpos=76, endpos=90, name='Skonto-Abzug'),
+    dict(length=15, startpos=91, endpos=105, name='Mehrwertsteuer'),    
+    dict(length=5, startpos=106, endpos=110, name='Steuersatz 1'),
+    dict(length=15, startpos=111, endpos=125, name='Steuerbetrag 1'),
+    dict(length=5, startpos=126, endpos=130, name='Steuersatz 2'),
+    dict(length=15, startpos=131, endpos=145, name='Steuerbetrag 2'),
+    dict(length=15, startpos=146, endpos=160, name='Nettowarenwert 1'),
+    dict(length=15, startpos=161, endpos=175, name='Nettowarenwert 2'),
+    dict(length=15, startpos=176, endpos=190, name='Versandkosten 1'),
+    dict(length=15, startpos=191, endpos=205, name='Versandkosten 2'),
+    dict(length=15, startpos=206, endpos=220, name='Verpackungskosten 1'),
+    dict(length=15, startpos=221, endpos=235, name='Verpackungskosten 2'),
+    dict(length=15, startpos=236, endpos=250, name='Nebenkosten 1'),
+    dict(length=15, startpos=251, endpos=265, name='Nebenkosten 2'),
+    dict(length=15, startpos=266, endpos=280, name='Summe Rabatte'),    
+    dict(length=1, startpos=281 , endpos=281, name='Vorzeichen Summe Rabatte'),
+    dict(length=15, startpos=282, endpos=296, name='Summe Zuschläge'),
+    dict(length=1, startpos=297, endpos=297, name='Vorzeichen Summe Zuschläge'),
+    dict(length=15, startpos=298, endpos=312, name='Kopfrabatt 1 in %'),
+    dict(length=15, startpos=313, endpos=327, name='Kopfrabatt 2 in %'),
+    dict(length=1, startpos=328, endpos=328, name='Vorzeichen Kopfrabatt 1'),
+    dict(length=1, startpos=329, endpos=329, name='Vorzeichen Kopfrabatt 2'),
+    dict(length=15, startpos=330, endpos=344, name='Kopfrabatt 1'),
+    dict(length=15, startpos=345, endpos=359, name='Kopfrabatt 2'),
+    dict(length=3, startpos=360, endpos=362, name='TxtSl Kopfrabatt 1'),
+    dict(length=3, startpos=363, endpos=365, name='TxtSl Kopfrabatt 2'),
+    dict(length=15, startpos=366, endpos=380, name='Kopfrabatt USt 1'),
+    dict(length=15, startpos=381, endpos=395, name='Kopfrabatt USt 2'),
+    dict(length=11, startpos=396, endpos=406, name='Gesamtgewicht brutto'),
+    dict(length=11, startpos=407, endpos=417, name='Gesamtgewicht netto'),
+    dict(length=4, startpos=418, endpos=421, name='Anzahl Positionen'),
+    dict(length=1, startpos=496, endpos=496, name='Status'),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA9:
+    feld['startpos'] = feld['startpos'] - 1
+A9satzklasse = generate_field_datensatz_class(FELDERA9, name='A9auftragsendedaten', length=496, doc=doctext)
+
+
 doctext = 'XOO00EFA Rg-Adresse'
 FELDERFA = [
  dict(length=17, startpos=1, endpos=17, name='iln_rechnungsempfaenger', doc='119-03 bei StratEDI 119-02=IV'),
@@ -591,6 +781,11 @@ def parse_to_objects(lines):
         F9=F9satzklasse, # Rechnungsende
         # ER=ERsatzklasse,
         A1=A1satzklasse,
+        A2=A2satzklasse,
+        A3=A3satzklasse,
+        A4=A4satzklasse,
+        A8=A8satzklasse,
+        A9=A9satzklasse,
         R1=R1satzklasse,
         R2=R2satzklasse,
         R3=R3satzklasse,

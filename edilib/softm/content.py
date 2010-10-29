@@ -340,7 +340,7 @@ class SoftMConverter(object):
         return kopf
 
     def _convert_invoices(self):
-        """Handles the invoices of an SoftM invoice list."""
+        """Handles the invoices of a SoftM invoice list."""
 
         softm_records = dict(self.softm_record_list)
 
@@ -363,6 +363,11 @@ class SoftMConverter(object):
             # process invoice
             invoices.append(self._convert_invoice(invoice))
         return invoices
+        
+    def _convert_xxx(self):
+        """Handles the xxx of a SoftM Auftragsbestätigung"""
+
+        pass
 
     def convert(self, data):
         """Parse INVOICE file and save result in workfile."""
