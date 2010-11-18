@@ -27,6 +27,9 @@ class SoftMConverter(object):
     """Converts SoftM INVOICE files to very Simple Invoice Protocol."""
 
     def __init__(self):
+        self.interchangeheader = {}
+        self.invoicelistfooter = {}
+        self.invoices = []
         self.softm_record_list = None # whole set of records from SoftM
 
     def _convert_invoice_head(self, invoice_records):
@@ -342,8 +345,6 @@ class SoftMConverter(object):
     def _convert_invoices(self):
         """Handles the invoices of an SoftM invoice list."""
 
-        softm_records = dict(self.softm_record_list)
-
         # now we have to extract the per invoice records from self.softm_record_list
         # every position starts with a F1 record
         tmp_softm_record_list = copy.copy(self.softm_record_list)
@@ -364,14 +365,72 @@ class SoftMConverter(object):
             invoices.append(self._convert_invoice(invoice))
         return invoices
 
+    def _convert_interchangehead(self):
+        """Handles file header information."""
+
+        xh = None
+        for key, entry in self.softm_record_list:
+            if 'XH' == key:
+                xh = entry
+                break
+
+        if not xh:
+            raise RuntimeError('Missing file header (XH) in data.')
+
+        self.interchangeheader = dict(
+            empfaenger_iln=xh.dfue_partner,
+            erstellungsdatum=xh.erstellungs_datum,
+            erstellungszeit=xh.erstellungs_zeit[:4], # remove seconds
+            anwendungsreferenz=xh.umgebung,
+            testkennzeichen=xh.testkennzeichen,
+            iln_rechnungsempfaenger=xh.dfue_partner)
+
+
+    def _convert_invoicelistfooter(self):
+        """Handle R1, R2, R3 entries of invoice lists.
+
+        R1   Rechnungsliste-Verbandsdaten                 1-mal pro Verband
+        R2   Rechnungsliste-Position (= Rechnungssumme)   1-mal pro Rechnung
+        R3   Rechnungsliste-Summe                         1-mal pro Kopfdaten (R1)
+        """
+
+        softm_record_dict = dict(self.softm_record_list)
+        r1 = softm_record_dict.get('R1', None)
+        r3 = softm_record_dict.get('R3', None)
+        r2 = [x[1] for x in self.softm_record_list if x[0] == 'R2']
+
+        if not all((r1, r2, r3)):
+            if any((r1, r2, r3)):
+                raise RuntimeError("Data seems to be a invoice list with missing information.")
+            return
+
+        self.invoicelistfooter = dict(
+            rechnungslistennr=r2[-1].listennr,
+            rechnungslistendatum=r2[-1].listendatum,
+            empfaenger_iln=r1.verband_iln,
+            lieferantennr=r1.lieferantennr_verband,
+            rechnungslistenendbetrag=r3.summe,
+            #nettowarenwert=r3.summe,
+            mwst=sum([rec.mwst for rec in r2]),
+            steuerpflichtiger_betrag=sum([rec.warenwert for rec in r2]))
+
+
     def convert(self, data):
         """Parse INVOICE file and save result in workfile."""
 
         # If we handle a collection of single invoices here, we have to split them into pieces and
         # provide a header for them.
 
+        # call init to clean this instance of SoftMConverter if this function is used multiple times
+        self.__init__()
+
+        # parse invoice(list)
         self.softm_record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))
-        return self._convert_invoices()
+        self._convert_interchangehead()
+        self.invoices = self._convert_invoices()
+        self._convert_invoicelistfooter()
+
+        return self.invoices
 
 
 def main():
