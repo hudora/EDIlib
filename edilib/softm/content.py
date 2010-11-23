@@ -440,6 +440,11 @@ class SoftMConverter(object):
         self.invoices = self._convert_invoices()
         self.invoicelistfooter = self._convert_invoicelistfooter()
 
+        # for invoice lists, add the invoice recipient to every single invoice
+        if self.invoicelistfooter:
+            for invoice in invoices:
+                invoice['rechnungsadresse'] = {'iln': self.interchangeheader['technischer_rechnungsempfaenger']}
+
         return self.invoices
 
 
