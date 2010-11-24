@@ -308,7 +308,6 @@ class SoftMConverter(object):
         for k in line.keys():
             if line[k] == '':
                 del line[k]
-
         return line
 
     def _convert_invoice(self, softm_record_slice):
@@ -333,10 +332,8 @@ class SoftMConverter(object):
             position = [tmp_softm_record_list.pop(0)]
             while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F3':
                 position.append(tmp_softm_record_list.pop(0))
-
             # process position
             kopf['orderlines'].append(self._convert_invoice_position(dict(position)))
-
         return kopf
 
     def _convert_invoices(self):
@@ -376,7 +373,7 @@ class SoftMConverter(object):
 
 def main():
     converter = SoftMConverter()
-    print converter.convert(open('/Users/md/Downloads/RG01112-3.TXT.rdp').read())
+    print converter.convert(open('/Users/md/Downloads/RL01388.TXT').read())
     #for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
     #    if not f.startswith('RG'):
     #        continue

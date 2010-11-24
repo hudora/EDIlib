@@ -533,8 +533,6 @@ class DatensatzBaseClass(object):
     def _feldgen(self, name=None, length=None, startpos=None, endpos=None, fieldclass=Field, **kwargs):
         """Generate field descriptor for a single field and validate Field description."""
         fieldinstance = fieldclass(name, length, **kwargs)
-        # setattr(self, name, fieldinstance)
-        # setattr(self, name + '_field', _FieldDescriptorClass(fieldinstance))
         setattr(self, name + '_field', fieldinstance)
         self.fielddict[startpos] = fieldinstance
 
@@ -560,9 +558,13 @@ class DatensatzBaseClass(object):
                                 len(data), self, self.length))
         # cut data in chunks fitting to our fields and the the fields parse them
         for startpos, field in sorted(self.fielddict.items()):
-            # print startpos,
             field.parse(data[startpos:startpos+field.length])
-            # print
+
+    def as_dict(self):
+        d = {}
+        for startpos, field in sorted(self.fielddict.items()):
+            d[field.name] = field.get()
+        return d
 
 
 def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
