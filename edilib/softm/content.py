@@ -22,6 +22,14 @@ import husoftm.tools
 import sys
 import logging
 import itertools
+import psutil; p = psutil.Process(os.getpid())
+
+import inspect
+
+def lineno():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
 
 
 def itersplitlines(strng, threshold=1500000):
@@ -380,7 +388,7 @@ class SoftMConverter(object):
 
         # now we have to extract the per invoice records from self.softm_record_iter
         # every position starts with a F1 record
-        record_iter = iter(self.softm_record_iter)
+        record_iter = self.softm_record_iter
 
         # remove everything until we hit the first F1
         for key, val in record_iter:
@@ -391,7 +399,6 @@ class SoftMConverter(object):
         if key != 'F1':
             raise RuntimeError('Invalid invoice data')
 
-        invoices = []
         while record_iter and key == "F1":
             # slice of segment until the next F1
             invoice = [(key, val)]
@@ -401,8 +408,7 @@ class SoftMConverter(object):
                 invoice.append((key, val))
 
             # process invoice
-            invoices.append(self._convert_invoice(invoice))
-        return invoices
+            yield(self._convert_invoice(invoice))
 
     def _convert_interchangehead(self):
         """Handles file header information."""
@@ -425,7 +431,7 @@ class SoftMConverter(object):
             testkennzeichen=xh.testkennzeichen)
 
 
-    def _convert_invoicelistfooter(self):
+    def _convert_invoicelistfooter(self, record_iter):
         """Handle R1, R2, R3 entries of invoice lists.
 
         R1   Rechnungsliste-Verbandsdaten                 1-mal pro Verband
@@ -433,12 +439,9 @@ class SoftMConverter(object):
         R3   Rechnungsliste-Summe                         1-mal pro Kopfdaten (R1)
         """
 
-        if not self.invoices:
-            raise RuntimeError('Dont call _convert_invoicelistfooter before _convert_invoices.')
-
         logging.debug("_convert_invoicelistfooter")
 
-        records = [(key, val) for (key, val) in self.softm_record_iter if key[0] == 'R']
+        records = [(key, val) for (key, val) in record_iter if key[0] == 'R']
         softm_record_dict = dict(records)
 
         r1 = softm_record_dict.get('R1', None)
@@ -468,29 +471,30 @@ class SoftMConverter(object):
 
         # call init to clean this instance of SoftMConverter if this function is used multiple times
         self.__init__()
+        print lineno(), p.get_memory_info(), p.get_memory_percent()
 
         # parse invoice(list)
         logging.debug("convert")
 
         # get an iterator for all invoice entries of data
         self.softm_record_iter, copy_of_that_iter = itertools.tee(edilib.softm.structure.parse_to_objects(itersplitlines(data)), 2)
+        print lineno(), p.get_memory_info(), p.get_memory_percent()
 
         # parse header
         self.interchangeheader = self._convert_interchangehead()
+        print lineno(), p.get_memory_info(), p.get_memory_percent()
 
-        # parse all invoicec
-        self.invoices = self._convert_invoices()
+        # parse the invoicelist footer, if any
+        #self.invoicelistfooter = self._convert_invoicelistfooter(copy_of_that_iter) ### einschalten!
+        print lineno(), p.get_memory_info(), p.get_memory_percent()
 
-        # reset softm_record_iter and parse the invoicelist footer, if any
-        self.softm_record_iter = copy_of_that_iter
-        self.invoicelistfooter = self._convert_invoicelistfooter()
-
-        # for invoice lists, add the invoice recipient to every single invoice
-        if self.invoicelistfooter:
-            for invoice in self.invoices:
+        # parse all invoices
+        for invoice in self._convert_invoices():
+            # for invoice lists, add the invoice recipient to every single invoice
+            if self.invoicelistfooter:
                 invoice['rechnungsadresse'] = {'iln': self.interchangeheader['technischer_rechnungsempfaenger']}
+            yield(invoice)
 
-        return self.invoices
 
 
 def main():
