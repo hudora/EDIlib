@@ -577,8 +577,10 @@ for feld in FELDERTEXT:
 TEXTsatzklasse = generate_field_datensatz_class(FELDERTEXT, name='generic_text', length=496)
 
 
+import logging
 def parse_to_objects(lines):
     """Implementiert das Parsen einer liste von SoftM EDI-Datensätzen in Objekte."""
+    logging.debug("parse_to_objects")
     satzresolver = dict(XH=XHsatzklasse,
         F1=F1satzklasse,
         F2=F2satzklasse,
@@ -604,9 +606,10 @@ def parse_to_objects(lines):
         # FL Lieferbedingungstexte
         # FN Nebenkosten
         )
-    ret = []
     lineno = 0
+    logging.debug("parse_to_objects")
     for rawline in lines:
+        logging.debug("parse_to_objects %d", lineno)
         lineno += 1
 
         # remove newline & EOF
@@ -626,11 +629,10 @@ def parse_to_objects(lines):
         if satzklasse:
             satz = satzklasse()
             satz.parse(data)
-            ret.append((satzart, satz, ))
+            yield((satzart, satz, ))
         else:
             print "Zeile %s:" %  lineno, repr(satzart), repr(version), repr(erstellungsdatum),
             print len(line), len(data)
             print "unbekannter Satz:", satzart, version
             print repr(rawline)
             raise RuntimeError("unbekannter Satz: %r %r" % (str(satzart), str(version)))
-    return ret
