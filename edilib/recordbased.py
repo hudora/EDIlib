@@ -110,6 +110,9 @@ class FieldDescriptor(object):
     def __set__(self, obj, value):
         return getattr(obj, self.name + '_field').set(value)
 
+    def __delete__(self, obj):
+        print u"hallöchen"
+
 
 class Field(object):
     """Base Class for (string) fields in fixed length records.
@@ -562,6 +565,8 @@ class DatensatzBaseClass(object):
         for startpos, field in sorted(self.fielddict.items()):
             # print startpos,
             field.parse(data[startpos:startpos+field.length])
+            #print field.__dict__
+
             # print
 
 
