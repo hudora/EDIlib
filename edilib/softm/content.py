@@ -463,29 +463,26 @@ class SoftMConverter(object):
 
 
     def convert(self, data):
-        """Parse INVOICE file and save result in workfile."""
+        """Parse INVOICE file content and save result in workfile."""
 
         # If we handle a collection of single invoices here, we have to split them into pieces and
         # provide a header for them.
 
         # call init to clean this instance of SoftMConverter if this function is used multiple times
         self.__init__()
-        #print lineno(), p.get_memory_info(), p.get_memory_percent()
 
         # parse invoice(list)
         logging.debug("convert")
 
         # get an iterator for all invoice entries of data
-        softm_record_iter, copy_of_that_iter = itertools.tee(edilib.softm.structure.parse_to_objects(itersplitlines(data)), 2)
-        #print lineno(), p.get_memory_info(), p.get_memory_percent()
+        softm_record_iter = edilib.softm.structure.parse_to_objects(itersplitlines(data))
 
         # parse header
         self.interchangeheader = self._convert_interchangehead(softm_record_iter)
-        #print lineno(), p.get_memory_info(), p.get_memory_percent()
 
-        # parse the invoicelist footer, if any
-        #self.invoicelistfooter = self._convert_invoicelistfooter(copy_of_that_iter) ### einschalten!
-        #print lineno(), p.get_memory_info(), p.get_memory_percent()
+        # reset softm_record_iter and parse the invoicelist footer, if any
+        another_iter = edilib.softm.structure.parse_to_objects(itersplitlines(data))
+        self.invoicelistfooter = self._convert_invoicelistfooter(another_iter)
 
         # parse all invoices
         for invoice in self._convert_invoices(softm_record_iter):
