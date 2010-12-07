@@ -359,7 +359,7 @@ class SoftMConverter(object):
 
         # create sub-part of whole invoice (list) that represents one single invoice
         if key != 'F1':
-            raise RuntimeError('Invalid invoice data')
+            raise RuntimeError('Invalid invoice data: no F1 record')
 
         invoices = []
         while record_iter and key == "F1":
