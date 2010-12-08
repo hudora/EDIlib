@@ -129,13 +129,13 @@ F1satzklasse = generate_field_datensatz_class(FELDERF1, name='F1kopfdaten', leng
 doctext = 'Auftrags-Kopf (XOO00EA1)'
 FELDERA1 = [
  dict(length=3, startpos=1, endpos=3, name='Belegart'),
- dict(length=9, startpos=4, endpos=12, name='Auftrag'),
+ dict(length=9, startpos=4, endpos=12, name='auftragsnr'),
  dict(length=8, startpos=13, endpos=20, name='Auftragsdatum'),
  dict(length=8, startpos=21, endpos=28, name='AB Druckdatum'),
  dict(length=20, startpos=29, endpos=48, name='Kundenbestellnummer'),
  dict(length=8, startpos=49, endpos=56, name='Kundenbestelldatum'),
- dict(length=17, startpos=57, endpos=73, name='ILN Rechnungsempfänger'),
- dict(length=17, startpos=74, endpos=90, name='Rechnungsempfänger'),
+ dict(length=17, startpos=57, endpos=73, name='iln_rechnungsempfaenger'),
+ dict(length=17, startpos=74, endpos=90, name='rechnungsempfaenger'),
  dict(length=17, startpos=91, endpos=107, name='USt-IDNr. RgEmpf'),
  dict(length=17, startpos=108, endpos=124, name='eigene ILN beim RgEmpf'),
  dict(length=17, startpos=125, endpos=141, name='unsere LiNr beim RgEmpf'),
@@ -168,19 +168,19 @@ A1satzklasse = generate_field_datensatz_class(FELDERA1, name='A1auftragskopf', l
 
 doctext = 'Auftrags-Lieferdaten (XOO00EA2)'
 FELDERA2 = [
-    dict(length=17, startpos=1, endpos=17, name='ILN-Warenempfänger'),
-    dict(length=17, startpos=18, endpos=34, name='Warenempfänger'),
+    dict(length=17, startpos=1, endpos=17, name='iln_Warenempfaenger'),
+    dict(length=17, startpos=18, endpos=34, name='warenempfaenger'),
     dict(length=17, startpos=35, endpos=51, name='eigene ILN beim WaEmpf'),
     dict(length=17, startpos=52, endpos=68, name='unsere LiNr beim WaEmpf'),
     dict(length=17, startpos=69, endpos=85, name='unsere LiNr beim WaEmpf'),
-    dict(length=35, startpos=86, endpos=120, name='LfAdr: Name 1'),
-    dict(length=35, startpos=121, endpos=155, name='LfAdr: Name 2'),
-    dict(length=35, startpos=156, endpos=190, name='LfAdr: Name 3'),
-    dict(length=35, startpos=191, endpos=225, name='LfAdr: Name 4'),
-    dict(length=35, startpos=226, endpos=260, name='LfAdr: Strasse'),
-    dict(length=3, startpos=261, endpos=263, name='LfAdr: Länderkennzeichen'),
-    dict(length=9, startpos=264, endpos=272, name='LfAdr: Postleitzahl'),
-    dict(length=35, startpos=273, endpos=307, name='LfAdr: Ort'),
+    dict(length=35, startpos=86, endpos=120, name='name1'),
+    dict(length=35, startpos=121, endpos=155, name='name2'),
+    dict(length=35, startpos=156, endpos=190, name='name3'),
+    dict(length=35, startpos=191, endpos=225, name='name4'),
+    dict(length=35, startpos=226, endpos=260, name='strasse'),
+    dict(length=3, startpos=261, endpos=263, name='land'),
+    dict(length=9, startpos=264, endpos=272, name='plz'),
+    dict(length=35, startpos=273, endpos=307, name='ort'),
     dict(length=30, startpos=308, endpos=337, name='Lagerbezeichnung'),
     dict(length=3, startpos=338, endpos=340, name='Versandart'),
     dict(length=3, startpos=341, endpos=343, name='Lieferbedingung'),
@@ -197,14 +197,14 @@ A2satzklasse = generate_field_datensatz_class(FELDERA2, name='A2auftragslieferda
 
 doctext = 'Auftrags-Position (XOO00EA3)'
 FELDERA3 = [
-    dict(length=5, startpos=1, endpos=5, name='Position'),
-    dict(length=35, startpos=6, endpos=40, name='Artikel'),
+    dict(length=5, startpos=1, endpos=5, name='position'),
+    dict(length=35, startpos=6, endpos=40, name='artnr'),
     dict(length=35, startpos=41, endpos=75, name='ArtikelNr Kunde'),
-    dict(length=35, startpos=76, endpos=110, name='EAN'),
+    dict(length=35, startpos=76, endpos=110, name='ean'),
     dict(length=35, startpos=111, endpos=145, name='Zolltarifnummer'),
-    dict(length=70, startpos=146, endpos=215, name='Artikelbezeichnung'),
+    dict(length=70, startpos=146, endpos=215, name='bezeichnung'),
     dict(length=70, startpos=216, endpos=285, name='Artikelbezeichnung Kunde'),
-    dict(length=15, startpos=286, endpos=300, name='Menge'),
+    dict(length=15, startpos=286, endpos=300, name='menge'),
     dict(length=3, startpos=301, endpos=303, name='Mengeneinheit'),
     dict(length=15, startpos=304, endpos=318, name='Verkaufspreis'),
     dict(length=1, startpos=319, endpos=319, name='Vorzeichen Verkaufspreis'),
@@ -353,6 +353,26 @@ FELDERA9 = [
 for feld in FELDERA9:
     feld['startpos'] = feld['startpos'] - 1
 A9satzklasse = generate_field_datensatz_class(FELDERA9, name='A9auftragsendedaten', length=496, doc=doctext)
+
+
+doctext = 'Texte (XOO00EA0)'
+FELDERA0 = [
+    dict(length=60, startpos=1, endpos=60, name='text_1'),
+    dict(length=60, startpos=61, endpos=120, name='text_2'),
+    dict(length=60, startpos=121, endpos=180, name='text_3'),
+    dict(length=60, startpos=181, endpos=240, name='text_4'),
+    dict(length=60, startpos=241, endpos=300, name='text_5'),
+    dict(length=60, startpos=301, endpos=360, name='text_6'),
+    dict(length=60, startpos=361, endpos=420, name='text_7'),
+    dict(length=60, startpos=421, endpos=480, name='text_8'),
+    dict(length=15, startpos=481, endpos=495, name='reserve'),
+    dict(length=1, startpos=496, endpos=496, name='status'),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA0:
+    feld['startpos'] = feld['startpos'] - 1
+A0satzklasse = generate_field_datensatz_class(FELDERA0, name='A0auftragstext', length=496, doc=doctext)
 
 
 doctext = 'XOO00EFA Rg-Adresse'
@@ -792,6 +812,11 @@ def parse_to_objects(lines):
         A4=A4satzklasse,
         A8=A8satzklasse,
         A9=A9satzklasse,
+        AV=A0satzklasse, # Texte zur Versandart
+        AL=A0satzklasse, # Texte zu Lieferbedingungen
+        AN=A0satzklasse, # Texte zu Nebenkosten
+        AK=A0satzklasse, # Kopftexte
+        AP=A0satzklasse, # Positionstexte
         R1=R1satzklasse,
         R2=R2satzklasse,
         R3=R3satzklasse,
