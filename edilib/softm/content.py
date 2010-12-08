@@ -13,7 +13,6 @@ Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 
 from decimal import Decimal
 import codecs
-import copy
 import datetime
 import edilib.softm.structure
 import os
@@ -27,6 +26,9 @@ class SoftMConverter(object):
     """Converts SoftM INVOICE files to very Simple Invoice Protocol."""
 
     def __init__(self):
+        self.interchangeheader = {}
+        self.invoicelistfooter = {}
+        self.invoices = []
         self.softm_record_list = None # whole set of records from SoftM
 
     def _convert_invoice_head(self, invoice_records):
@@ -308,7 +310,6 @@ class SoftMConverter(object):
         for k in line.keys():
             if line[k] == '':
                 del line[k]
-
         return line
 
     def _convert_invoice(self, softm_record_slice):
@@ -320,45 +321,55 @@ class SoftMConverter(object):
 
         # the now we have to extract the per invoice records from softm_record_list
         # every position starts with a F3 record
-        tmp_softm_record_list = copy.deepcopy(softm_record_slice)
+        record_iter = iter(softm_record_slice)
 
         # remove everything until we hit the first F3
-        while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F3':
-            tmp_softm_record_list.pop(0)
+        for key, val in record_iter:
+            if key == 'F3':
+                break
+        if key != 'F3':
+            raise RuntimeError('Invalid invoice data')
 
         # process positions
         kopf['orderlines'] = []
-        while tmp_softm_record_list:
-            # slice of segment untill the next F3
-            position = [tmp_softm_record_list.pop(0)]
-            while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F3':
-                position.append(tmp_softm_record_list.pop(0))
+        while record_iter and key == "F3":
+
+            # slice of segment until the next F3
+            position = [(key, val)]
+            for key, val in record_iter:
+                if key == 'F3':
+                    break
+                position.append((key, val))
 
             # process position
             kopf['orderlines'].append(self._convert_invoice_position(dict(position)))
-
         return kopf
 
     def _convert_invoices(self):
         """Handles the invoices of a SoftM invoice list."""
 
-        softm_records = dict(self.softm_record_list)
-
         # now we have to extract the per invoice records from self.softm_record_list
         # every position starts with a F1 record
-        tmp_softm_record_list = copy.copy(self.softm_record_list)
+        record_iter = iter(self.softm_record_list)
 
         # remove everything until we hit the first F1
-        while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F1':
-            tmp_softm_record_list.pop(0)
+        for key, val in record_iter:
+            if key == 'F1':
+                break
 
         # create sub-part of whole invoice (list) that represents one single invoice
+        if key != 'F1':
+            raise RuntimeError('Invalid invoice data: no F1 record')
+
         invoices = []
-        while tmp_softm_record_list:
+        while record_iter and key == "F1":
             # slice of segment until the next F1
-            invoice = [tmp_softm_record_list.pop(0)]
-            while tmp_softm_record_list and tmp_softm_record_list[0] and tmp_softm_record_list[0][0] != 'F1':
-                invoice.append(tmp_softm_record_list.pop(0))
+            invoice = [(key, val)]
+            for key, val in record_iter:
+                if key == 'F1':
+                    break
+                invoice.append((key, val))
+
 
             # process invoice
             invoices.append(self._convert_invoice(invoice))
@@ -369,19 +380,80 @@ class SoftMConverter(object):
 
         pass
 
+    def _convert_interchangehead(self):
+        """Handles file header information."""
+
+        xh = None
+        for key, entry in self.softm_record_list:
+            if 'XH' == key:
+                xh = entry
+                break
+
+        if not xh:
+            raise RuntimeError('Missing file header (XH) in data.')
+
+        return dict(
+            technischer_rechnungsempfaenger=xh.dfue_partner,
+            erstellungsdatum=xh.erstellungs_datum,
+            erstellungszeit=xh.erstellungs_zeit[:4], # remove seconds
+            anwendungsreferenz=xh.umgebung,
+            testkennzeichen=xh.testkennzeichen)
+
+
+    def _convert_invoicelistfooter(self):
+        """Handle R1, R2, R3 entries of invoice lists.
+
+        R1   Rechnungsliste-Verbandsdaten                 1-mal pro Verband
+        R2   Rechnungsliste-Position (= Rechnungssumme)   1-mal pro Rechnung
+        R3   Rechnungsliste-Summe                         1-mal pro Kopfdaten (R1)
+        """
+
+        softm_record_dict = dict(self.softm_record_list)
+        r1 = softm_record_dict.get('R1', None)
+        r3 = softm_record_dict.get('R3', None)
+        r2 = [x[1] for x in self.softm_record_list if x[0] == 'R2']
+
+        if not all((r1, r2, r3)):
+            if any((r1, r2, r3)):
+                raise RuntimeError("Data seems to be a invoice list with missing information.")
+            return {}
+
+        return dict(
+            rechnungslistennr=r2[-1].listennr,
+            rechnungslistendatum=r2[-1].listendatum,
+            empfaenger_iln=r1.verband_iln,
+            lieferantennr=r1.lieferantennr_verband,
+            rechnungslistenendbetrag=r3.summe,
+            mwst=sum([rec.mwst for rec in r2]),
+            steuerpflichtiger_betrag=sum([rec.warenwert for rec in r2]))
+
+
     def convert(self, data):
         """Parse INVOICE file and save result in workfile."""
 
         # If we handle a collection of single invoices here, we have to split them into pieces and
         # provide a header for them.
 
+        # call init to clean this instance of SoftMConverter if this function is used multiple times
+        self.__init__()
+
+        # parse invoice(list)
         self.softm_record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))
-        return self._convert_invoices()
+        self.interchangeheader = self._convert_interchangehead()
+        self.invoices = self._convert_invoices()
+        self.invoicelistfooter = self._convert_invoicelistfooter()
+
+        # for invoice lists, add the invoice recipient to every single invoice
+        if self.invoicelistfooter:
+            for invoice in self.invoices:
+                invoice['rechnungsadresse'] = {'iln': self.interchangeheader['technischer_rechnungsempfaenger']}
+
+        return self.invoices
 
 
 def main():
     converter = SoftMConverter()
-    print converter.convert(open('/Users/md/Downloads/RG01112-3.TXT.rdp').read())
+    print converter.convert(open('/Users/md/Downloads/RL01388.TXT').read())
     #for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
     #    if not f.startswith('RG'):
     #        continue

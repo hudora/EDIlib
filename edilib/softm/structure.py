@@ -767,6 +767,12 @@ for feld in FELDERTEXT:
 TEXTsatzklasse = generate_field_datensatz_class(FELDERTEXT, name='generic_text', length=496)
 
 
+# from http://stackoverflow.com/questions/1305532/convert-python-dict-to-object
+class Struct:
+    def __init__(self, **entries):
+        self.__dict__.update(entries)
+
+
 def parse_to_objects(lines):
     """Implementiert das Parsen einer liste von SoftM EDI-Datensätzen in Objekte."""
     satzresolver = dict(XH=XHsatzklasse,
@@ -803,7 +809,6 @@ def parse_to_objects(lines):
     lineno = 0
     for rawline in lines:
         lineno += 1
-
         # remove newline & EOF
         line = rawline.rstrip('\r\n').strip(' \x1a')
         if not line:
@@ -821,7 +826,8 @@ def parse_to_objects(lines):
         if satzklasse:
             satz = satzklasse()
             satz.parse(data)
-            ret.append((satzart, satz, ))
+            ret.append((satzart, Struct(**satz.as_dict())))
+            del satz
         else:
             print "Zeile %s:" %  lineno, repr(satzart), repr(version), repr(erstellungsdatum),
             print len(line), len(data)
