@@ -51,7 +51,7 @@ def invoice_to_INVOICD09A(invoice):
          uebertragungsnr=base64.b32encode(struct.pack('>d', time.time())).strip('=\n')[:14],
          unhnr=base64.b32encode(struct.pack('>d', time.time()-1000000000)).strip('=\n')[:14],
          rechnungsdatum=date_to_EDIFACT(invoice['rechnungsdatum']),
-         leistungsdatum=date_to_EDIFACT(invoice['leistungsdatum']),
+         leistungsdatum=date_to_EDIFACT(invoice.get('leistungsdatum', invoice.get('rechnungsdatum'))),
          date=date_to_EDIFACT(datetime.date.today()),
          time=datetime.datetime.now().strftime('%H%M'),
          absenderadresse_iln='4005998000007',
