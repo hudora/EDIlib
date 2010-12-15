@@ -13,11 +13,11 @@ desadv.py
 
 
 import base64
+import logging
 import struct
 from datetime import date
 from datetime import datetime
 from edilib.edifact.invoic import date_to_EDIFACT
-from invoic import date_to_EDIFACT
 from time import time
 
 
@@ -35,6 +35,7 @@ def split_and_normalize_text(text, length, parts=2):
 
 
 def lieferschein_to_DESADV(lieferschein):
+    #logging.info("------------> %s" % lieferschein)
     params = dict(absenderadresse_iln='4005998000007',
                   absenderadresse_name1='HUDORA GmbH',
                   absenderadresse_name2='Fakturierung',
@@ -49,8 +50,8 @@ def lieferschein_to_DESADV(lieferschein):
                        msgrefnr=base64.b32encode(struct.pack('>d', time()-1000000000)).strip('=\n')[:14],
                        date=date.today().strftime('%y%m%d'),
                        time=datetime.now().strftime('%H%M'),
-                       lieferdatum=date_to_EDIFACT(lieferschein['anlieferdatum']),
-                       lieferdatum_latest=date_to_EDIFACT(lieferschein['anlieferdatum']),
+                       #lieferdatum=date_to_EDIFACT(lieferschein['anlieferdatum']),
+                       #lieferdatum_latest=date_to_EDIFACT(lieferschein['anlieferdatum']),
                        ))
 
     # TEST
@@ -92,8 +93,8 @@ def lieferschein_to_DESADV(lieferschein):
                # liefersnr  document/message number
                # 9          message function, 9 equals "Original"
 
-    msg.append("DTM+64:%(lieferdatum)s:102" % params)         # fruehestmoeglicher Lieferzeitpunkt
-    msg.append("DTM+63:%(lieferdatum_latest)s:102" % params)  # spaetmoeglichster Lieferzeitpunkt
+    #msg.append("DTM+64:%(lieferdatum)s:102" % params)         # fruehestmoeglicher Lieferzeitpunkt
+    #msg.append("DTM+63:%(lieferdatum_latest)s:102" % params)  # spaetmoeglichster Lieferzeitpunkt
                # http://www.gs1.se/EANCOM%202000/desadv/gd3.htm#3DTMDESADV30
                # 64         date/time period qualifier, 64 equals "delivery date/time, earliest"
                #                                        63 equals "delivery date/time, latest"
