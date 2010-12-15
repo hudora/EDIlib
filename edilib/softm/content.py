@@ -136,7 +136,7 @@ class SoftMConverter(object):
             #skontofaehig_ust1=f1.skontofaehig_ust1,
             #skonto1=f1.skonto1,
             #skontobetrag1_ust1=f1.skontobetrag1_ust1,
-            steuernr_kunde=str(f1.ustdid_rechnungsempfaenger or f1.steuernummer),
+            steuernr_kunde=str(f1.ustdid_rechnungsempfaenger),
             steuernr_lieferant=str(f1.ustdid_absender),
         )
 
