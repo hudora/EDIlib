@@ -13,11 +13,11 @@ desadv.py
 
 
 import base64
+import logging
 import struct
 from datetime import date
 from datetime import datetime
 from edilib.edifact.invoic import date_to_EDIFACT
-from invoic import date_to_EDIFACT
 from time import time
 
 
@@ -49,8 +49,8 @@ def lieferschein_to_DESADV(lieferschein):
                        msgrefnr=base64.b32encode(struct.pack('>d', time()-1000000000)).strip('=\n')[:14],
                        date=date.today().strftime('%y%m%d'),
                        time=datetime.now().strftime('%H%M'),
-                       lieferdatum=date_to_EDIFACT(lieferschein['anlieferdatum']),
-                       lieferdatum_latest=date_to_EDIFACT(lieferschein['anlieferdatum']),
+                       #lieferdatum=date_to_EDIFACT(lieferschein['anlieferdatum']),
+                       #lieferdatum_latest=date_to_EDIFACT(lieferschein['anlieferdatum']),
                        ))
 
     # TEST
