@@ -3,7 +3,7 @@
 """
 convert SoftM INVOICE to VerySimpleInvoiceProtocol.
 
-Leider wird die EDI-Invoice Schnittstelle von SoftM nur unvollständig versorgt. So fehlen bei Auftraägen mit
+Leider wird die EDI-Invoice Schnittstelle von SoftM nur unvollständig versorgt. So fehlen bei Aufträgen mit
 abweichender Lieferadresse nicht nur die Lieferadresse, sondern auch die Auftragsnummer und das
 Leistungsdatum.
 
@@ -23,9 +23,13 @@ import sys
 
 
 class SoftMConverter(object):
+#     """Base class for the various SoftM files"""
+#     pass
+#class SoftMInvoiceConverter(SoftMConverter):
     """Converts SoftM INVOICE files to very Simple Invoice Protocol."""
 
     def __init__(self):
+        # super(self, SoftMInvoiceConverter).__init__()
         self.interchangeheader = {}
         self.invoicelistfooter = {}
         self.invoices = []
@@ -349,7 +353,7 @@ class SoftMConverter(object):
         return kopf
 
     def _convert_invoices(self):
-        """Handles the invoices of an SoftM invoice list."""
+        """Handles the invoices of a SoftM invoice list."""
 
         # now we have to extract the per invoice records from self.softm_record_list
         # every position starts with a F1 record
@@ -424,8 +428,7 @@ class SoftMConverter(object):
             rechnungslistenendbetrag=r3.summe,
             mwst=sum([rec.mwst for rec in r2]),
             steuerpflichtiger_betrag=sum([rec.warenwert for rec in r2]))
-
-
+    
     def convert(self, data):
         """Parse INVOICE file and save result in workfile."""
 
@@ -449,9 +452,100 @@ class SoftMConverter(object):
         return self.invoices
 
 
+class SoftMABConverter(SoftMConverter):
+    
+    def convert_header(self, records):
+        """Auftragskopf konvertieren"""
+        
+        a1 = records['A1']
+        a2 = records['A2']
+        
+        kundennr = str(a1.rechnungsempfaenger)
+        if not kundennr.startswith('SC'):
+            tmp = kundennr.split()
+            kundennr = 'SC%s' % int(tmp[-1])
+
+        auftragsnr = str(a1.auftragsnr)
+        if auftragsnr and not auftragsnr.startswith('SO'):
+            auftragsnr = 'SO%d' % int(auftragsnr)
+        
+        self.guid = auftragsnr
+        
+        kopf = dict(
+            # absenderadresse
+            # erfasst_von
+            guid=self.guid,
+            iln=a1.iln_rechnungsempfaenger,
+            kundennr=kundennr,
+            name1=a2.name1,
+            name2=a2.name2,
+            name3=a2.name3,
+            strasse=a2.strasse,
+            land=husoftm.tools.land2iso(a2.land),
+            plz=a2.plz,
+            ort=a2.ort,
+            auftragsnr=auftragsnr,
+        )
+                
+        kopf['_parsed_at'] = datetime.datetime.now()
+        return kopf
+    
+    def convert_position(self, records):
+        """Konvertiere Auftragsposition"""
+        a3 = records['A3']
+        pos = dict(guid='%s-%s' % (self.guid, a3.position),
+                   posnr=int(a3.position),
+                   artnr=a3.artnr,
+                   ean=a3.ean,
+                   infotext_kunde=a3.bezeichnung,
+                   menge=int(a3.menge) / 1000)
+        
+        # TODO
+        if 'A4' in records:
+            pass
+        if 'AP' in records:
+            pass
+        
+        return pos        
+        
+    def convert(self, data):
+        """Parse ORDRSP file."""
+
+        records, positions = {}, []
+        position = None
+        record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))        
+        for key, record in record_list:
+            if key in ('XH', 'A1', 'A2', 'A8', 'A9'):
+                records[key] = record
+            elif key in ('AV', 'AL', 'AN', 'AK'):
+                pass
+            elif key == 'A3':
+                if position:
+                    positions.append(position)
+                position = {'A3': record}
+            else:
+                position[key] = record
+        
+        if position:
+            positions.append(position)
+
+        # For legacy code from base class
+        self.softm_record_list = record_list
+        self.interchangeheader = self._convert_interchangehead()
+
+        # Auftrags(-bestaetigungs)kopfs
+        ab = self.convert_header(records)
+        ab['positions'] = [self.convert_position(position) for position in positions]
+        return ab
+
+
 def main():
-    converter = SoftMConverter()
-    print converter.convert(open('/Users/md/Downloads/RL01388.TXT').read())
+    converter = SoftMABConverter()
+    converter.convert(open('../workdir/archive/INVOIC/AB00049_ORIGINAL.txt').read())
+    
+    # converter = SoftMABConverter()
+    # converter.convert(open('RG01490.TXT').read())
+    
     #for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
     #    if not f.startswith('RG'):
     #        continue
