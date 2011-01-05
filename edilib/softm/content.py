@@ -136,7 +136,7 @@ class SoftMConverter(object):
             #skontofaehig_ust1=f1.skontofaehig_ust1,
             #skonto1=f1.skonto1,
             #skontobetrag1_ust1=f1.skontobetrag1_ust1,
-            steuernr_kunde=str(f1.ustdid_rechnungsempfaenger or f1.steuernummer),
+            steuernr_kunde=str(f1.ustdid_rechnungsempfaenger),
             steuernr_lieferant=str(f1.ustdid_absender),
         )
 
@@ -193,6 +193,9 @@ class SoftMConverter(object):
             elif f2.besteller_iln and f2.besteller_iln != '0':
                 kopf['lieferadresse']['iln'] = str(f2.besteller_iln)
 
+            if f2.verband:
+                kopf['verbandsnr'] = f2.verband
+        
         if f1.iln_rechnungsempfaenger and f1.iln_rechnungsempfaenger != '0':
             kopf['iln'] = str(f1.iln_rechnungsempfaenger)
 
