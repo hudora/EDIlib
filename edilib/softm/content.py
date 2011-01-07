@@ -18,8 +18,12 @@ import edilib.softm.structure
 import os
 import os.path
 import shutil
-import husoftm.tools
 import sys
+
+try:
+    from husoftm2.tools import land2iso
+except ImportError:
+    from husoftm.tools import land2iso
 
 
 class SoftMConverter(object):
@@ -101,7 +105,7 @@ class SoftMConverter(object):
             name2=fa.rechnung_name2,
             name3=fa.rechnung_name3,
             strasse=fa.rechnung_strasse,
-            land=husoftm.tools.land2iso(fa.rechnung_land),
+            land=land2iso(fa.rechnung_land),
             plz=fa.rechnung_plz,
             ort=fa.rechnung_ort,
             rechnungsnr=rechnungsnr,
@@ -186,7 +190,7 @@ class SoftMConverter(object):
                 strasse=f2.liefer_strasse,
                 plz=f2.liefer_plz,
                 ort=f2.liefer_ort,
-                land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
+                land=land2iso(f2.liefer_land),  # fixup to iso country code
                 #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
             )
             
@@ -481,7 +485,7 @@ class SoftMABConverter(SoftMConverter):
             name2=a2.name2,
             name3=a2.name3,
             strasse=a2.strasse,
-            land=husoftm.tools.land2iso(a2.land),
+            land=land2iso(a2.land),
             plz=a2.plz,
             ort=a2.ort,
             auftragsnr=auftragsnr,
