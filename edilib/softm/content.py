@@ -11,82 +11,230 @@ Created by Maximillian Dornseif on 2008-10-31.
 Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 """
 
-from decimal import Decimal
-import codecs
 import datetime
 import edilib.softm.structure
-import os
-import os.path
-import shutil
+import huTools.monetary
 import husoftm.tools
-import sys
+import os
+
+
+def get_text(record, separator=' '):
+    """Konkateniere Textzeilen aus SoftM-Textsatz"""
+    text = separator.join(getattr(record, 'textzeile%d' % (i + 1)) for i in range(8))
+    return text.strip()
 
 
 class SoftMConverter(object):
-#     """Base class for the various SoftM files"""
-#     pass
-#class SoftMInvoiceConverter(SoftMConverter):
+    """Base class for the various SoftM filetypes"""
+
+    file_records = ['XH']
+    position_prefix = ''
+
+    def get_recordname(self, recordtype):
+        """Convenience Method for resolving record name"""
+        return '%s%s' % (self.position_prefix, recordtype)
+
+    @property
+    def position_key(self):
+        """Name des Records für Positionen"""
+        return self.get_recordname('3')
+
+    def parse(self, data):
+        """Parse input data into records
+
+        Returns a list of (dict of records and a list of position)
+        """
+
+        def add(parent, key, record):
+            """
+            Füge Record in dict ein
+
+            Wenn der Schlüssel schon exisitert,
+            werden die Records als Liste gespeichert.
+            """
+
+            if key in parent:
+                if isinstance(parent[key], list):
+                    parent[key].append(record)
+                else:
+                    parent[key] = [parent[key], record]
+            else:
+                parent[key] = record
+
+        # Datensätze, die einmal pro Übertragungsdatei auftreten
+        # diese werden in alle Dateien kopiert
+        file_records = {}
+
+        # übertragene Datensätze
+        files = []
+
+        # rohe Datensätze aus der Eingagsdatei
+        record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))
+
+        records, positions = None, None
+        for key, record in record_list:
+            if key in self.file_records:
+                add(file_records, key, record)
+            elif key == self.get_recordname('1'):
+                # Beginn neuer Datei: Lege neue Datei an und kopiere file_records
+                if records:
+                    files.append((records, positions))
+                records = dict(file_records)
+                records[key] = record
+                positions = []
+                position = None
+            elif key in self.header_records:  # Datensatz, der ein- oder n-mal pro Header auftritt
+                add(records, key, record)
+            elif key == self.position_key:  # Beginn neuer Position
+                if position:
+                    positions.append(position)
+                position = {key: record}
+            elif key in self.position_records:
+                if not position:
+                    raise RuntimeError(u'Record %s without %s Record' % (key, self.position_key))
+                add(position, key, record)
+            else:
+                raise RuntimeError(u'Unknown record: %s' % key)
+
+        if position:
+            positions.append(position)
+
+        files.append((records, positions))
+        return files
+
+    def convert_interchangeheader(self, record):
+        """Convert file interchange header information."""
+
+        if not record:
+            raise RuntimeError('Missing file header (XH) in data.')
+
+        return dict(technischer_rechnungsempfaenger=record.dfue_partner,
+                    erstellungsdatum=record.erstellungs_datum,
+                    erstellungszeit=record.erstellungs_zeit[:4],  # remove seconds
+                    anwendungsreferenz=record.umgebung,
+                    testkennzeichen=record.testkennzeichen)
+
+    def convert_position(self, guid, position_records):
+        """Converts SoftM position record to orderline"""
+
+        position = position_records[self.position_key]
+        rabatt = position_records[self.get_recordname('4')]
+
+        line = dict(
+            guid="%s-%s" % (guid, position.positionsnr),
+            menge=int(position.menge),
+            artnr=position.artnr,
+            kundenartnr=position.artnr_kunde,
+            name=position.artikelbezeichnung.strip(),
+            infotext_kunde=[position.artikelbezeichnung_kunde],
+            einzelpreis=huTools.monetary.euro_to_cent(position.verkaufspreis),
+            warenwert=huTools.monetary.euro_to_cent(position.wert_netto),
+            zu_zahlen=huTools.monetary.euro_to_cent(position.wert_brutto),
+            abschlag=huTools.monetary.euro_to_cent(-1 * rabatt.positionsrabatt_gesamt),
+            liefertermin=position.liefertermin,
+            ursprungsland=position.ursprungsland,
+            anzahl_komponenten=position.anzahl_komponenten,
+            komponentenaufloesung=position.komponentenaufloesung,
+            steuersatz=position.steuersatz,
+            steuerbetrag=position.steuerbetrag,
+        )
+
+        # Füge EAN ein, wenn nicht leerer String oder nur aus '0' bestehend
+        if position.ean and int(position.ean):
+            line['ean'] = position.ean
+
+        if rabatt.textschluessel3:
+            raise RuntimeError(u"%s hat mehr als 2 Positionsrabatte" % line['guid'])
+
+        rabattep = {}  # Rabatte in %
+        rabatteb = {}  # Rabattbeträge
+        rabattet = {}  # Rabatttexte
+
+        abschlagtext = []
+
+        # Bearbeite die Positionsrabatte
+        # Es kann bis zu acht Rabatte geben - unterstützt werden aber nur zwei!
+        # Record '?R' ist der Positionsrabatttext (den es wohl nur bei Rechnungen gibt)
+        key = self.get_recordname('R')
+        for i in range(1, 9):
+            # Speichere Rabatt-Text aus Positionsrabatttext-Record
+            if key in position_records.keys():
+                rabattet[i] = getattr(position_records[key], 'textzeile%d' % i).strip()
+
+            # Wenn Rabattkennzeichen gesetzt ist, füge Rabatt-Text ein, falls vorhanden
+            # Es werden nur die Rabattkennzeichen '0' und '1' unterstützt
+            rabattkennzeichen = getattr(rabatt, 'rabattkennzeichen%d' % i)
+
+            if rabattkennzeichen == '0':  # '0' ist "Rabatt in Prozent"
+                rabattep[i] = getattr(rabatt, 'positionsrabatt%dp' % i)
+                if rabattep[i]:
+                    abschlagtext.append("%s: %s %%" % (rabattet.get(i, '*unknown*'), rabattep[i]))
+            elif rabattkennzeichen == '1':  # '1' ist Rabatt als Betrag
+                rabatteb[i] = getattr(rabatt, 'rabattbetrag%d' % i)
+                if rabatteb[i]:
+                    abschlagtext.append("%s: %.2f Euro" % (rabattet.get(i, '*unknown'), -1 * float(str(rabatteb[i]))))
+            else:
+                raise ValueError(u"%s: nicht unterstütztes Rabattkennzeichen: %r" % (line['guid'], rabattkennzeichen))
+
+        line['abschlagtext'] = ', '.join(abschlagtext)
+
+        # Füge Positionstexte an 'infotext_kunde'
+        # Record '?P' ist der Positionstext
+        key = self.get_recordname('P')
+        if key in position_records.keys():
+            line['infotext_kunde'].append(get_text(position_records[key]))
+
+        # die restlichen Felder hinzufügen, d.h. alle außer ?3, ?4 und ?P (und ?R)
+        # Positionszuschläge: 'A5'
+        # Set-Komponenten: 'A6'
+        
+        if self.get_recordname('5') in position_records:
+            print 'HAS %s!' % self.get_recordname('5')
+
+        # Texte für Set-Komponenten
+        if self.get_recordname('6') in position_records:
+            records = position_records[self.get_recordname('6')]
+            if not isinstance(records, list):
+                records = [records]
+            for record in records:
+                set_text = '%d x %s  -  %s' % (record.menge, record.artnr, record.bezeichnung)
+                line['infotext_kunde'].append(set_text)
+
+        line['infotext_kunde'] = '\n'.join([x for x in line['infotext_kunde'] if x])
+
+        # ungenutzte Felder entfernen
+        for k in line.keys():
+            if line[k] == '':
+                del line[k]
+        return line
+
+
+class SoftMInvoiceConverter(SoftMConverter):
     """Converts SoftM INVOICE files to very Simple Invoice Protocol."""
 
-    def __init__(self):
-        # super(self, SoftMInvoiceConverter).__init__()
-        self.interchangeheader = {}
-        self.invoicelistfooter = {}
-        self.invoices = []
-        self.softm_record_list = None # whole set of records from SoftM
+    position_prefix = 'F'
+    file_records = ['XH', 'R1', 'R2', 'R3']
+    header_records = ['F1', 'F2', 'FV', 'FL', 'FK', 'F8', 'F9', 'FX', 'FA', 'FE']
+    position_records = ['F3', 'F4', 'FR', 'FP']
 
-    def _convert_invoice_head(self, invoice_records):
+    def convert_header(self, invoice_records):
         """Converts SoftM F1 and varius others."""
 
         # needed entries from SoftM
         fa = invoice_records['FA']
         f1 = invoice_records['F1']
-        f3 = invoice_records['F3']
         f9 = invoice_records['F9']
 
-        # erfasst_von - Name der Person oder des Prozesses, der den Auftrag in das System eingespeist hat.
         # F8 = Kontodaten
-
-# <Bezogene Rechnungsnummer: 0>
-# <verband: 0>,
-
-# <Skontofähig USt 1: u'000000000053550'>,
-# <waehrung: 'EUR'>,
-# <ust1_fuer_skonto: Decimal('19.00')>,
-# <ust2_fuer_skonto: Decimal('0.00')>,
-# <eigene_iln_beim_kunden: u'4005998000007'>,
-# <nettodatum: datetime.date(2009, 4, 7)>,
-# <liefertermin: datetime.date(2009, 1, 21)>,
-# <skonto1: Decimal('3.00')>,
-# <skontobetrag1_ust1: Decimal('-1.610')>,
-
-
-# <gesamtbetrag: Decimal('-53.550')>,
-# <summe_rabatte:Decimal('0.000')>,
-# <skontofaehig: Decimal('0.000')>,
-# <summe_zuschlaege: Decimal('0.000')>,
-# <steuerpflichtig1: Decimal('-45.000')>,
-# <kopfrabatt1_prozent: Decimal('0.000')>,
-# <steuerpflichtig USt 2: '000000000000000+'>,
-# <kopfrabatt2_prozent: Decimal('0.000')>,
-# <skontoabzug: Decimal('1.610')>,
-# <kopfrabatt1_vorzeichen: '+'>,
-# <kopfrabatt2_vorzeichen: '+'>,
-# <kopfrabatt1: Decimal('0.000')>,
-# <mehrwertsteuer: Decimal('-8.550')>,
-# <kopfrabatt2: Decimal('0.000')>,
-# <TxtSlKopfrabatt1: ''>,
-# <TxtSlKopfrabatt2: ''>,
-# <KopfrabattUSt1: Decimal('0.000')>>
 
         kundennr = str(f1.rechnungsempfaenger)
         if not kundennr.startswith('SC'):
             kundennr = 'SC%s' % kundennr
 
-        rechnungsnr=str(f1.rechnungsnr)
+        rechnungsnr = str(f1.rechnungsnr)
         if not rechnungsnr.startswith('RG'):
             rechnungsnr = 'RG%s' % rechnungsnr
-        self.guid = rechnungsnr
+        guid = rechnungsnr
 
         auftragsnr = str(f1.auftragsnr)
         if auftragsnr and not auftragsnr.startswith('SO'):
@@ -95,7 +243,7 @@ class SoftMConverter(object):
         kopf = dict(
             # absenderadresse
             # erfasst_von
-            guid=self.guid,
+            guid=guid,
             kundennr=kundennr,
             name1=fa.rechnung_name1,
             name2=fa.rechnung_name2,
@@ -111,25 +259,26 @@ class SoftMConverter(object):
             auftragsdatum=f1.auftragsdatum,
             rechnungsdatum=f1.rechnungsdatum,
             leistungsdatum=f1.liefertermin,
-            infotext_kunde=' '.join([str(x) for x in (#f1.eigene_iln_beim_kunden.strip(),
-                                                      f1.lieferantennummer.strip(),
-                                                      ) if x]),
-            versandkosten = int(f9.versandkosten1*100),
-            warenwert = int(abs(f9.warenwert)*100), # in cent
+            infotext_kunde=f1.lieferantennummer.strip(),
+
+            versandkosten=huTools.monetary.euro_to_cent(f9.versandkosten1),
+            warenwert=huTools.monetary.euro_to_cent(abs(f9.warenwert)),
 
             # summe_zuschlaege=f9.summe_zuschlaege,
-            # rechnungsbetrag='?5', - Rechnungsbetrag ohne Steuer und Abzüge als String mit zwei Nachkommastellen. Entspricht warenwert - Abschlag
-            rechnung_steuranteil=int(f9.mehrwertsteuer*100),
+            # Rechnungsbetrag ohne Steuer und Abzüge als String mit zwei Nachkommastellen.
+            # Entspricht Warenwert - Abschlag
+            # rechnungsbetrag='?5',
+            rechnung_steueranteil=huTools.monetary.euro_to_cent(f9.mehrwertsteuer),
             steuer_prozent="19",
             # Der Betrag, denn der Kund eZahlen muss - es sei denn, er zieht Skonto
-            zu_zahlen=int(f9.gesamtbetrag*100), # in cent
+            zu_zahlen=huTools.monetary.euro_to_cent(f9.gesamtbetrag),
             # Rechnungsbetrag ohne Steuer und Abz<C3><BC>ge als String mit zwei Nachkommastellen.
             # Entspricht warenwert - abschlag oder zu_zahlen - rechnung_steuranteil
-            rechnungsbetrag=int((f9.gesamtbetrag-f9.mehrwertsteuer)*100),
+            rechnungsbetrag=huTools.monetary.euro_to_cent((f9.gesamtbetrag - f9.mehrwertsteuer)),
 
             zahlungstage=f1.nettotage,
-            #skontofaehig=int(abs(f9.skontofaehig)*100),  # TODO: in cent?
-            #steuerpflichtig1=int(abs(f9.steuerpflichtig1)*100), # TODO: in cent?
+            #skontofaehig=huTools.monetary.euro_to_cent(abs(f9.skontofaehig)),
+            #steuerpflichtig1=huTools.monetary.euro_to_cent(abs(f9.steuerpflichtig1)),
             #skontoabzug=f9.skontoabzug,
             )
 
@@ -156,8 +305,8 @@ class SoftMConverter(object):
             if text2 and f9.kopfrabatt2_prozent:
                 text2 = "%s (%s %%)" % (text2, f9.kopfrabatt2_prozent)
             kopf['abschlag_text'] = ', '.join([x for x in [text1, text2] if x])
-            kopf['abschlag'] = int(f9.summe_rabatte*100) # = f9.kopfrabatt1 + f9.kopfrabatt2, in cent
-            kopf['hint']['abschlag_prozent'] = "%.2f" % float(str(f9.kopfrabatt1_prozent+f9.kopfrabatt2_prozent))
+            kopf['abschlag'] = huTools.monetary.euro_to_cent(f9.summe_rabatte)  # = f9.kopfrabatt1 + f9.kopfrabatt2
+            kopf['hint']['abschlag_prozent'] = "%.2f" % float(str(f9.kopfrabatt1_prozent + f9.kopfrabatt2_prozent))
             # 'kopfrabatt1_vorzeichen', fieldclass=FixedField, default='+'),
             # 'kopfrabatt2_vorzeichen', fieldclass=FixedField, default='+'),
 
@@ -165,10 +314,13 @@ class SoftMConverter(object):
             kopf['skontotage'] = f1.skontotage1
             kopf['skonto_prozent'] = f1.skonto1
             # in cent
-            kopf['zu_zahlen_bei_skonto'] = int((f9.gesamtbetrag-f1.skontobetrag1_ust1)*100)
+            kopf['zu_zahlen_bei_skonto'] = huTools.monetary.euro_to_cent(f9.gesamtbetrag - f1.skontobetrag1_ust1)
             kopf['hint']['skontodatum'] = f1.skontodatum1
-            kopf['hint']['skontobetrag'] = int(abs(f9.skontoabzug)*100)
-            kopf['hint']['steueranteil_bei_skonto'] = kopf['zu_zahlen_bei_skonto']-int(kopf['zu_zahlen_bei_skonto']/1.19)
+            kopf['hint']['skontobetrag'] = huTools.monetary.euro_to_cent(abs(f9.skontoabzug))
+
+            # huTools.monetary.tara
+            tmp = kopf['zu_zahlen_bei_skonto'] - huTools.monetary.netto(kopf['zu_zahlen_bei_skonto'])
+            kopf['hint']['steueranteil_bei_skonto'] = tmp
 
         if 'F2' in invoice_records:
             # manchmal wird KEINE Lieferadresse mitgegeben
@@ -177,7 +329,7 @@ class SoftMConverter(object):
             warenempfaenger = str(f2.warenempfaenger)
             if not warenempfaenger.startswith('SC'):
                 warenempfaenger = 'SC%s' % warenempfaenger
-            
+
             kopf['lieferadresse'] = dict(
                 kundennr=warenempfaenger,
                 name1=f2.liefer_name1,
@@ -189,7 +341,7 @@ class SoftMConverter(object):
                 land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
                 #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
             )
-            
+
             if f2.liefer_iln and f2.liefer_iln != '0':
                 kopf['lieferadresse']['iln'] = str(f2.liefer_iln)
             elif f2.iln_warenempfaenger and f2.iln_warenempfaenger != '0':
@@ -252,154 +404,7 @@ class SoftMConverter(object):
         kopf['_parsed_at'] = datetime.datetime.now()
         return kopf
 
-    def _convert_invoice_position(self, position_records):
-        """Converts SoftM F3 & F4 records to orderline"""
-
-        f3 = position_records['F3']
-        f4 = position_records['F4'] # Positionsrabatte
-
-        line = dict(
-            guid="%s-%s" % (self.guid, f3.positionsnr),
-            menge=int(f3.menge),
-            artnr=f3.artnr,
-            kundenartnr=f3.artnr_kunde,
-            name=f3.artikelbezeichnung.strip(),
-            infotext_kunde=[f3.artikelbezeichnung_kunde],
-            einzelpreis=int(f3.verkaufspreis*100),
-            warenwert=int(f3.wert_netto*100),
-            zu_zahlen=int(f3.wert_brutto*100),
-            abschlag=-1*int(f4.positionsrabatt_gesamt*100)
-        )
-
-        if f3.ean and int(f3.ean):
-            line['ean']=f3.ean
-
-        if f4.textschluessel3:
-            raise ValueError("%s hat mehr als 2 Positionsrabatte - das ist nicht unterstützt" % (rechnungsnr))
-
-        rabattep = {} # %
-        rabatteb = {} # Betraege
-        rabattet = {} # Texte
-        abschlagtext = []
-        # FR = positionsrabatttext
-        for i in range(1,9):
-            if 'FR' in position_records.keys():
-                rabattet[i] = getattr(position_records['FR'], 'textzeile%d' % i).strip()
-            if getattr(f4, 'rabattkennzeichen%d' % i) == '0':
-                rabattep[i] = getattr(f4, 'positionsrabatt%dp' % i)
-                if rabattep[i]:
-                     abschlagtext.append("%s: %s %%" % (rabattet[i], rabattep[i]))
-            elif getattr(f4, 'rabattkennzeichen%d' % i) == '1':
-                rabatteb[i] = getattr(f4, 'rabattbetrag%d' % i)
-                if rabatteb[i]:
-                    abschlagtext.append("%s: %.2f Euro" % (rabattet[i], -1 * float(str(rabatteb[i]))))
-            else:
-                raise ValueError("%s hat nicht unterstütztes Rabattkennzeichen" % (rechnungsnr))
-        line['abschlagtext'] = ', '.join(abschlagtext)
-
-        # FP = positionstext
-        for k in [u'FP']:
-            if k in position_records.keys():
-                zeile = []
-                for i in range(1, 9):
-                    text = getattr(position_records[k], 'textzeile%d' % i).strip()
-                    if text:
-                        zeile.append(text)
-                if zeile:
-                    line['infotext_kunde'].append(' '.join(zeile).strip())
-
-        line['infotext_kunde'] = ', '.join([x for x in line['infotext_kunde'] if x])
-
-        # ungenutzte Felder entfernen
-        for k in line.keys():
-            if line[k] == '':
-                del line[k]
-        return line
-
-    def _convert_invoice(self, softm_record_slice):
-        """Handles a SoftM invoice. Works on a slice of an INVOICE list, which
-        contains the relavant stuff for the actual invoice."""
-
-        softm_records = dict(softm_record_slice)
-        kopf = self._convert_invoice_head(softm_records)
-
-        # the now we have to extract the per invoice records from softm_record_list
-        # every position starts with a F3 record
-        record_iter = iter(softm_record_slice)
-
-        # remove everything until we hit the first F3
-        for key, val in record_iter:
-            if key == 'F3':
-                break
-        if key != 'F3':
-            raise RuntimeError('Invalid invoice data')
-
-        # process positions
-        kopf['orderlines'] = []
-        while record_iter and key == "F3":
-
-            # slice of segment until the next F3
-            position = [(key, val)]
-            for key, val in record_iter:
-                if key == 'F3':
-                    break
-                position.append((key, val))
-
-            # process position
-            kopf['orderlines'].append(self._convert_invoice_position(dict(position)))
-        return kopf
-
-    def _convert_invoices(self):
-        """Handles the invoices of a SoftM invoice list."""
-
-        # now we have to extract the per invoice records from self.softm_record_list
-        # every position starts with a F1 record
-        record_iter = iter(self.softm_record_list)
-
-        # remove everything until we hit the first F1
-        for key, val in record_iter:
-            if key == 'F1':
-                break
-
-        # create sub-part of whole invoice (list) that represents one single invoice
-        if key != 'F1':
-            raise RuntimeError('Invalid invoice data: no F1 record')
-
-        invoices = []
-        while record_iter and key == "F1":
-            # slice of segment until the next F1
-            invoice = [(key, val)]
-            for key, val in record_iter:
-                if key == 'F1':
-                    break
-                invoice.append((key, val))
-
-
-            # process invoice
-            invoices.append(self._convert_invoice(invoice))
-        return invoices
-
-    def _convert_interchangehead(self):
-        """Handles file header information."""
-
-        xh = None
-        for key, entry in self.softm_record_list:
-            if 'XH' == key:
-                xh = entry
-                break
-
-        if not xh:
-            raise RuntimeError('Missing file header (XH) in data.')
-
-        return dict(
-            technischer_rechnungsempfaenger=xh.dfue_partner,
-            erstellungsdatum=xh.erstellungs_datum,
-            erstellungszeit=xh.erstellungs_zeit[:4], # remove seconds
-            anwendungsreferenz=xh.umgebung,
-            testkennzeichen=xh.testkennzeichen)
-
-
-    def _convert_invoicelistfooter(self):
+    def convert_invoicelistfooter(self, records):
         """Handle R1, R2, R3 entries of invoice lists.
 
         R1   Rechnungsliste-Verbandsdaten                 1-mal pro Verband
@@ -407,56 +412,79 @@ class SoftMConverter(object):
         R3   Rechnungsliste-Summe                         1-mal pro Kopfdaten (R1)
         """
 
-        softm_record_dict = dict(self.softm_record_list)
-        r1 = softm_record_dict.get('R1', None)
-        r3 = softm_record_dict.get('R3', None)
-        r2 = [x[1] for x in self.softm_record_list if x[0] == 'R2']
+        if not ('R1' in records and 'R2' in records and 'R3' in records):
+            return
 
-        if not all((r1, r2, r3)):
-            if any((r1, r2, r3)):
-                raise RuntimeError("Data seems to be a invoice list with missing information.")
-            return {}
+        r1 = records['R1']
+        r3 = records['R3']
+        r2 = records['R2']
 
-        return dict(
-            rechnungslistennr=r2[-1].listennr,
-            rechnungslistendatum=r2[-1].listendatum,
-            empfaenger_iln=r1.verband_iln,
-            lieferantennr=r1.lieferantennr_verband,
-            rechnungslistenendbetrag=r3.summe,
-            mwst=sum([rec.mwst for rec in r2]),
-            steuerpflichtiger_betrag=sum([rec.warenwert for rec in r2]))
-    
+        if not isinstance(r2, list):
+            r2 = [r2]
+
+        footer = dict(rechnungslistennr=r2[-1].listennr,
+                      rechnungslistendatum=r2[-1].listendatum,
+                      empfaenger_iln=r1.verband_iln,
+                      lieferantennr=r1.lieferantennr_verband,
+                      rechnungslistenendbetrag=r3.summe,
+                      mwst=sum([rec.mwst for rec in r2]),
+                      steuerpflichtiger_betrag=sum([rec.warenwert for rec in r2]))
+        return footer
+
     def convert(self, data):
         """Parse INVOICE file and save result in workfile."""
 
         # If we handle a collection of single invoices here, we have to split them into pieces and
         # provide a header for them.
 
+        footer = None
+        interchangeheader = None
+        invoices = []
+
+        files = self.parse(data)
+        for records, positions in files:
+            if not interchangeheader:
+                interchangeheader = self.convert_interchangeheader(records['XH'])
+
+            invoice = self.convert_header(records)
+            invoice['orderlines'] = [self.convert_position(invoice['guid'], position) for position in positions]
+            invoices.append(invoice)
+
+            if 'R1' in records and not footer:
+                footer = self.convert_invoicelistfooter(records)
+
         # call init to clean this instance of SoftMConverter if this function is used multiple times
         self.__init__()
 
-        # parse invoice(list)
-        self.softm_record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))
-        self.interchangeheader = self._convert_interchangehead()
-        self.invoices = self._convert_invoices()
-        self.invoicelistfooter = self._convert_invoicelistfooter()
-
         # for invoice lists, add the invoice recipient to every single invoice
-        if self.invoicelistfooter:
+        if footer:
             for invoice in self.invoices:
-                invoice['rechnungsadresse'] = {'iln': self.interchangeheader['technischer_rechnungsempfaenger']}
+                invoice['rechnungsadresse'] = {'iln': interchangeheader['technischer_rechnungsempfaenger']}
 
-        return self.invoices
+        return invoices
 
 
 class SoftMABConverter(SoftMConverter):
-    
+    """Converter for AB files"""
+
+    position_prefix = 'A'
+
+    # Datensätze, die genau einmal pro Auftrag auftreten und
+    # Texte: Versandart, Lieferbedingungen, Nebenkosten, Kopftexte
+    #        Texte Kopfrabatt, Endetexte
+    # Treten 1 oder n mal pro Kopf auf
+    header_records = ['A1', 'A2', 'A8', 'A9', 'AV', 'AL', 'AN', 'AK', 'AX', 'AE']
+
+    # Records, die n mal pro Position auftreten
+    position_records = ['A3', 'A4', 'A6', 'AP']
+
     def convert_header(self, records):
         """Auftragskopf konvertieren"""
-        
+
         a1 = records['A1']
         a2 = records['A2']
-        
+        a9 = records['A9']
+
         kundennr = str(a1.rechnungsempfaenger)
         if not kundennr.startswith('SC'):
             tmp = kundennr.split()
@@ -465,92 +493,135 @@ class SoftMABConverter(SoftMConverter):
         auftragsnr = str(a1.auftragsnr)
         if auftragsnr and not auftragsnr.startswith('SO'):
             auftragsnr = 'SO%d' % int(auftragsnr)
-        
-        self.guid = auftragsnr
-        
+
+        guid = auftragsnr
+
         kopf = dict(
-            # absenderadresse
-            # erfasst_von
-            guid=self.guid,
+            guid=guid,
             iln=a1.iln_rechnungsempfaenger,
             kundennr=kundennr,
-            name1=a2.name1,
-            name2=a2.name2,
-            name3=a2.name3,
-            strasse=a2.strasse,
-            land=husoftm.tools.land2iso(a2.land),
-            plz=a2.plz,
-            ort=a2.ort,
+            # name1=a2.name1,
+            # name2=a2.name2,
+            # name3=a2.name3,
+            # strasse=a2.strasse,
+            # land=husoftm.tools.land2iso(a2.land),
+            # plz=a2.plz,
+            # ort=a2.ort,
             auftragsnr=auftragsnr,
+            auftragsdatum=a1.auftragsdatum,
+            
+            # Daten aus A9-Record
+            warenwert=huTools.monetary.euro_to_cent(abs(a9.nettowarenwert)),
+            # Der Betrag, denn der Kunde zahlen muss - es sei denn, er zieht Skonto
+            zu_zahlen=huTools.monetary.euro_to_cent(a9.gesamtbetrag),
+            steueranteil=huTools.monetary.euro_to_cent(a9.mehrwertsteuer),
+            versandkosten=huTools.monetary.euro_to_cent(a9.versandkosten1),        
+            
+            rechnungsbetrag=huTools.monetary.euro_to_cent(a9.steuerpflichtig_ust1),
+            skontofaehig=huTools.monetary.euro_to_cent(a9.skontofaehig),
+            skontoabzug=huTools.monetary.euro_to_cent(a9.skontoabzug),
+            steuer_prozent=a9.steuersatz1,
+            
+            # Wird bei Rechnung addiert! TODO
+            # kopf['abschlag'] = huTools.monetary.euro_to_cent(f9.summe_rabatte)  # = f9.kopfrabatt1 + f9.kopfrabatt2
+            summe_zuschlaege=huTools.monetary.euro_to_cent(a9.summe_zuschlaege),
+            summe_rabatte=huTools.monetary.euro_to_cent(a9.summe_rabatte),
+            
+            kopfrabatt1=huTools.monetary.euro_to_cent(a9.kopfrabatt1),
+            kopfrabatt1_pct=a9.kopfrabatt1_pct,
+            textschluessel1=a9.textschluessel1,
+            kopfrabatt2=huTools.monetary.euro_to_cent(a9.kopfrabatt2),
+            kopfrabatt2pct=a9.kopfrabatt2_pct,
+            textschluessel2=a9.textschluessel2,
+                    
+            # verpackungskosten1=a9.verpackungskosten1,
+            # nebenkosten1=a9.nebenkosten1,
+            anzahl_positionen=a9.anzahl_positionen,
         )
-                
+        
+        kopf['hint'] = dict(
+            lieferantennr=a1.lieferantennr,
+            steuernr_kunde=str(a1.ustdid_rechnungsempfaenger),
+            steuernr_lieferant=str(a1.ustdid_absender),
+        )        
+
+        if a1.skontotage1:
+            kopf['skontotage'] = a1.skontotage1
+            kopf['skonto_prozent'] = a1.skonto1
+            kopf['zu_zahlen_bei_skonto'] = huTools.monetary.euro_to_cent(a9.gesamtbetrag - a1.skontobetrag1_ust1)
+            kopf['hint']['skontobetrag'] = huTools.monetary.euro_to_cent(abs(a9.skontoabzug))
+
+            # huTools.monetary.tara
+            tmp = kopf['zu_zahlen_bei_skonto'] - huTools.monetary.netto(kopf['zu_zahlen_bei_skonto'])
+            kopf['hint']['steueranteil_bei_skonto'] = tmp
+
+        # Daten aus Satz A2 (Auftrags-Lieferdaten) einfügen
+        warenempfaenger = str(a2.warenempfaenger)
+        if not warenempfaenger.startswith('SC'):
+            warenempfaenger = 'SC%s' % warenempfaenger
+
+        kopf['lieferadresse'] = dict(
+            kundennr=warenempfaenger,
+            name1=a2.liefer_name1,
+            name2=a2.liefer_name2,
+            name3=a2.liefer_name3,
+            strasse=a2.liefer_strasse,
+            plz=a2.liefer_plz,
+            ort=a2.liefer_ort,
+            land=husoftm.tools.land2iso(a2.liefer_land),
+        )
+
+        if a2.liefer_iln and a2.liefer_iln != '0':
+            kopf['lieferadresse']['iln'] = str(a2.liefer_iln)
+        elif a2.iln_warenempfaenger and a2.iln_warenempfaenger != '0':
+            kopf['lieferadresse']['iln'] = str(f2.iln_warenempfaenger)
+
+        zeilen = []
+        for key in ('AV', 'AL', 'AN', 'AK', 'AX', 'AE'):
+            if key in records:
+                record = records[key]
+                if isinstance(record, list):
+                    zeilen.extend(get_text(r, separator='\n') for r in record)
+                else:
+                    zeilen.append(get_text(records[key], separator='\n'))
+
+        kopf['infotext_kunde'] = '\n'.join(zeilen).strip()
         kopf['_parsed_at'] = datetime.datetime.now()
         return kopf
-    
-    def convert_position(self, records):
-        """Konvertiere Auftragsposition"""
-        a3 = records['A3']
-        pos = dict(guid='%s-%s' % (self.guid, a3.position),
-                   posnr=int(a3.position),
-                   artnr=a3.artnr,
-                   ean=a3.ean,
-                   infotext_kunde=a3.bezeichnung,
-                   menge=int(a3.menge) / 1000)
-        
-        # TODO
-        if 'A4' in records:
-            pass
-        if 'AP' in records:
-            pass
-        
-        return pos        
-        
+
     def convert(self, data):
         """Parse ORDRSP file."""
 
-        records, positions = {}, []
-        position = None
-        record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))        
-        for key, record in record_list:
-            if key in ('XH', 'A1', 'A2', 'A8', 'A9'):
-                records[key] = record
-            elif key in ('AV', 'AL', 'AN', 'AK'):
-                pass
-            elif key == 'A3':
-                if position:
-                    positions.append(position)
-                position = {'A3': record}
-            else:
-                position[key] = record
+        files = self.parse(data)
+        print "%d ABs in data" % len(files)  # sollte nur EINE sein!
         
-        if position:
-            positions.append(position)
-
-        # For legacy code from base class
-        self.softm_record_list = record_list
-        self.interchangeheader = self._convert_interchangehead()
-
-        # Auftrags(-bestaetigungs)kopfs
-        ab = self.convert_header(records)
-        ab['positions'] = [self.convert_position(position) for position in positions]
+        for records, positions in files:
+            # Datenaustausch-Kopf
+            interchangeheader = self.convert_interchangeheader(records['XH'])
+            # Auftrags(-bestätigungs)kopf
+            ab = self.convert_header(records)
+            ab['positions'] = [self.convert_position(ab['guid'], position) for position in positions]
         return ab
 
 
-def main():
-    converter = SoftMABConverter()
-    converter.convert(open('../workdir/archive/INVOIC/AB00049_ORIGINAL.txt').read())
-    
-    # converter = SoftMABConverter()
-    # converter.convert(open('RG01490.TXT').read())
-    
-    #for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
-    #    if not f.startswith('RG'):
-    #        continue
-    #    # print f, os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f)
-    #    converter = SoftMConverter()
-    #    converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
+def demo():
+    """Demo Application"""
+    for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
+        if not f.startswith('RG'):
+            continue
+        converter = SoftMInvoiceConverter()
+        converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
 
-# RG821130 ist nen tolles Beispiel für ne Gutschrift
+
+def main():
+    """Main Entry Point"""
+
+    converter = SoftMABConverter()
+    converter.convert(open('OUT/AB00049.txt').read())
+
+    converter = SoftMInvoiceConverter()
+    converter.convert(open('OUT/RG01490.TXT').read())
+
 
 if __name__ == '__main__':
     main()

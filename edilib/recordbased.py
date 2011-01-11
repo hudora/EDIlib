@@ -238,6 +238,23 @@ class EanField(Field):
         return super(EanField, self).is_valid(value)
 
 
+class BooleanField(Field):
+    """Boolean Field"""
+
+    def format(self, value):
+        return '1' if value else '0'
+
+    def get_parsed(self, data):
+        """Do the actual parsing."""
+        if data == '1':
+            return True
+        elif data == '0':
+            return False
+        else:
+            raise ValueError('BooleanField: Unknown state %s' % data)
+        return bool(data)
+
+
 class IntegerField(Field):
     """Right adjusted Integer Field."""
 
