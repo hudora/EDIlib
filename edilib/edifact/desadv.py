@@ -92,7 +92,7 @@ def lieferschein_to_DESADV(lieferschein):
                # liefersnr  document/message number
                # 9          message function, 9 equals "Original"
 
-    msg.append("DTM+76:%(lieferdatum)s:102" % params)
+    msg.append("DTM+76:%(anlieferdatum)s:102" % params)
                # http://www.gs1.se/EANCOM%202000/desadv/gd3.htm#3DTMDESADV30
                # 76         date/time period qualifier, 76 equals "delivery date/time, scheduled for"
                # datum      date/time/period
