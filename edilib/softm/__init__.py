@@ -9,4 +9,3 @@ Copyright (c) 2010 HUDORA. All rights reserved.
 
 from edilib.softm.structure import *
 from edilib.softm.content import *
-

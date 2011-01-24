@@ -4,12 +4,12 @@
 desadv.py
 """
 
-# Format laut http://www.gs1belu.org/files/DESADV(EANCOM2002_S3).pdf 
+# Format laut http://www.gs1belu.org/files/DESADV(EANCOM2002_S3).pdf
 # UNA http://www.gs1.se/EANCOM%202000/part1/una.htm
 
 # Fragen:
 #  - warum hat UNB mit date_to_EDIFACT keine Time lt. http://www.gs1.se/EANCOM%202000/part1/unb.htm ?
-#  - UNH, message identifier, message type release number: muesste das nicht 96A statt 09A heissen? 
+#  - UNH, message identifier, message type release number: muesste das nicht 96A statt 09A heissen?
 
 
 import base64
@@ -31,7 +31,7 @@ def split_and_normalize_text(text, length, parts=2):
     text = (text.replace(':', ' ')
                 .replace('+', ' ')
                 .replace('\n', ' '))
-    return (text[i:i+length] for i in range(0, parts*length, length))
+    return (text[i:i + length] for i in range(0, parts * length, length))
 
 
 def lieferschein_to_DESADV(lieferschein):
@@ -46,7 +46,7 @@ def lieferschein_to_DESADV(lieferschein):
 
     params.update(lieferschein)
     params.update(dict(uebertragungsnr=base64.b32encode(struct.pack('>d', time())).strip('=\n')[:14],
-                       msgrefnr=base64.b32encode(struct.pack('>d', time()-1000000000)).strip('=\n')[:14],
+                       msgrefnr=base64.b32encode(struct.pack('>d', time() - 1000000000)).strip('=\n')[:14],
                        date=date.today().strftime('%y%m%d'),
                        time=datetime.now().strftime('%H%M'),
                        #lieferdatum=date_to_EDIFACT(lieferschein['anlieferdatum']),
@@ -73,7 +73,7 @@ def lieferschein_to_DESADV(lieferschein):
                 # iln   interchange recpt:  EAN location number (n13)
                 # 14                        EAN international
                 # date  date/time of preparation: date
-                # time                            time 
+                # time                            time
                 # uebertragungsnr   interchange control reference
 
     msg = []
@@ -111,7 +111,7 @@ def lieferschein_to_DESADV(lieferschein):
                # 9                                        code list resp. agency, 9 equals EAN
                # name1      name and address: line 1
                # name2                        line 2
-               # name3                        line 3 
+               # name3                        line 3
                # [empty]    party name
                # strasse    street: street and number, line 1
                # ort        city name
@@ -127,7 +127,7 @@ def lieferschein_to_DESADV(lieferschein):
                # 9                                        code list resp. agency, 9 equals EAN
                # name1      name and address: line 1
                # name2                        line 2
-               # name3                        line 3 
+               # name3                        line 3
                # [empty]    party name
                # strasse    street: street and number, line 1
                # ort        city name
@@ -136,7 +136,7 @@ def lieferschein_to_DESADV(lieferschein):
                # land       country
 
     msg.append("RFF+AVC:%(kundennr)s" % params)
-               # http://www.gs1.se/EANCOM%202000/desadv/gdb.htm#3RFFDESADV140 
+               # http://www.gs1.se/EANCOM%202000/desadv/gdb.htm#3RFFDESADV140
                # AVC        reference qualifier, AVC
                # kundennr   reference number
 
@@ -145,7 +145,7 @@ def lieferschein_to_DESADV(lieferschein):
                # 1          hierachical id number
 
     for idx, position in enumerate(lieferschein['positionen']):
-        msg.append("LIN+%d++%s:SA" % (idx+1, position['artnr']))
+        msg.append("LIN+%d++%s:SA" % (idx + 1, position['artnr']))
                    # http://www.gs1.se/EANCOM%202000/desadv/gdv.htm#3LINDESADV560
                    # %d         line item number
                    # [empty]    action request/notification
@@ -156,7 +156,7 @@ def lieferschein_to_DESADV(lieferschein):
                    # http://www.gs1.se/EANCOM%202000/desadv/gdz.htm#3QTYDESADV600
                    # 12         quantity qualifier, 12 equals "despatch quantity"
                    # %d         quantity
-        
+
         if 'name' in position:
             parts = u'+'.join(split_and_normalize_text(position['name'], 34))
             msg.append("IMD+F++:::%s" % parts)
@@ -168,7 +168,7 @@ def lieferschein_to_DESADV(lieferschein):
                        # [empty]                    code list responsible agency
                        # %s                         item description, part 1
                        # %s                         item description, part 2
-                   
+
         if 'infotext_kunde' in position:
             parts = u'+'.join(split_and_normalize_text(position['infotext_kunde'], length=70, parts=5))
             msg.append("FTX+ZZZ+002+%s" % parts)
@@ -182,11 +182,11 @@ def lieferschein_to_DESADV(lieferschein):
                # 2       control qualifier, 2 equals "number of line items in message"
                # %d      control value
 
-    msg.append("UNT+%d+%s" % (len(msg)+1, params['msgrefnr']))
+    msg.append("UNT+%d+%s" % (len(msg) + 1, params['msgrefnr']))
                # http://www.gs1.se/EANCOM%202000/desadv/gd1l.htm#3UNTDESADV990
                # %d      number of segments in the message
                # %s      message reference number as in UNH given
-    
+
     envelope.extend(msg)
     envelope.append("UNZ+1+%(uebertragungsnr)s" % params)
                     # http://www.gs1.se/EANCOM%202000/part1/unz.htm
@@ -197,7 +197,7 @@ def lieferschein_to_DESADV(lieferschein):
     # bei einem Encode nach 8859-1 bleiben die Umlaute in Ergebnis, was aber
     # fuer den gewaehlten Encoding-Type UNOC nicht zulaessig ist. Deshalb 'ascii'
     # mit 'ignore' wirft die Umlaute raus. Reicht das? Only time will tell.
-    return u'\n'.join(map(lambda row: row+u"'", envelope)).encode('ascii', 'ignore')
+    return u'\n'.join(map(lambda row: row + u"'", envelope)).encode('ascii', 'ignore')
 
 
 if __name__ == '__main__':
@@ -205,7 +205,7 @@ if __name__ == '__main__':
                     "name1": "HUDORA GmbH",
                     "name2": "Abt. Cybernetics",
                     "name3": "Anlieferung: Tor 2",
-                    "strasse": u"Jägerwald 13", 
+                    "strasse": u"Jägerwald 13",
                     "ort": "Remscheid",
                     "plz": "42897",
                     "land": "DE",
@@ -232,4 +232,3 @@ if __name__ == '__main__':
                                     "artnr": "12345",
                                     "name": "Whatever"}]}
     print lieferschein_to_DESADV(lieferschein)
-    
