@@ -20,8 +20,6 @@ import datetime
 import time
 import struct
 import base64
-import os
-import logging
 
 
 def date_to_EDIFACT(d):

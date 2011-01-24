@@ -11,19 +11,9 @@ Created by Maximillian Dornseif on 2008-10-31.
 Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 """
 
-from decimal import Decimal
-import codecs
 import datetime
 import edilib.softm.structure
-import os
-import os.path
-import shutil
-import sys
-
-try:
-    from husoftm2.tools import land2iso
-except ImportError:
-    from husoftm.tools import land2iso
+import husoftm2.tools
 
 
 class SoftMConverter(object):
@@ -45,7 +35,6 @@ class SoftMConverter(object):
         # needed entries from SoftM
         fa = invoice_records['FA']
         f1 = invoice_records['F1']
-        f3 = invoice_records['F3']
         f9 = invoice_records['F9']
 
         # erfasst_von - Name der Person oder des Prozesses, der den Auftrag in das System eingespeist hat.
@@ -104,7 +93,7 @@ class SoftMConverter(object):
             name2=fa.rechnung_name2,
             name3=fa.rechnung_name3,
             strasse=fa.rechnung_strasse,
-            land=land2iso(fa.rechnung_land),
+            land=husoftm2.tools.land2iso(fa.rechnung_land),
             plz=fa.rechnung_plz,
             ort=fa.rechnung_ort,
             rechnungsnr=rechnungsnr,
@@ -187,7 +176,7 @@ class SoftMConverter(object):
                 strasse=f2.liefer_strasse,
                 plz=f2.liefer_plz,
                 ort=f2.liefer_ort,
-                land=land2iso(f2.liefer_land),  # fixup to iso country code
+                land=husoftm2.tools.land2iso(f2.liefer_land),  # fixup to iso country code
                 #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
             )
 
@@ -279,7 +268,7 @@ class SoftMConverter(object):
             line['ean'] = f3.ean
 
         if f4.textschluessel3:
-            raise ValueError("%s hat mehr als 2 Positionsrabatte - das ist nicht unterstützt" % (rechnungsnr))
+            raise ValueError("%s hat mehr als 2 Positionsrabatte - das ist nicht unterstützt" % (self.guid))
 
         rabattep = {}  # %
         rabatteb = {}  # Betraege
@@ -298,7 +287,7 @@ class SoftMConverter(object):
                 if rabatteb[i]:
                     abschlagtext.append("%s: %.2f Euro" % (rabattet[i], -1 * float(str(rabatteb[i]))))
             else:
-                raise ValueError("%s hat nicht unterstütztes Rabattkennzeichen" % (rechnungsnr))
+                raise ValueError("%s hat nicht unterstütztes Rabattkennzeichen" % (self.guid))
         line['abschlagtext'] = ', '.join(abschlagtext)
 
         # FP = positionstext
@@ -480,7 +469,7 @@ class SoftMABConverter(SoftMConverter):
             name2=a2.name2,
             name3=a2.name3,
             strasse=a2.strasse,
-            land=land2iso(a2.land),
+            land=husoftm2.tools.land2iso(a2.land),
             plz=a2.plz,
             ort=a2.ort,
             auftragsnr=auftragsnr,

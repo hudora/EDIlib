@@ -11,7 +11,6 @@ Copyright (c) 2007, 2008, 2010 HUDORA GmbH. All rights reserved.
 
 
 import datetime
-import os
 from edilib.recordbased import generate_field_datensatz_class, DateField, TimeField
 from edilib.recordbased import IntegerField, DecimalFieldNoDot, DecimalFieldNoDotSigned, FixedField, EanField
 

@@ -728,7 +728,6 @@ def parse_rawdata(data):
     In fact it returns (header, [Auftrag, Auftrag, ...]).
     """
 
-    firstline = ''
     header = None
     parsers = []
     auftraege = []
@@ -752,7 +751,6 @@ def parse_rawdata(data):
 
         if satzart == '000':
             # special case: interchange header
-            firstline = line
             header = recordhandlers[satzart](parser)
         else:
             if satzart == '100':
