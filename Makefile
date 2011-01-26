@@ -1,7 +1,7 @@
 check: dependencies
-	-pep8 -r --ignore=E501 edilib/
+	pep8 -r --ignore=E501 edilib/
 	pyflakes edilib/
-	pylint -iy --max-line-length=110 -d E1101 edilib/
+	-pylint -iy --max-line-length=110 -d E1101 edilib/
 
 test: dependencies
 	PYTHONPATH=. ./pythonenv/bin/python test/test_recordbased.py
