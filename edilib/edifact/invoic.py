@@ -111,7 +111,8 @@ def invoice_to_INVOICD09A(invoice):
 
     k.append("NAD+SU+%(absenderadresse_iln)s::9+%(absenderadresse_name1)s:%(absenderadresse_name2)s:%(absenderadresse_name3)s++%(absenderadresse_strasse)s:::+%(absenderadresse_ort)s++%(absenderadresse_plz)s+%(absenderadresse_land)s'" % param)
     # Kontoverbindung FII       -C      5       - Financial institution information
-    k.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
+    if 'hint_steuernr_lieferant' in param:
+        k.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
     k.append("NAD+BY+%(iln)s::9++%(name1)s:%(name2)s:%(name3)s+%(strasse)s+%(ort)s++%(plz)s+%(land)s'" % param)
     k.append("RFF+AVC:%(kundennr)s'" % param)
     if 'hint_steuernr_kunde' in param:
