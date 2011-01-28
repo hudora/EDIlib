@@ -20,8 +20,6 @@ import datetime
 import time
 import struct
 import base64
-import os
-import logging
 
 
 def date_to_EDIFACT(d):
@@ -47,9 +45,9 @@ def invoice_to_INVOICD09A(invoice):
                  absenderadresse_plz='42897',
                  absenderadresse_land='DE')
     param.update(invoice)
-    param.update(dict(# der ID darf 14-stellig sein, unserer ist eine 13stellige codeirte Unix Timestamp
+    param.update(dict(  # der ID darf 14-stellig sein, unserer ist ein 13stelliger kodierter Unix Timestamp
          uebertragungsnr=base64.b32encode(struct.pack('>d', time.time())).strip('=\n')[:14],
-         unhnr=base64.b32encode(struct.pack('>d', time.time()-1000000000)).strip('=\n')[:14],
+         unhnr=base64.b32encode(struct.pack('>d', time.time() - 1000000000)).strip('=\n')[:14],
          rechnungsdatum=date_to_EDIFACT(invoice['rechnungsdatum']),
          leistungsdatum=date_to_EDIFACT(invoice.get('leistungsdatum', invoice.get('rechnungsdatum'))),
          date=date_to_EDIFACT(datetime.date.today()),
@@ -73,8 +71,8 @@ def invoice_to_INVOICD09A(invoice):
 
     k = []
     k.append("UNH+%(unhnr)s+INVOIC:D:09A:UN:EAN010'" % param)
-    k.append("BGM+385+%(rechnungsnr)s+9'" % param) # oder 380 = Rechung
-    # k.append("BGM+262+300200+9'") # oder 381 = Gutschrift
+    k.append("BGM+385+%(rechnungsnr)s+9'" % param)  # oder 380 = Rechung
+    # k.append("BGM+262+300200+9'")  # oder 381 = Gutschrift
     k.append("DTM+137:%(rechnungsdatum)s:102'" % param)
     # Alternativ: DTM+3:%(rechnungsdatum)s:102'
     k.append("DTM+263:%(leistungsdatum)s%(leistungsdatum)s:718'" % param)
@@ -86,17 +84,17 @@ def invoice_to_INVOICD09A(invoice):
     # PCD -C 1  - Percentage details This segment is used to specify percentages which will be allowed or charged if the invoicee pays (does not pay) to terms.
     # MOA -C 1  - Monetary amount This segment is used to specify monetary values which will be allowed or charged if the invoicee pays (does not pay) to terms.
     # PAI       -C      1       - Payment instructions This segment is used to specify payment instructions related to payment terms.
-    if 'kundenauftragsnr' in param: # Order document identifier, buyer assigned
+    if 'kundenauftragsnr' in param:  # Order document identifier, buyer assigned
         k.append("RFF+ON:%(kundenauftragsnr)s'" % param)
-    if 'lieferscheinnr' in param: # Delivery note number
+    if 'lieferscheinnr' in param:  # Delivery note number
         k.append("RFF+DQ:%(lieferscheinnr)s'" % param)
     if 'guid' in param:
-        k.append("RFF+ZZZ:%(guid)s'" % param) # Mutually defined reference number
+        k.append("RFF+ZZZ:%(guid)s'" % param)  # Mutually defined reference number
     if 'auftragsnr' in param:
-        k.append("RFF+AAJ:%(auftragsnr)s'" % param) # AAJ       Delivery order number - Reference number assigned by issuer to a delivery order.
-    if 'infotext_kunde' in param: # Supplier remarks Remarks from or for a supplier of goods or services.
+        k.append("RFF+AAJ:%(auftragsnr)s'" % param)  # AAJ       Delivery order number - Reference number assigned by issuer to a delivery order.
+    if 'infotext_kunde' in param:  # Supplier remarks Remarks from or for a supplier of goods or services.
         k.append("FTX+SUR+++%(infotext_kunde)s'" % param)
-    if 'erfasst_von' in param: # Internal auditing information Text relating to internal auditing information.
+    if 'erfasst_von' in param:  # Internal auditing information Text relating to internal auditing information.
         k.append("FTX+AEZ+++Erfasser: %(erfasst_von)s'" % param)
     # FTX+AAI   General information
     # FTX+AAJ   Additional conditions of sale/purchase Additional conditions specific to this order or pro
@@ -113,7 +111,8 @@ def invoice_to_INVOICD09A(invoice):
 
     k.append("NAD+SU+%(absenderadresse_iln)s::9+%(absenderadresse_name1)s:%(absenderadresse_name2)s:%(absenderadresse_name3)s++%(absenderadresse_strasse)s:::+%(absenderadresse_ort)s++%(absenderadresse_plz)s+%(absenderadresse_land)s'" % param)
     # Kontoverbindung FII       -C      5       - Financial institution information
-    k.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
+    if 'hint_steuernr_lieferant' in param:
+        k.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
     k.append("NAD+BY+%(iln)s::9++%(name1)s:%(name2)s:%(name3)s+%(strasse)s+%(ort)s++%(plz)s+%(land)s'" % param)
     k.append("RFF+AVC:%(kundennr)s'" % param)
     if 'hint_steuernr_kunde' in param:
@@ -131,7 +130,7 @@ def invoice_to_INVOICD09A(invoice):
     for orderline in invoice['orderlines']:
         p = []
         od = copy.copy(orderline)
-        od.update(dict(positionsnummer=len(positionen)+1))
+        od.update(dict(positionsnummer=len(positionen) + 1))
         if 'ean' in od:
             p.append("LIN+%(positionsnummer)s++%(ean)s:SRV'" % od)
         else:
@@ -144,9 +143,9 @@ def invoice_to_INVOICD09A(invoice):
         p.append("DTM+35:%(leistungsdatum)s:102'" % param)
         if 'abschlag' in od and od['abschlag']:
             p.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % od)
-        p.append("MOA+77:%(zu_zahlen)s'" % od) # - Rechnungsbetrag (Gesamtpositionsbetrag zuzüglich Zuschläge und MWSt, abzüglich Abschläge) (DE5025 = 77); Mussfeld 77     Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
-        p.append("MOA+66:%(warenwert)s'" % od) # 66 Goods item total Net price x quantity for the line item.
-        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
+        p.append("MOA+77:%(zu_zahlen)s'" % od)  # - Rechnungsbetrag (Gesamtpositionsbetrag zuzüglich Zuschläge und MWSt, abzüglich Abschläge) (DE5025 = 77); Mussfeld 77     Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
+        p.append("MOA+66:%(warenwert)s'" % od)  # 66 Goods item total Net price x quantity for the line item.
+        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag))  # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
         # abschlag_prozent
 
         # einzelpreis* - Preis von einer Einheit ohne Mehrwertsteuer
@@ -169,18 +168,18 @@ def invoice_to_INVOICD09A(invoice):
         k.append("MOA+64:%(versandkosten)s'" % invoice)
 
 #UNS+S'
-#MOA+124:%(mwst)s' # 124        Tax amount Tax imposed by government or other official authority related to the weight/volume charge or valuation charge.
+#MOA+124:%(mwst)s'  # 124        Tax amount Tax imposed by government or other official authority related to the weight/volume charge or valuation charge.
 #MOA+125:450'  # Taxable amount Amount on which a tax has to be applied.
-#MOA+128:%(zu_zahlen)s' # Total amount The amount specified is the total amount.
-#MOA+77:540' # 77       Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
-#MOA+79:%(gesammtpreis)s' # 79  Total line items amount The sum of all the line item amounts
+#MOA+128:%(zu_zahlen)s'  # Total amount The amount specified is the total amount.
+#MOA+77:540'  # 77       Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
+#MOA+79:%(gesammtpreis)s'  # 79  Total line items amount The sum of all the line item amounts
 
 #TAX+7+VAT+++:::19+S'
 #UNT+%(segmentzahl)+%(14streferenzb)s'
 #UNZ+1+%(14streferenza)s'
 
     envelope.extend(k)
-    envelope.append("UNT+%d+%s'" % (len(k)+1, param['unhnr']))
+    envelope.append("UNT+%d+%s'" % (len(k) + 1, param['unhnr']))
     envelope.append("UNZ+1+%(uebertragungsnr)s'" % param)
 
     return u'\n'.join(envelope).encode('iso-8859-1')

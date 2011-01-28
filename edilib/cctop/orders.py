@@ -10,6 +10,7 @@ from edilib.recordbased import generate_field_datensatz_class, FixedField, Decim
 from edilib.recordbased import DateField, EanField, TimeField
 from decimal import Decimal
 
+
 class BenedictException(RuntimeError):
     """Baseclass for more detailed exceptions."""
     pass
@@ -45,7 +46,7 @@ INTERCHANGEHEADER000 = [
     dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
     dict(length=5, startpos=129, endpos=133, name='schnittstellenversion',
          fieldclass=FixedField, default='4.5  '),
-    dict(length=379, startpos=134, endpos=512, name='filler', default=' '* 379) #fieldclass=FixedField,
+    dict(length=379, startpos=134, endpos=512, name='filler', default=' ' * 379)
 ]
 
 # fix since this is not in python notation fix "off by one" errors
@@ -68,7 +69,7 @@ class InterchangeheaderHandler(object):
 
     def contribute_to_order(self, dummy):
         """Return a dict contributing to the OrderProtocol."""
-        return {} # FIXME
+        return {}  # FIXME
 
 
 transaktionskopf = [
@@ -95,7 +96,7 @@ transaktionskopf = [
         doc="BGM-4343"),
     dict(startpos=90, endpos=90, length=1, name='selbstabholung', doc="TOD-4055"),
     dict(startpos=91, endpos=125, length=35, name='dokumentenname', doc="BGM-1000"),
-    dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' '*387),
+    dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' ' * 387),
     ]
 # fix since this is not in python notation fix "off by one" errors
 for feld in transaktionskopf:
@@ -170,7 +171,7 @@ class TransaktionsreferenzHandler(object):
         return {'werbe_aktionsnr': self.parser.werbe_aktionsnr}
 
 
-transaktionstermine = [ # kopiert von satzart 515
+transaktionstermine = [  # kopiert von satzart 515
     dict(startpos=1, endpos=3, length=3, name='satzart', fieldclass=FixedField, default="115"),
     # die folgenden Felder verwenden wir nicht
     dict(startpos=4, endpos=11, length=8, name='lieferdatum_bevorzugt', fieldclass=DateField,
@@ -459,7 +460,7 @@ auftragsposition = [
     dict(startpos=166, endpos=200, length=35, name='artikelbezeichnung2', doc="IMD-7008"),
     dict(startpos=201, endpos=235, length=35, name='artikelgroesse', fieldclass=FixedField,
         default=' ' * 35, doc="IMD-7008"),
-    dict(startpos=236, endpos=270, length=35, name='artikelfarbe',# fieldclass=FixedField,
+    dict(startpos=236, endpos=270, length=35, name='artikelfarbe',
         default=' ' * 35, doc="IMD-7008"),
     dict(startpos=271, endpos=285, length=15, name='bestellmenge', fieldclass=DecimalField,
         precision=3, doc="QTY-6060"),
@@ -483,7 +484,7 @@ auftragsposition = [
     #    default=' ' * 15, doc="PRI-5118"),
     #dict(startpos=384, endpos=392, length=9, name='preisbasis', fieldclass=FixedField,
     #    default=' ' * 9, doc="PRI-5284"),
-    dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE', '   '], # FIXME ist leeres Feld zulaessig?
+    dict(startpos=393, endpos=395, length=3, name='mengeneinheit', choices=['PCE', '   '],  # FIXME ist leeres Feld zulaessig?
         doc="PRI-6411"),
     #dict(startpos=396, endpos=413, length=18, name='nettowarenwert', fieldclass=FixedField,
     #    default=' ' * 18, doc="MOA-5004"),
@@ -727,7 +728,6 @@ def parse_rawdata(data):
     In fact it returns (header, [Auftrag, Auftrag, ...]).
     """
 
-    firstline = ''
     header = None
     parsers = []
     auftraege = []
@@ -751,7 +751,6 @@ def parse_rawdata(data):
 
         if satzart == '000':
             # special case: interchange header
-            firstline = line
             header = recordhandlers[satzart](parser)
         else:
             if satzart == '100':
