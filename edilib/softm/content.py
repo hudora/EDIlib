@@ -14,12 +14,10 @@ Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 import datetime
 import edilib.softm.structure
 import husoftm2.tools
+import logging
 
 
 class SoftMConverter(object):
-#     """Base class for the various SoftM files"""
-#     pass
-#class SoftMInvoiceConverter(SoftMConverter):
     """Converts SoftM INVOICE files to very Simple Invoice Protocol."""
 
     def __init__(self):
