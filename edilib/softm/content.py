@@ -32,44 +32,14 @@ class SoftMConverter(object):
     def _convert_invoice_head(self, invoice_records):
         """Converts SoftM F1 and varius others."""
 
-        # needed entries from SoftM
+        # Die grundlegenden Rahmen-Bestandteile einer SoftM EDI Rechung sind der Rechungskopf ("F1"),
+        # die Rechungsadresse ("FA") und die Recungesendedaten ("F9").
         fa = invoice_records['FA']
         f1 = invoice_records['F1']
         f9 = invoice_records['F9']
 
         # erfasst_von - Name der Person oder des Prozesses, der den Auftrag in das System eingespeist hat.
         # F8 = Kontodaten
-
-# <Bezogene Rechnungsnummer: 0>
-# <verband: 0>,
-
-# <Skontofähig USt 1: u'000000000053550'>,
-# <waehrung: 'EUR'>,
-# <ust1_fuer_skonto: Decimal('19.00')>,
-# <ust2_fuer_skonto: Decimal('0.00')>,
-# <eigene_iln_beim_kunden: u'4005998000007'>,
-# <nettodatum: datetime.date(2009, 4, 7)>,
-# <liefertermin: datetime.date(2009, 1, 21)>,
-# <skonto1: Decimal('3.00')>,
-# <skontobetrag1_ust1: Decimal('-1.610')>,
-
-# <gesamtbetrag: Decimal('-53.550')>,
-# <summe_rabatte:Decimal('0.000')>,
-# <skontofaehig: Decimal('0.000')>,
-# <summe_zuschlaege: Decimal('0.000')>,
-# <steuerpflichtig1: Decimal('-45.000')>,
-# <kopfrabatt1_prozent: Decimal('0.000')>,
-# <steuerpflichtig USt 2: '000000000000000+'>,
-# <kopfrabatt2_prozent: Decimal('0.000')>,
-# <skontoabzug: Decimal('1.610')>,
-# <kopfrabatt1_vorzeichen: '+'>,
-# <kopfrabatt2_vorzeichen: '+'>,
-# <kopfrabatt1: Decimal('0.000')>,
-# <mehrwertsteuer: Decimal('-8.550')>,
-# <kopfrabatt2: Decimal('0.000')>,
-# <TxtSlKopfrabatt1: ''>,
-# <TxtSlKopfrabatt2: ''>,
-# <KopfrabattUSt1: Decimal('0.000')>>
 
         kundennr = str(f1.rechnungsempfaenger)
         if not kundennr.startswith('SC'):
@@ -88,6 +58,7 @@ class SoftMConverter(object):
             # absenderadresse
             # erfasst_von
             guid=self.guid,
+            waehrung=f1.waehrung,
             kundennr=kundennr,
             name1=fa.rechnung_name1,
             name2=fa.rechnung_name2,
@@ -225,14 +196,15 @@ class SoftMConverter(object):
             kopf['infotext_kunde'] = '\n'.join(zeilen).strip()
 
         if f1.ust2_fuer_skonto:
+            logging.critical("2. Skontosatz: %s %r", f1.ust2_fuer_skonto, kopf)
             print f1.ust2_fuer_skonto, kopf
-            raise ValueError("%s hat einen zweiten Stuerersatz - das ist nicht unterstützt" % (rechnungsnr))
+            raise ValueError("%s hat einen zweiten Steuerersatz - das ist nicht unterstützt" % (rechnungsnr))
         if f1.skontodatum2 or f1.skontotage2 or f1.skonto2:
-            print kopf
+            logging.critical("2. Skontosatz: %r", kopf)
             raise ValueError("%s hat 2. Skontosatz - das ist nicht unterstützt" % (rechnungsnr))
-        if f1.waehrung != 'EUR':
-            print kopf
-            raise ValueError("%s ist nicht in EURO - das ist nicht unterstützt" % (rechnungsnr))
+        if f1.waehrung not in ['EUR', 'USD']:
+            logging.critical("Währungsproblem: %r", kopf)
+            raise ValueError("%s ist nicht in EUR/USD - das ist nicht unterstützt" % (rechnungsnr))
 
         # ungenutzte Felder entfernen
         for k in kopf.keys():
