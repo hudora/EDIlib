@@ -8,6 +8,7 @@ test: dependencies
 
 dependencies:
 	virtualenv --python=python2.5 --no-site-packages --unzip-setuptools pythonenv
+	pip install --environment=pythonenv/ '-egit+ssh://git@github.com/hudora/CentralServices.git#egg=cs'
 	pip install --environment=pythonenv huSoftM
 	pip install --environment=pythonenv huTools
 
