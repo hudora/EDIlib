@@ -1,0 +1,3 @@
+--editable git+ssh://git@github.com/hudora/CentralServices.git#egg=cs
+huSoftM
+--editable git+ssh://git@github.com/hudora/huTools#egg=huTools
