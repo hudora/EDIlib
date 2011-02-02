@@ -128,7 +128,7 @@ class FieldTestsNumeric(unittest.TestCase):
         self.assertEqual(fieldinstance.formated(), ' 0.333')
         fieldinstance.set(10)
         self.assertEqual(fieldinstance.formated(), '10.000')
-        self.assertRaises(FieldTooLong, fieldinstance.set, 100)
+        self.assertRaises(FieldTooLong, fieldinstance.set, "100.001")
 
     def test_decimal_no_dot(self):
         """Test basic DecimalFieldNoDot functionality."""
