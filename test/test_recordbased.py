@@ -124,7 +124,7 @@ class FieldTestsNumeric(unittest.TestCase):
         fieldinstance = DecimalField('name', 6, precision=3)
         self.assertEqual(len(fieldinstance.formated()), 6)
         self.assertEqual(fieldinstance.formated(), '      ')
-        fieldinstance.set(1/3.0)
+        fieldinstance.set(str(1/3.0))
         self.assertEqual(fieldinstance.formated(), ' 0.333')
         fieldinstance.set(10)
         self.assertEqual(fieldinstance.formated(), '10.000')
@@ -137,9 +137,9 @@ class FieldTestsNumeric(unittest.TestCase):
         self.assertEqual(fieldinstance.formated(), '          ')
         fieldinstance.set(50)
         self.assertEqual(fieldinstance.formated(), '     50000')
-        fieldinstance.set(60.6)
+        fieldinstance.set("60.6")
         self.assertEqual(fieldinstance.formated(), '     60600')
-        fieldinstance.set(1/3.0)
+        fieldinstance.set(str(1/3.0))
         self.assertEqual(fieldinstance.formated(), '      0333')
     
     def test_decimal_no_dot_padded(self):
@@ -149,9 +149,9 @@ class FieldTestsNumeric(unittest.TestCase):
         self.assertEqual(fieldinstance.formated(), '0000000000')
         fieldinstance.set(50)
         self.assertEqual(fieldinstance.formated(), '0000050000')
-        fieldinstance.set(60.6)
+        fieldinstance.set("60.6")
         self.assertEqual(fieldinstance.formated(), '0000060600')
-        fieldinstance.set(1/3.0)
+        fieldinstance.set(str(1/3.0))
         self.assertEqual(fieldinstance.formated(), '0000000333')
     
     def test_decimal_parse(self):
