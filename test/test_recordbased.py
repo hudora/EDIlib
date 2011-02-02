@@ -377,7 +377,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         
         fieldinstance.parse('20070506')
         self.assertEqual(str(fieldinstance), '2007-05-06')
-        self.assertEqual(fieldinstance.value, datetime.datetime(2007, 5, 6))
+        self.assertEqual(fieldinstance.value, datetime.date(2007, 5, 6))
         
         self.assertRaises(InvalidData, fieldinstance.parse, '88888888')
         
@@ -390,7 +390,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         """Test parsing of DateFieldReverse field."""
         fieldinstance = DateFieldReverse('name', 8)
         fieldinstance.parse('06052007')
-        self.assertEqual(fieldinstance.value, datetime.datetime(2007, 5, 6))
+        self.assertEqual(fieldinstance.value, datetime.date(2007, 5, 6))
     
     def test_time_field(self):
         """Test parsing of date field."""
@@ -400,7 +400,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         # I'm affraid this test is platform dependant
         fieldinstance.parse('1314')
         self.assertEqual(str(fieldinstance), '13:14')
-        self.assertEqual(fieldinstance.value, datetime.datetime(1900, 1, 1, 13, 14))
+        self.assertEqual(fieldinstance.value, datetime.time(13, 14))
         
         self.assertRaises(InvalidData, fieldinstance.parse, '2526')
         self.assertRaises(InvalidData, fieldinstance.parse, '2525')
@@ -560,8 +560,8 @@ class FieldDatensatzParseAndBack(unittest.TestCase):
         self.assertEqual(instance.position, '9999')
         self.assertEqual(instance.artikelnummer, '14650/42z')
         self.assertEqual(instance.menge, 111111)
-        self.assertEqual(instance.date, datetime.datetime(2006, 5, 6))
-        self.assertEqual(instance.date2, datetime.datetime(2006, 7, 8))
+        self.assertEqual(instance.date, datetime.date(2006, 5, 6))
+        self.assertEqual(instance.date2, datetime.date(2006, 7, 8))
         self.assertEqual(instance.fixed, '#')
         self.assertEqual(instance.int1, 2222222)
         self.assertEqual(instance.int2, 33333)
