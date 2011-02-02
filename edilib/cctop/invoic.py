@@ -364,7 +364,7 @@ BELEGABSCHLAEGE913 = [
     dict(length=3, startpos=4, endpos=6, name='kennzeichen', fieldclass=FixedField, default='A  ',
          doc='913-02 Kennzeichen Zu-/Abschlag, "C" = Zuschlag, "A" = Abschlag/Rabatt'),
     dict(length=3, startpos=7, endpos=9, name='art', fieldclass=FixedField, default='   '),
-    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige',
+    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige',  # fieldclass=FixedField,
          default='001', doc='''913-04 Kalkulationsfolgeanzeige. Die Kalkulationsstufe gibt darüber Auskunft,
          ob sich ein Rabatt auf einen bereits reduzierten (rabattierten) Betrag bezieht oder nicht.
          Existiert nur ein Rabatt, ist der Inhalt immer "1".
