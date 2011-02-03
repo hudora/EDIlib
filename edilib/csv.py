@@ -1,9 +1,9 @@
 # encoding: utf-8
 """
-invoice.py - Export an invoice as CSV
+invoice.py - Export an deliverynote/invoice as CSV
 
 Created by Christian Klein on 2010-10-21.
-Copyright (c) 2010 HUDORA GmbH. All rights reserved.
+Copyright (c) 2010, 2011 HUDORA GmbH. All rights reserved.
 """
 
 from cStringIO import StringIO
@@ -71,3 +71,21 @@ def invoice_to_csv(invoice, delimiter=';'):
         writer.writerow(create_row('O', orderline))
 
     return fileobj.getvalue()
+
+
+def lieferschein_to_csv(lieferschein, delimiter=';'):
+    """Liefert den Lieferschein als CSV-formatierten String zurueck, wobei jede Position
+       als eigene Zeile im CSV ausgegeben wird."""
+    buf = StringIO()
+    writer = csv.writer(buf, delimiter=delimiter)
+    for position in lieferschein.get('positionen', []):
+        writer.writerow(['P',
+                         lieferschein['lieferscheinnr'],
+                         lieferschein['auftragsnr'],
+                         lieferschein['kundennr'],
+                         position['auftragpos_guid'],
+                         position['kommipos_guid'],
+                         position['menge'],
+                         position['artnr'],
+                         position['infotext_kunde']])
+    return buf.getvalue()
