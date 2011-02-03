@@ -287,6 +287,7 @@ class DecimalField(Field):
         precision = 0
         if self.precision:
             precision = self.precision
+
         self.formatstring = "%%#%d.%df" % (self.length, precision, )
 
     def _reducetofit(self, value):
@@ -304,6 +305,12 @@ class DecimalField(Field):
             value = newval
         return value
 
+    def _drop_trailing_decimal_point(self, value):
+        if value.endswith('.'):
+            return ' ' + value[:-1]
+        else:
+            return value
+
     def format(self, value):
         """Formats the data according to the field's length, etc."""
 
@@ -312,6 +319,7 @@ class DecimalField(Field):
             return ("%%%ds" % self.length) % ' '
         ret = self.formatstring % Decimal(value)
         ret = self._reducetofit(ret)
+        ret = self._drop_trailing_decimal_point(ret)
         return ret
 
     def parse(self, data):

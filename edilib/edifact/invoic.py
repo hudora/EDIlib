@@ -45,7 +45,7 @@ def invoice_to_INVOICD09A(invoice):
                  absenderadresse_plz='42897',
                  absenderadresse_land='DE')
     param.update(invoice)
-    param.update(dict(  # der ID darf 14-stellig sein, unserer ist ein 13stelliger kodierter Unix Timestamp
+    param.update(dict(  # der ID darf 14-stellig sein, unserer ist eine 13stellige codeirte Unix Timestamp
          uebertragungsnr=base64.b32encode(struct.pack('>d', time.time())).strip('=\n')[:14],
          unhnr=base64.b32encode(struct.pack('>d', time.time() - 1000000000)).strip('=\n')[:14],
          rechnungsdatum=date_to_EDIFACT(invoice['rechnungsdatum']),
@@ -145,7 +145,7 @@ def invoice_to_INVOICD09A(invoice):
             p.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % od)
         p.append("MOA+77:%(zu_zahlen)s'" % od)  # - Rechnungsbetrag (Gesamtpositionsbetrag zuzüglich Zuschläge und MWSt, abzüglich Abschläge) (DE5025 = 77); Mussfeld 77     Invoice line item amount [5068] Total sum charged with respect to a single line item of an invoice.
         p.append("MOA+66:%(warenwert)s'" % od)  # 66 Goods item total Net price x quantity for the line item.
-        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag))  # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
+        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
         # abschlag_prozent
 
         # einzelpreis* - Preis von einer Einheit ohne Mehrwertsteuer

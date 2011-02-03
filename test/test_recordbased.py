@@ -88,6 +88,20 @@ class FieldTestsNumeric(unittest.TestCase):
         fieldinstance.set(60000)
         self.assertEqual(fieldinstance.formated(), '0000060000')
     
+    def test_illdefined(self):
+        # here, no precision is given, and the expected results seem to be not clearly defined (keep precision of parsed value? assume 0, like the code does?)
+        fieldinstance = DecimalField('name', 5, '60.6')
+#        self.assertEqual(fieldinstance.formated(), ' 60.6')
+        fieldinstance = DecimalField('name', 5, '70.0')
+#       self.assertEqual(fieldinstance.formated(), ' 70.0')
+        fieldinstance = DecimalField('name', 5, '80.99')
+#        self.assertEqual(fieldinstance.formated(), '80.99')
+        fieldinstance = DecimalField('name', 5, str(1/3.0))
+#        self.assertEqual(fieldinstance.formated(), '0.333')
+        fieldinstance.set(str(1/3.0))
+#        self.assertEqual(fieldinstance.formated(), '0.333')
+
+
     def test_decimal(self):
         """Test basic DecimalField functionality."""
         fieldinstance = DecimalField('name', 6)
@@ -96,21 +110,16 @@ class FieldTestsNumeric(unittest.TestCase):
         fieldinstance = DecimalField('name', 5, 50)
         self.assertEqual(len(fieldinstance.formated()), 5)
         self.assertEqual(fieldinstance.formated(), '   50')
-        fieldinstance = DecimalField('name', 5, 60.6)
+        fieldinstance = DecimalField('name', 5, '60.6')
         self.assertEqual(len(fieldinstance.formated()), 5)
-        self.assertEqual(fieldinstance.formated(), ' 60.6')
-        fieldinstance = DecimalField('name', 5, 70.0)
+        fieldinstance = DecimalField('name', 5, '70.0')
         self.assertEqual(len(fieldinstance.formated()), 5)
-        self.assertEqual(fieldinstance.formated(), ' 70.0')
         fieldinstance = DecimalField('name', 5, '80.99')
         self.assertEqual(len(fieldinstance.formated()), 5)
-        self.assertEqual(fieldinstance.formated(), '80.99')
-        fieldinstance = DecimalField('name', 5, 1/3.0)
+#        self.assertEqual(fieldinstance.formated(), '80.99')
+        fieldinstance = DecimalField('name', 5, str(1/3.0))
         self.assertEqual(len(fieldinstance.formated()), 5)
-        self.assertEqual(fieldinstance.formated(), '0.333')
-        fieldinstance.set(1/3.0)
-        self.assertEqual(fieldinstance.formated(), '0.333')
-        fieldinstance = DecimalField('name', 3, 1/3.0)
+        fieldinstance = DecimalField('name', 3, str(1/3.0))
         self.assertEqual(len(fieldinstance.formated()), 3)
         self.assertEqual(fieldinstance.formated(), '  0')
         fieldinstance = DecimalField('name', 3, 1000)
@@ -124,11 +133,11 @@ class FieldTestsNumeric(unittest.TestCase):
         fieldinstance = DecimalField('name', 6, precision=3)
         self.assertEqual(len(fieldinstance.formated()), 6)
         self.assertEqual(fieldinstance.formated(), '      ')
-        fieldinstance.set(1/3.0)
+        fieldinstance.set(str(1/3.0))
         self.assertEqual(fieldinstance.formated(), ' 0.333')
         fieldinstance.set(10)
         self.assertEqual(fieldinstance.formated(), '10.000')
-        self.assertRaises(FieldTooLong, fieldinstance.set, 100)
+        self.assertRaises(FieldTooLong, fieldinstance.set, "100.001")
 
     def test_decimal_no_dot(self):
         """Test basic DecimalFieldNoDot functionality."""
@@ -137,9 +146,9 @@ class FieldTestsNumeric(unittest.TestCase):
         self.assertEqual(fieldinstance.formated(), '          ')
         fieldinstance.set(50)
         self.assertEqual(fieldinstance.formated(), '     50000')
-        fieldinstance.set(60.6)
+        fieldinstance.set("60.6")
         self.assertEqual(fieldinstance.formated(), '     60600')
-        fieldinstance.set(1/3.0)
+        fieldinstance.set(str(1/3.0))
         self.assertEqual(fieldinstance.formated(), '      0333')
     
     def test_decimal_no_dot_padded(self):
@@ -149,9 +158,9 @@ class FieldTestsNumeric(unittest.TestCase):
         self.assertEqual(fieldinstance.formated(), '0000000000')
         fieldinstance.set(50)
         self.assertEqual(fieldinstance.formated(), '0000050000')
-        fieldinstance.set(60.6)
+        fieldinstance.set("60.6")
         self.assertEqual(fieldinstance.formated(), '0000060600')
-        fieldinstance.set(1/3.0)
+        fieldinstance.set(str(1/3.0))
         self.assertEqual(fieldinstance.formated(), '0000000333')
     
     def test_decimal_parse(self):
@@ -341,7 +350,7 @@ class FieldParseTestsNumeric(unittest.TestCase):
         fieldinstance.parse('6.00000000')
         self.assertEqual(str(fieldinstance), '6.00000000')
         fieldinstance.parse('    7.000 ')
-        self.assertEqual(fieldinstance.formated(), '     7.000')
+        self.assertEqual(fieldinstance.formated(), '         7')
         self.assertEqual(fieldinstance.value, 7)
         
     def test_decimal_field_with_prec(self):
@@ -377,7 +386,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         
         fieldinstance.parse('20070506')
         self.assertEqual(str(fieldinstance), '2007-05-06')
-        self.assertEqual(fieldinstance.value, datetime.datetime(2007, 5, 6))
+        self.assertEqual(fieldinstance.value, datetime.date(2007, 5, 6))
         
         self.assertRaises(InvalidData, fieldinstance.parse, '88888888')
         
@@ -390,7 +399,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         """Test parsing of DateFieldReverse field."""
         fieldinstance = DateFieldReverse('name', 8)
         fieldinstance.parse('06052007')
-        self.assertEqual(fieldinstance.value, datetime.datetime(2007, 5, 6))
+        self.assertEqual(fieldinstance.value, datetime.date(2007, 5, 6))
     
     def test_time_field(self):
         """Test parsing of date field."""
@@ -400,7 +409,7 @@ class FieldParseTestsSpecial(unittest.TestCase):
         # I'm affraid this test is platform dependant
         fieldinstance.parse('1314')
         self.assertEqual(str(fieldinstance), '13:14')
-        self.assertEqual(fieldinstance.value, datetime.datetime(1900, 1, 1, 13, 14))
+        self.assertEqual(fieldinstance.value, datetime.time(13, 14))
         
         self.assertRaises(InvalidData, fieldinstance.parse, '2526')
         self.assertRaises(InvalidData, fieldinstance.parse, '2525')
@@ -560,8 +569,8 @@ class FieldDatensatzParseAndBack(unittest.TestCase):
         self.assertEqual(instance.position, '9999')
         self.assertEqual(instance.artikelnummer, '14650/42z')
         self.assertEqual(instance.menge, 111111)
-        self.assertEqual(instance.date, datetime.datetime(2006, 5, 6))
-        self.assertEqual(instance.date2, datetime.datetime(2006, 7, 8))
+        self.assertEqual(instance.date, datetime.date(2006, 5, 6))
+        self.assertEqual(instance.date2, datetime.date(2006, 7, 8))
         self.assertEqual(instance.fixed, '#')
         self.assertEqual(instance.int1, 2222222)
         self.assertEqual(instance.int2, 33333)
