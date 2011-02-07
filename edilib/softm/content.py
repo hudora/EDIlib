@@ -171,7 +171,7 @@ class SoftMConverter(object):
             raise ValueError("%s: Belegart %s unbekannt" % (rechnungsnr, f1.belegart.lstrip('0')))
 
         if f1.lieferscheinnr and int(f1.lieferscheinnr):
-            kopf['lieferscheinnr'] = str(f1.lieferscheinnr)
+            kopf['lieferscheinnr'] = "SL%s" % f1.lieferscheinnr
 
         #rec900.steuerpflichtiger_betrag = abs(f9.steuerpflichtig1)
         #rec900.mwst_gesamtbetrag = abs(f9.mehrwertsteuer)
