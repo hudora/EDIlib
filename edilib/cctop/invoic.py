@@ -27,7 +27,7 @@ INTERCHANGEHEADER000 = [
     dict(length=1, startpos=128, endpos=128, name='testkennzeichen'),
     dict(length=5, startpos=129, endpos=133, name='schnittstellenversion',
          fieldclass=FixedField, default='4.5  '),
-    dict(length=467, startpos=134, endpos=600, name='filler', fieldclass=FixedField, default=' '* 467),
+    dict(length=467, startpos=134, endpos=600, name='filler', fieldclass=FixedField, default=' ' * 467),
 ]
 # fix since this is not in python notation fix "off by one" errors
 for feld in INTERCHANGEHEADER000:
@@ -65,7 +65,7 @@ TRANSAKTIONSKOPF100 = [
         doc="TOD-4055"),
     dict(startpos=91, endpos=125, length=35, name='dokumentanname',
         doc="BGM-1000"),
-    dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' '*387),
+    dict(startpos=126, endpos=512, length=387, name='filler', fieldclass=FixedField, default=' ' * 387),
     ]
 # fix since this is not in python notation fix "off by one" errors
 for feld in TRANSAKTIONSKOPF100:
@@ -78,7 +78,7 @@ TRANSAKTIONSREFERENZ111 = [
     # 111-03 Angebots-Datum K an 8 39 46 YYYYMMDD
     # 111-04 Werbe- oder Aktionsnummer K an 35 47 81
     # 111-05 Nummer der Preisliste K an 35 82 116
-    dict(length=35, startpos=117, endpos=151, name='auftragsnr'), # Kundenbestellnummer?
+    dict(length=35, startpos=117, endpos=151, name='auftragsnr'),  # Kundenbestellnummer?
     dict(length=8, startpos=152, endpos=159, name='auftragsdatum', fieldclass=DateField),
     # 111-08 Interne Auftragsnummer K an 35 160 194
     # 111-09 Internes Auftragsdatum K an 8 195 202 YYYYMMDD
@@ -94,7 +94,7 @@ TRANSAKTIONSREFERENZ111 = [
     # 111-19 Rechnungs-/Referenzdatum (bei Gutschrift) K an 8 410 417 YYYYMMDD
     # 111-20 Retourennummer (bei Gutschrift) K an 35 418 452
     # 111-21 Retourendatum (bei Gutschrift) K an 8 453 460 YYYYMMDD
-    dict(length=140, startpos=461, endpos=600, name='filler', fieldclass=FixedField, default=' '*140),
+    dict(length=140, startpos=461, endpos=600, name='filler', fieldclass=FixedField, default=' ' * 140),
 ]
 
 # fix since this is not in python notation fix "off by one" errors
@@ -154,7 +154,7 @@ ADDRESSEN119 = [
         doc='"XA" = WEEE-Reg.-Nr.'),
     dict(startpos=515, endpos=549, length=35, name='weeenr',
          default='DE 70323035', doc='Muss für Lieferant/Zahlungsleistender, wenn WEEE-Reg.-Nr. existiert'),
-    dict(startpos=550, endpos=600, length=51, name='filler', fieldclass=FixedField, default=' '*51),
+    dict(startpos=550, endpos=600, length=51, name='filler', fieldclass=FixedField, default=' ' * 51),
     ]
 
 # fix since this is not in python notation fix "off by one" errors
@@ -223,7 +223,7 @@ ZUSATZKOSTEN140 = [
     dict(startpos=71, endpos=88, length=18, name='versicherungsbetrag', fieldclass=FixedField,
          default=' ' * 18, doc="MOA20-5004"),
     dict(startpos=89, endpos=91, length=3, name='skontotage', doc="PAT8-2152"),
-    dict(startpos=92, endpos=99, length=8, name='skontodatum', fieldclass=DateField, doc="PAT8-2152"), # FIXME oder DateFieldReverse
+    dict(startpos=92, endpos=99, length=8, name='skontodatum', fieldclass=DateField, doc="PAT8-2152"),  # FIXME oder DateFieldReverse
     dict(startpos=100, endpos=512, length=413, name='filler', fieldclass=FixedField, default=' ' * 413),
 ]
 
@@ -260,7 +260,7 @@ RECHNUNGSPOSITION500 = [
     dict(startpos=271, endpos=285, length=15, name='berechnete_menge', fieldclass=DecimalField,
         precision=2, doc="QTY-6060"),
     dict(startpos=286, endpos=300, length=15, name='menge_ohne_berechnung', fieldclass=FixedField,
-        default = '               ', doc="QTY-6060"),
+        default='               ', doc="QTY-6060"),
     dict(startpos=301, endpos=303, length=3, name='waehrung', fieldclass=FixedField, default='EUR',
         doc="CUX-6345"),
     dict(startpos=304, endpos=308, length=5, name='mwstsatz', fieldclass=DecimalField,
@@ -364,7 +364,7 @@ BELEGABSCHLAEGE913 = [
     dict(length=3, startpos=4, endpos=6, name='kennzeichen', fieldclass=FixedField, default='A  ',
          doc='913-02 Kennzeichen Zu-/Abschlag, "C" = Zuschlag, "A" = Abschlag/Rabatt'),
     dict(length=3, startpos=7, endpos=9, name='art', fieldclass=FixedField, default='   '),
-    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige', #fieldclass=FixedField,
+    dict(length=3, startpos=10, endpos=12, name='kalkulationsfolgeanzeige',
          default='001', doc='''913-04 Kalkulationsfolgeanzeige. Die Kalkulationsstufe gibt darüber Auskunft,
          ob sich ein Rabatt auf einen bereits reduzierten (rabattierten) Betrag bezieht oder nicht.
          Existiert nur ein Rabatt, ist der Inhalt immer "1".
@@ -381,7 +381,7 @@ BELEGABSCHLAEGE913 = [
     # 913-10 Zu-/Abschlagbasis D n 18 74 91 (2 NK-St.)
     dict(length=35, startpos=92, endpos=126, name='text',
          doc='913-11 Art des Zu-/Abschlages, Text'),
-    dict(length=474, startpos=127, endpos=600, name='filler', fieldclass=FixedField, default=' '*474,
+    dict(length=474, startpos=127, endpos=600, name='filler', fieldclass=FixedField, default=' ' * 474,
          doc='913-12 Filler K(Blank)'),
 ]
 
@@ -389,7 +389,6 @@ BELEGABSCHLAEGE913 = [
 for feld in BELEGABSCHLAEGE913:
     feld['startpos'] -= 1
 belegabschlaege913 = generate_field_datensatz_class(BELEGABSCHLAEGE913, name='belegabschlaege', length=600)
-
 
 
 RECHNUNGSLISTE990 = [

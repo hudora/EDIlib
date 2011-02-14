@@ -159,7 +159,7 @@ class Field(object):
 
     def format(self, value):
         """Formats the data according to the field's length, etc.  - meant to be overwirtten by subclasses."""
-        return ("%%-%ds" % self.length) % self._resolve(value) # pad and left-adjust
+        return ("%%-%ds" % self.length) % self._resolve(value)  # pad and left-adjust
 
     def is_valid(self, value):
         """Returns true if value is valid date for Field else raises an Exception."""
@@ -180,7 +180,7 @@ class Field(object):
         if len(data) != self.length:
             raise SizeMismatch("%s has length %d but you trying to parse %r (len %d)" % (self.name,
                                 self.length, data, len(data)))
-        if data.strip() == '': # empty field
+        if data.strip() == '':  # empty field
             self.set(self._resolve(self.default))
         else:
             self.set(self.get_parsed(data))
@@ -389,7 +389,7 @@ class DecimalFieldNoDotSigned(DecimalFieldNoDotZeropadded):
         # insert decimal point
         # print data, self.name, self.length
         sign = data[-1]
-        data = "%s.%s" % (data[:-(self.precision+1)], data[-(self.precision+1):-1])
+        data = "%s.%s" % (data[:-(self.precision + 1)], data[-(self.precision + 1):-1])
 
         if data:
             try:
@@ -497,10 +497,10 @@ def _get_length(felder):
     """Check that fields in the list 'felder' do not overlap. And returns the minimum length of a record."""
     posarray = []
     for feld in felder:
-        if feld['endpos']-feld['startpos'] != feld['length']:
+        if feld['endpos'] - feld['startpos'] != feld['length']:
             raise InvalidFieldDefinition(("Länge bei Field %s stimmt nicht: len=%d end-start=%d"
                                           " start=%d end=%d") % (feld['name'], feld['length'],
-                                                                 feld['endpos']-feld['startpos'],
+                                                                 feld['endpos'] - feld['startpos'],
                                                                  feld['startpos'], feld['endpos']))
         # resize positionarray on demand
         while len(posarray) < feld['endpos']:
@@ -509,7 +509,7 @@ def _get_length(felder):
             if posarray[i] != '_':
                 raise InvalidFieldDefinition("Field %s überschneidet sich mit %s an Position %d" %
                                              (feld['name'], posarray[i], i))
-            posarray[i] = feld['name'] # store name
+            posarray[i] = feld['name']  # store name
     return len(posarray)
 
 
@@ -533,8 +533,6 @@ class DatensatzBaseClass(object):
     def _feldgen(self, name=None, length=None, startpos=None, endpos=None, fieldclass=Field, **kwargs):
         """Generate field descriptor for a single field and validate Field description."""
         fieldinstance = fieldclass(name, length, **kwargs)
-        # setattr(self, name, fieldinstance)
-        # setattr(self, name + '_field', _FieldDescriptorClass(fieldinstance))
         setattr(self, name + '_field', fieldinstance)
         self.fielddict[startpos] = fieldinstance
 
@@ -550,7 +548,7 @@ class DatensatzBaseClass(object):
                 fielddata = field.formated()
             except Exception, e:
                 raise ValueError("Error serializing %r: %s" % (field, str(e)))
-            data[startpos:startpos+field.length] = list(fielddata)
+            data[startpos:startpos + field.length] = list(fielddata)
         return ''.join(data)
 
     def parse(self, data):
@@ -560,9 +558,13 @@ class DatensatzBaseClass(object):
                                 len(data), self, self.length))
         # cut data in chunks fitting to our fields and the the fields parse them
         for startpos, field in sorted(self.fielddict.items()):
-            # print startpos,
-            field.parse(data[startpos:startpos+field.length])
-            # print
+            field.parse(data[startpos:startpos + field.length])
+
+    def as_dict(self):
+        d = {}
+        for startpos, field in sorted(self.fielddict.items()):
+            d[field.name] = field.get()
+        return d
 
 
 def generate_field_datensatz_class(felder, name=None, length=None, doc=None):
