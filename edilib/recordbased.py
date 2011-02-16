@@ -238,6 +238,23 @@ class EanField(Field):
         return super(EanField, self).is_valid(value)
 
 
+class BooleanField(Field):
+    """Boolean Field"""
+
+    def format(self, value):
+        return '1' if value else '0'
+
+    def get_parsed(self, data):
+        """Do the actual parsing."""
+        if data == '1':
+            return True
+        elif data == '0':
+            return False
+        else:
+            raise ValueError('BooleanField: Unknown state %s' % data)
+        return bool(data)
+
+
 class IntegerField(Field):
     """Right adjusted Integer Field."""
 
@@ -287,7 +304,6 @@ class DecimalField(Field):
         precision = 0
         if self.precision:
             precision = self.precision
-
         self.formatstring = "%%#%d.%df" % (self.length, precision, )
 
     def _reducetofit(self, value):
@@ -305,12 +321,6 @@ class DecimalField(Field):
             value = newval
         return value
 
-    def _drop_trailing_decimal_point(self, value):
-        if value.endswith('.'):
-            return ' ' + value[:-1]
-        else:
-            return value
-
     def format(self, value):
         """Formats the data according to the field's length, etc."""
 
@@ -319,7 +329,6 @@ class DecimalField(Field):
             return ("%%%ds" % self.length) % ' '
         ret = self.formatstring % Decimal(value)
         ret = self._reducetofit(ret)
-        ret = self._drop_trailing_decimal_point(ret)
         return ret
 
     def parse(self, data):
