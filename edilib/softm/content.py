@@ -493,7 +493,7 @@ class SoftMABConverter(SoftMConverter):
         if auftragsnr and not auftragsnr.startswith('SO'):
             auftragsnr = 'SO%d' % int(auftragsnr)
 
-        guid = auftragsnr
+        guid = auftragsnr.replace('SO', 'SB')
 
         kopf = dict(
             guid=guid,
@@ -593,7 +593,7 @@ class SoftMABConverter(SoftMConverter):
 
             # Schreibe frühsten und spätesten Liefertermin der Positionen als
             # anliefertermin_ab und anliefertermin_bis in die Auftragsbestätigung
-            liefertermine = [pos['liefertermin'] for pos in ab['positions']]
+            liefertermine = [pos['liefertermin'] for pos in ab['positionen']]
             ab['anliefertermin_ab'] = min(liefertermine)
             ab['anliefertermin_bis'] = max(liefertermine)
 
