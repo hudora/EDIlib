@@ -293,8 +293,7 @@ class DecimalField(Field):
     def __init__(self, name, length=15, *args, **kwargs):
         self.precision = None
         if 'precision' in kwargs:
-            self.precision = kwargs['precision']
-            del(kwargs['precision'])
+            self.precision = kwargs.pop('precision')
         super(DecimalField, self).__init__(name, length, *args, **kwargs)
         if self.precision and (self.precision + 2 > self.length):
             raise InvalidFieldDefinition("%r: too much precision (%d) for too little length (%d)" %
@@ -304,7 +303,7 @@ class DecimalField(Field):
         precision = 0
         if self.precision:
             precision = self.precision
-        self.formatstring = "%%#%d.%df" % (self.length, precision, )
+        self.formatstring = "%%#%d.%df" % (self.length, precision)
 
     def _reducetofit(self, value):
         '''When converting a number which has length=self.length e.g. 9000000000.00000 w/ length=15 and precision=5 we get
@@ -326,7 +325,7 @@ class DecimalField(Field):
 
         value = self._resolve(value)
         if not value:
-            return ("%%%ds" % self.length) % ' '
+            return "%*s" % (self.length, ' ')
         ret = self.formatstring % Decimal(value)
         ret = self._reducetofit(ret)
         return ret

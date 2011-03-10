@@ -125,7 +125,7 @@ class FieldTestsNumeric(unittest.TestCase):
         self.assertEqual(len(fieldinstance.formated()), 5)
         fieldinstance = DecimalField('name', 3, str(1/3.0))
         self.assertEqual(len(fieldinstance.formated()), 3)
-        self.assertEqual(fieldinstance.formated(), '  0')
+        self.assertEqual(fieldinstance.formated(), ' 0.')
         fieldinstance = DecimalField('name', 3, 1000)
         self.assertRaises(FieldTooLong, fieldinstance.formated)
     
@@ -340,11 +340,12 @@ class FieldParseTestsNumeric(unittest.TestCase):
         fieldinstance.parse(' 3        ')
         self.assertEqual(str(fieldinstance), '3')
         fieldinstance.parse('0000000004')
-#        self.assertEqual(fieldinstance.formated(), '         4')
+        self.assertEqual(fieldinstance.formated(), '        4.')
         self.assertEqual(str(fieldinstance), '4')
-        self.assertEqual(fieldinstance.value, 4)        
+        self.assertEqual(fieldinstance.value, 4)
+        self.assertEqual(len(fieldinstance.formated()), fieldinstance.length)
         fieldinstance.parse('        -4')
-        self.assertEqual(fieldinstance.formated(), '        -4')
+        self.assertEqual(fieldinstance.formated(), '       -4.')
         self.assertEqual(str(fieldinstance), '-4')
         self.assertEqual(fieldinstance.value, -4)
         fieldinstance.parse('00000005  ')
@@ -354,7 +355,7 @@ class FieldParseTestsNumeric(unittest.TestCase):
         fieldinstance.parse('6.00000000')
         self.assertEqual(str(fieldinstance), '6.00000000')
         fieldinstance.parse('    7.000 ')
-        self.assertEqual(fieldinstance.formated(), '         7')
+        self.assertEqual(fieldinstance.formated(), '        7.')
         self.assertEqual(fieldinstance.value, 7)
         
     def test_decimal_field_with_prec(self):
