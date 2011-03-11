@@ -8,7 +8,7 @@ Copyright (c) 2010 HUDORA. All rights reserved.
 """
 
 from edilib.softm.structure import parse_to_objects
-from edilib.softm.content import SoftMConverter, SoftMABConverter
+from edilib.softm.content import SoftMInvoiceConverter, SoftMABConverter
 
 
-__all__ = ['parse_to_objects', 'SoftMConverter', 'SoftMABConverter']
+__all__ = ['parse_to_objects', 'SoftMInvoiceConverter', 'SoftMABConverter']
