@@ -19,10 +19,17 @@ import logging
 import os
 
 
-def get_text(record, separator=' '):
-    """Konkateniere Textzeilen aus SoftM-Textsatz"""
-    text = separator.join(getattr(record, 'textzeile%d' % (i + 1)) for i in range(8))
-    return text.strip()
+def get_text(records, separator=' '):
+    """Konkateniet Textzeilen aus SoftM-Textsatz und gib eine Liste von Texten zurück."""
+    # Manchmal ist `record` eine Liste und manchmal direkt eine
+    # `edilib.softm.structure.Struct` - wir müssen hier mit beidem umgehen können.
+    if not isinstance(records, list):
+        records = [records]
+    ret = []
+    for record in records:
+        text = separator.join(getattr(record, 'textzeile%d' % (i + 1)) for i in range(8))
+        ret.append(text.strip())
+    return ret
 
 
 class SoftMConverter(object):
@@ -72,7 +79,8 @@ class SoftMConverter(object):
         # rohe Datensätze aus der Eingagsdatei
         record_list = edilib.softm.structure.parse_to_objects(data.split('\n'))
 
-        records, positions = None, None
+        records, position = None, None
+        positions = []
         for key, record in record_list:
             if key in self.file_records:
                 add(file_records, key, record)
@@ -132,17 +140,24 @@ class SoftMConverter(object):
             warenwert=huTools.monetary.euro_to_cent(position.wert_netto),
             zu_zahlen=huTools.monetary.euro_to_cent(position.wert_brutto),
             abschlag=huTools.monetary.euro_to_cent(-1 * rabatt.positionsrabatt_gesamt),
-            liefertermin=position.liefertermin,
             ursprungsland=position.ursprungsland,
-            anzahl_komponenten=position.anzahl_komponenten,
-            komponentenaufloesung=position.komponentenaufloesung,
-            steuersatz=position.steuersatz,
-            steuerbetrag=position.steuerbetrag,
+            #steuersatz=position.steuersatz,
+            #steuerbetrag=position.steuerbetrag,
         )
 
         # Füge EAN ein, wenn nicht leerer String oder nur aus '0' bestehend
         if position.ean and int(position.ean):
             line['ean'] = position.ean
+
+        # Den Liefertermin pro Position gibt es (noch) in Auftragsbestätigungen, aber nicht in Rechnungen
+        if hasattr(position, 'liefertermin'):
+            line['liefertermin'] = position.liefertermin
+
+        # Komponentenbezogene Daten gibt es in Auftragsbestätigungen, aber nicht in Rechnungen
+        if hasattr(position, 'anzahl_komponenten'):
+            line['anzahl_komponenten'] = position.anzahl_komponenten
+        if hasattr(position, 'komponentenaufloesung'):
+            line['komponentenaufloesung'] = position.komponentenaufloesung
 
         if rabatt.textschluessel3:
             raise RuntimeError(u"%s hat mehr als 2 Positionsrabatte" % line['guid'])
@@ -183,7 +198,7 @@ class SoftMConverter(object):
         # Record '?P' ist der Positionstext
         key = self.get_recordname('P')
         if key in position_records.keys():
-            line['infotext_kunde'].append(get_text(position_records[key]))
+            line['infotext_kunde'].extend(get_text(position_records[key]))
 
         # die restlichen Felder hinzufügen, d.h. alle außer ?3, ?4 und ?P (und ?R)
         # Positionszuschläge: 'A5'
@@ -216,7 +231,7 @@ class SoftMInvoiceConverter(SoftMConverter):
     position_prefix = 'F'
     file_records = ['XH', 'R1', 'R2', 'R3']
     header_records = ['F1', 'F2', 'FV', 'FL', 'FK', 'F8', 'F9', 'FX', 'FA', 'FE']
-    position_records = ['F3', 'F4', 'FR', 'FP']
+    position_records = ['F3', 'F4', 'FR', 'FP', 'F6']
 
     def convert_header(self, invoice_records):
         """Converts SoftM F1 and varius others."""
@@ -378,7 +393,7 @@ class SoftMInvoiceConverter(SoftMConverter):
         zeilen = []
         for k in ['FK', 'FE', 'FX', 'FV', 'FL', 'FN']:
             if k in invoice_records:
-                zeilen.append(get_text(invoice_records[k]))
+                zeilen.extend(get_text(invoice_records[k]))
         if zeilen:
             kopf['infotext_kunde'] = '\n'.join(zeilen).strip()
 
@@ -431,7 +446,7 @@ class SoftMInvoiceConverter(SoftMConverter):
         return footer
 
     def convert(self, data):
-        """Parse INVOICE file and save result in workfile."""
+        """Parse INVOICE file and return result in Very Simple Invoice Format."""
 
         # If we handle a collection of single invoices here, we have to split them into pieces and
         # provide a header for them.
@@ -572,11 +587,7 @@ class SoftMABConverter(SoftMConverter):
         zeilen = []
         for key in ('AV', 'AL', 'AN', 'AK', 'AX', 'AE'):
             if key in records:
-                record = records[key]
-                if isinstance(record, list):
-                    zeilen.extend(get_text(r, separator='\n') for r in record)
-                else:
-                    zeilen.append(get_text(records[key], separator='\n'))
+                zeilen.extend(get_text(records[key], separator='\n'))
 
         kopf['infotext_kunde'] = '\n'.join(zeilen).strip()
         kopf['_parsed_at'] = datetime.datetime.now()
