@@ -329,6 +329,28 @@ for feld in FELDERA6:
 A6satzklasse = generate_field_datensatz_class(FELDERA6, name='A6setkomponenten', length=496, doc=doctext)
 
 
+doctext = 'Auftrags-Position Setkomponenten (XOO00EF6)'
+FELDERF6 = [
+    dict(length=5, startpos=1, endpos=5, name='position', fieldclass=IntegerField),
+    dict(length=5, startpos=6, endpos=10, name='laufende_nr', fieldclass=IntegerField),
+    dict(length=35, startpos=11, endpos=45, name='artnr'),
+    dict(length=35, startpos=46, endpos=80, name='artnr_kunde'),
+    dict(length=35, startpos=81, endpos=115, name='ean', fieldclass=EanField),
+    dict(length=35, startpos=116, endpos=150, name='zolltarifnr'),
+    dict(length=70, startpos=151, endpos=220, name='bezeichnung'),
+    dict(length=70, startpos=221, endpos=290, name='bezeichnung_kunde'),
+    dict(length=15, startpos=291, endpos=305, name='menge', fieldclass=DecimalFieldNoDot, precision=3),
+    # dict(length=3, startpos=306, endpos=308, name='mengeneinheit'),
+    dict(length=4, startpos=309, endpos=312, name='ggvs_klasse'),
+    dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERF6:
+    feld['startpos'] = feld['startpos'] - 1
+F6satzklasse = generate_field_datensatz_class(FELDERF6, name='F6setkomponenten', length=496, doc=doctext)
+
+
 doctext = 'Bankverbindung (XOO00EA8)'
 FELDERA8 = [
     dict(length=35, startpos=1, endpos=35, name='Bankkonto-Nummer'),
@@ -813,9 +835,13 @@ TEXTsatzklasse = generate_field_datensatz_class(FELDERTEXT, name='generic_text',
 
 
 # from http://stackoverflow.com/questions/1305532/convert-python-dict-to-object
+# see huTools.structured.Struct for a more sophisticated implementation.
 class Struct:
     def __init__(self, **entries):
         self.__dict__.update(entries)
+
+    def __repr__(self):
+        return "<Struct: %r>" % self.__dict__
 
 
 def parse_to_objects(lines):
@@ -826,7 +852,7 @@ def parse_to_objects(lines):
         F3=F3satzklasse,
         F4=F4satzklasse,  # Rabatte
         # F5 - Zuschlaege
-        F6=generate_field_datensatz_class(FELDERTEXT, name='komponenteninfo', length=496),
+        F6=F6satzklasse,
         # F7 Chargen
         F8=F8satzklasse,  # Bankverbindung
         F9=F9satzklasse,  # Rechnungsende
