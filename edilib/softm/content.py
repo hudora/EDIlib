@@ -86,12 +86,14 @@ class SoftMConverter(object):
                 add(file_records, key, record)
             elif key == self.get_recordname('1'):
                 # Beginn neuer Datei: Lege neue Datei an und kopiere file_records
+                if position:
+                    positions.append(position)
                 if records:
                     files.append((records, positions))
-                records = dict(file_records)
-                records[key] = record
                 positions = []
                 position = None
+                records = dict(file_records)
+                records[key] = record
             elif key in self.header_records:  # Datensatz, der ein- oder n-mal pro Header auftritt
                 add(records, key, record)
             elif key == self.position_key:  # Beginn neuer Position
@@ -460,6 +462,8 @@ class SoftMInvoiceConverter(SoftMConverter):
             if not interchangeheader:
                 interchangeheader = self.convert_interchangeheader(records)
 
+            if not positions:
+                raise RuntimeError("Keien Auftragspositionen!")
             invoice = self.convert_header(records)
             invoice['orderlines'] = [self.convert_position(invoice['guid'], position) for position in positions]
             invoices.append(invoice)
@@ -611,20 +615,8 @@ class SoftMABConverter(SoftMConverter):
         return ab
 
 
-def demo():
-    """Demo Application"""
-    for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
-        if not f.startswith('RG'):
-            continue
-        converter = SoftMInvoiceConverter()
-        converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
-
-
 def main():
     """Main Entry Point"""
-
-    pass
-
     # converter = SoftMABConverter()
     # converter.convert(open('OUT/AB00049.txt').read())
     # converter = SoftMInvoiceConverter()
@@ -634,12 +626,12 @@ def main():
     # converter = SoftMABConverter()
     # converter.convert(open('RG01490.TXT').read())
 
-    #for f in sorted(os.listdir('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/'), reverse=True):
-    #    if not f.startswith('RG'):
-    #        continue
-    #    # print f, os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f)
-    #    converter = SoftMConverter()
-    #    converter.convert(os.path.join('/Users/md/code2/git/DeadTrees/workdir/backup/INVOIC/', f))
+    for filename in sorted(os.listdir('.'), reverse=True):
+        if not (filename.startswith('RG') or filename.startswith('RL')):
+            continue
+        print filename, os.path.join('.', filename)
+        converter = SoftMInvoiceConverter()
+        print converter.convert(open(os.path.join('.', filename)).read())
 
 # RG821130 ist nen tolles Beispiel für ne Gutschrift
 
