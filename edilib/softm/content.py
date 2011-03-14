@@ -290,7 +290,7 @@ class SoftMInvoiceConverter(SoftMConverter):
             # Der Betrag, denn der Kunde Zahlen muss - es sei denn, er zieht Skonto
             zu_zahlen=huTools.monetary.euro_to_cent(f9.gesamtbetrag),
             # Rechnungsbetrag ohne Steuer und Abz<C3><BC>ge als String mit zwei Nachkommastellen.
-            # Entspricht warenwert - abschlag oder zu_zahlen - rechnung_steuranteil
+            # Entspricht warenwert - abschlag oder zu_zahlen - rechnung_steueranteil
             rechnungsbetrag=huTools.monetary.euro_to_cent((f9.gesamtbetrag - f9.mehrwertsteuer)),
 
             zahlungstage=f1.nettotage,
