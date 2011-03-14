@@ -6,6 +6,10 @@ check: dependencies
 test: dependencies
 	PYTHONPATH=. ./pythonenv/bin/python test/test_recordbased.py
 
+
+testdata:
+	git clone git@github.com:hudora/Testdatens.git
+
 dependencies:
 	virtualenv --python=python2.5 --no-site-packages --unzip-setuptools pythonenv
 	pip install --environment=pythonenv/ -r requirements.txt
