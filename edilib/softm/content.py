@@ -616,24 +616,35 @@ class SoftMABConverter(SoftMConverter):
 
 
 def main():
-    """Main Entry Point"""
-    # converter = SoftMABConverter()
-    # converter.convert(open('OUT/AB00049.txt').read())
-    # converter = SoftMInvoiceConverter()
-    # converter.convert(open('OUT/RG01490.TXT').read())
-    # converter.convert(open('../workdir/archive/INVOIC/AB00049_ORIGINAL.txt').read())
+    """Main Entry Point.
 
-    # converter = SoftMABConverter()
-    # converter.convert(open('RG01490.TXT').read())
+    Perform basic tests. Expects testfiles located in directory testdata/formate/
+    """
 
-    for filename in sorted(os.listdir('.'), reverse=True):
-        if not (filename.startswith('RG') or filename.startswith('RL')):
-            continue
-        print filename, os.path.join('.', filename)
-        converter = SoftMInvoiceConverter()
-        print converter.convert(open(os.path.join('.', filename)).read())
+    # iterate over all files located in testfolder and try parsing
+    testdir = os.path.join('testdata', 'formate')
+    for filename in sorted(os.listdir(testdir), reverse=True):
+        print filename, os.path.join(testdir, filename)
 
-# RG821130 ist nen tolles Beispiel für ne Gutschrift
+        # Parse INVOIC file
+        if filename.startswith('softm-edi-rechnungsliste'):
+            converter = SoftMInvoiceConverter()
+            invoices = converter.convert(open(os.path.join(testdir, filename)).read())
+            assert(invoices)
+            for invoice in invoices:
+                assert(len(invoice['orderlines']))
+
+        # parse ORDRSP file
+        elif filename.startswith('softm-edi-auftragsbestaetigung'):
+            converter = SoftMABConverter()
+            orderresponse = converter.convert(open(os.path.join('.', filename)).read())
+            assert(orderresponse)
+            assert(len(orderresponse['positionen']))
+
+        # no parsable file
+        else:
+            print "skipped"
+
 
 if __name__ == '__main__':
     main()
