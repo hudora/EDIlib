@@ -329,28 +329,6 @@ for feld in FELDERA6:
 A6satzklasse = generate_field_datensatz_class(FELDERA6, name='A6setkomponenten', length=496, doc=doctext)
 
 
-doctext = 'Auftrags-Position Setkomponenten (XOO00EF6)'
-FELDERF6 = [
-    dict(length=5, startpos=1, endpos=5, name='position', fieldclass=IntegerField),
-    dict(length=5, startpos=6, endpos=10, name='laufende_nr', fieldclass=IntegerField),
-    dict(length=35, startpos=11, endpos=45, name='artnr'),
-    dict(length=35, startpos=46, endpos=80, name='artnr_kunde'),
-    dict(length=35, startpos=81, endpos=115, name='ean', fieldclass=EanField),
-    dict(length=35, startpos=116, endpos=150, name='zolltarifnr'),
-    dict(length=70, startpos=151, endpos=220, name='bezeichnung'),
-    dict(length=70, startpos=221, endpos=290, name='bezeichnung_kunde'),
-    dict(length=15, startpos=291, endpos=305, name='menge', fieldclass=DecimalFieldNoDot, precision=3),
-    # dict(length=3, startpos=306, endpos=308, name='mengeneinheit'),
-    dict(length=4, startpos=309, endpos=312, name='ggvs_klasse'),
-    dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
-]
-
-# fix difference in array counting between SoftM and Python
-for feld in FELDERF6:
-    feld['startpos'] = feld['startpos'] - 1
-F6satzklasse = generate_field_datensatz_class(FELDERF6, name='F6setkomponenten', length=496, doc=doctext)
-
-
 doctext = 'Bankverbindung (XOO00EA8)'
 FELDERA8 = [
     dict(length=35, startpos=1, endpos=35, name='Bankkonto-Nummer'),
@@ -523,6 +501,7 @@ for feld in FELDERF3:
     feld['startpos'] = feld['startpos'] - 1
 F3satzklasse = generate_field_datensatz_class(FELDERF3, name='F3positionsdaten', length=496, doc=doctext)
 
+
 doctext = 'Rechnungs-Position Rabatte (XOO00EF4)'
 FELDERF4 = [
     # Seems the SoftM doku is off by one here
@@ -593,6 +572,54 @@ FELDERF4 = [
 for feld in FELDERF4:
     feld['startpos'] = feld['startpos'] - 1
 F4satzklasse = generate_field_datensatz_class(FELDERF4, name='F4positionsrabatte', length=496)
+
+
+doctext = 'Auftrags-Position Setkomponenten (XOO00EF5)'
+FELDERF5 = [
+    dict(length=5, startpos=1, endpos=5, name='position'),
+    dict(length=5, startpos=6, endpos=10, name='zusatzposition'),
+    dict(length=35, startpos=11, endpos=45, name='zuschlagsart'),
+    dict(length=16, startpos=46, endpos=61, name='positionszuschlag_netto',
+         fieldclass=DecimalFieldNoDotSigned, precision=3),
+    dict(length=16, startpos=62, endpos=77, name='positionszuschlag_brutto',
+         fieldclass=DecimalFieldNoDotSigned, precision=3),
+    dict(length=9, startpos=78, endpos=86, name='zuschlag_gewicht',
+         fieldclass=DecimalFieldNoDot, precision=3),
+    dict(length=15, startpos=87, endpos=101, name='zuschlag_kurs',
+         fieldclass=DecimalFieldNoDot, precision=3),
+    dict(length=3, startpos=102, endpos=104, name='zuschlag_einheit'),
+    # dict(length=200, startpos=105, endpos=304, name='Reserve 1'),
+    # dict(length=191, startpos=305, endpos=495, name='Reserve 2'),
+    dict(length=1, startpos=496, endpos=496, name='status', fieldclass=FixedField, default=' ')
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERF5:
+    feld['startpos'] = feld['startpos'] - 1
+F5satzklasse = generate_field_datensatz_class(FELDERF5, name='F5zuschlaege', length=496, doc=doctext)
+
+
+doctext = 'Auftrags-Position Setkomponenten (XOO00EF6)'
+FELDERF6 = [
+    dict(length=5, startpos=1, endpos=5, name='position', fieldclass=IntegerField),
+    dict(length=5, startpos=6, endpos=10, name='laufende_nr', fieldclass=IntegerField),
+    dict(length=35, startpos=11, endpos=45, name='artnr'),
+    dict(length=35, startpos=46, endpos=80, name='artnr_kunde'),
+    dict(length=35, startpos=81, endpos=115, name='ean', fieldclass=EanField),
+    dict(length=35, startpos=116, endpos=150, name='zolltarifnr'),
+    dict(length=70, startpos=151, endpos=220, name='bezeichnung'),
+    dict(length=70, startpos=221, endpos=290, name='bezeichnung_kunde'),
+    dict(length=15, startpos=291, endpos=305, name='menge', fieldclass=DecimalFieldNoDot, precision=3),
+    # dict(length=3, startpos=306, endpos=308, name='mengeneinheit'),
+    dict(length=4, startpos=309, endpos=312, name='ggvs_klasse'),
+    dict(length=1, startpos=496, endpos=496, name='Status', fieldclass=FixedField, default=' '),
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERF6:
+    feld['startpos'] = feld['startpos'] - 1
+F6satzklasse = generate_field_datensatz_class(FELDERF6, name='F6setkomponenten', length=496, doc=doctext)
+
 
 doctext = "Rechnungs-Bankverbindung (XOO00EF8)"
 FELDERF8 = [
@@ -851,7 +878,7 @@ def parse_to_objects(lines):
         F2=F2satzklasse,
         F3=F3satzklasse,
         F4=F4satzklasse,  # Rabatte
-        # F5 - Zuschlaege
+        F5=F5satzklasse,
         F6=F6satzklasse,
         # F7 Chargen
         F8=F8satzklasse,  # Bankverbindung

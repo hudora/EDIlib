@@ -233,7 +233,7 @@ class SoftMInvoiceConverter(SoftMConverter):
     position_prefix = 'F'
     file_records = ['XH', 'R1', 'R2', 'R3']
     header_records = ['F1', 'F2', 'FV', 'FL', 'FK', 'F8', 'F9', 'FX', 'FA', 'FE']
-    position_records = ['F3', 'F4', 'FR', 'FP', 'F6']
+    position_records = ['F3', 'F4', 'FR', 'FP', 'F5', 'F6']
 
     def convert_header(self, invoice_records):
         """Converts SoftM F1 and varius others."""
