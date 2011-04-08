@@ -4,3 +4,4 @@ dist
 *.pyc
 pythonenv/
 testdata/
+.DS_Store
