@@ -459,11 +459,20 @@ class SoftMInvoiceConverter(SoftMConverter):
 
         files = self.parse(data)
         for records, positions in files:
+
+            # SoftM sometimes writes empty invoice list files:
+            # The files consist of the data exchange header (XH record)
+            # and the invoice list records R1, R2, R3, but lack in
+            # invoides (F records).
+            # If the file is empty, it is ignored.
+            if records is None:
+                continue
+
             if not interchangeheader:
                 interchangeheader = self.convert_interchangeheader(records)
 
             if not positions:
-                raise RuntimeError("Keien Auftragspositionen!")
+                raise RuntimeError("Keine Auftragspositionen!")
             invoice = self.convert_header(records)
             invoice['orderlines'] = [self.convert_position(invoice['guid'], position) for position in positions]
             invoices.append(invoice)
