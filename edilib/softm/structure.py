@@ -83,7 +83,7 @@ FELDERF1 = [
  dict(length=17, startpos=228, endpos=244, name='ustdid_absender'),
  dict(length=35, startpos=245, endpos=279, name='rechnungsliste', fieldclass=IntegerField),
  dict(length=8, startpos=280, endpos=287, name='rechnungslistendatum', fieldclass=DateField),
- dict(length=3, startpos=288, endpos=290, name='waehrung', fieldclass=FixedField, default='EUR',
+ dict(length=3, startpos=288, endpos=290, name='waehrung', default='EUR',
       doc='ISO Währungsschlüssel', choices=['EUR', 'USD']),
  dict(length=5, startpos=291, endpos=295, name='ust1_fuer_skonto', fieldclass=DecimalFieldNoDot, precision=2),
  dict(length=5, startpos=296, endpos=300, name='ust2_fuer_skonto', fieldclass=DecimalFieldNoDot, precision=2),
