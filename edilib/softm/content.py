@@ -202,12 +202,14 @@ class SoftMConverter(object):
         if key in position_records.keys():
             line['infotext_kunde'].extend(get_text(position_records[key]))
 
-        # die restlichen Felder hinzufügen, d.h. alle außer ?3, ?4 und ?P (und ?R)
-        # Positionszuschläge: 'A5'
-        # Set-Komponenten: 'A6'
-
+        # Record '?5' ist ein Positionszuschlag. Dieser wird bei uns nicht verwendet!
+        # Ist der Zuschlagswert 0, wird der Record einfach ignoriert,
+        # ansonsten tritt ein ValueError auf.
         if self.get_recordname('5') in position_records:
-            print 'HAS %s!' % self.get_recordname('5')
+            record = position_records[self.get_recordname('5')]
+            value = record.positionszuschlag_netto + record.positionszuschlag_brutto
+            if value != 0:
+                raise RuntimeError('Unexpected record %s' % self.get_recordname('5'))
 
         # Texte für Set-Komponenten
         if self.get_recordname('6') in position_records:

@@ -307,6 +307,31 @@ for feld in FELDERA4:
 A4satzklasse = generate_field_datensatz_class(FELDERA4, name='A4auftragspositionsrabatte', length=496, doc=doctext)
 
 
+doctext = 'Auftrags-Position Positionszuschlag (XOO00EA5)'
+FELDERA5 = [
+    dict(length=5, startpos=1, endpos=5, name='position', fieldclass=IntegerField),
+    dict(length=5, startpos=6, endpos=10, name='zusatzposition', fieldclass=IntegerField),
+    dict(length=35, startpos=11, endpos=45, name='zuschlagsart'),
+    dict(length=16, startpos=46, endpos=61, name='positionszuschlag_netto',
+         fieldclass=DecimalFieldNoDotSigned, precision=3),
+    dict(length=16, startpos=62, endpos=77, name='positionszuschlag_brutto',
+         fieldclass=DecimalFieldNoDotSigned, precision=3),
+    dict(length=10, startpos=78, endpos=87, name='zuschlag_gewicht',
+         fieldclass=DecimalFieldNoDot, precision=3),
+    dict(length=15, startpos=88, endpos=102, name='zuschlag_kurs',
+         fieldclass=DecimalFieldNoDot, precision=3),
+    dict(length=3, startpos=103, endpos=105, name='zuschlag_einheit'),
+    # dict(length=200, startpos=106, endpos=305, name='Reserve 1'),
+    # dict(length=191, startpos=306, endpos=495, name='Reserve 2'),
+    dict(length=1, startpos=496, endpos=496, name='status', fieldclass=FixedField, default=' ')
+]
+
+# fix difference in array counting between SoftM and Python
+for feld in FELDERA5:
+    feld['startpos'] = feld['startpos'] - 1
+A5satzklasse = generate_field_datensatz_class(FELDERA5, name='A5zuschlaege', length=496, doc=doctext)
+
+
 doctext = 'Auftrags-Position Setkomponenten (XOO00EA6)'
 FELDERA6 = [
     dict(length=5, startpos=1, endpos=5, name='position', fieldclass=IntegerField),
@@ -574,7 +599,7 @@ for feld in FELDERF4:
 F4satzklasse = generate_field_datensatz_class(FELDERF4, name='F4positionsrabatte', length=496)
 
 
-doctext = 'Auftrags-Position Setkomponenten (XOO00EF5)'
+doctext = 'Auftrags-Position Positionszuschlag (XOO00EF5)'
 FELDERF5 = [
     dict(length=5, startpos=1, endpos=5, name='position', fieldclass=IntegerField),
     dict(length=5, startpos=6, endpos=10, name='zusatzposition', fieldclass=IntegerField),
@@ -884,14 +909,15 @@ def parse_to_objects(lines):
         F8=F8satzklasse,  # Bankverbindung
         F9=F9satzklasse,  # Rechnungsende
         # ER=ERsatzklasse,
+
         A1=A1satzklasse,
         A2=A2satzklasse,
         A3=A3satzklasse,
         A4=A4satzklasse,
+        A5=A5satzklasse,
         A6=A6satzklasse,
         A8=A8satzklasse,
         A9=A9satzklasse,
-
         AV=generate_field_datensatz_class(FELDERTEXT, name='versandarttext', length=496),
         AL=generate_field_datensatz_class(FELDERTEXT, name='lieferbedinungstext', length=496),
         AN=generate_field_datensatz_class(FELDERTEXT, name='nebenkostentext', length=496),
