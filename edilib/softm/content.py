@@ -166,7 +166,6 @@ class SoftMConverter(object):
 
         rabattep = {}  # Rabatte in %
         rabatteb = {}  # Rabattbeträge
-        rabattet = {}  # Rabatttexte
 
         abschlagtext = []
 
@@ -174,10 +173,10 @@ class SoftMConverter(object):
         # Es kann bis zu acht Rabatte geben - unterstützt werden aber nur zwei!
         # Record '?R' ist der Positionsrabatttext (den es wohl nur bei Rechnungen gibt)
         key = self.get_recordname('R')
-        for i in range(1, 9):
+        for i in range(1, 3):
             # Speichere Rabatt-Text aus Positionsrabatttext-Record
             if key in position_records.keys():
-                rabattet[i] = getattr(position_records[key], 'textzeile%d' % i).strip()
+                rabatttext = getattr(position_records[key], 'textzeile1').strip()
 
             # Wenn Rabattkennzeichen gesetzt ist, füge Rabatt-Text ein, falls vorhanden
             # Es werden nur die Rabattkennzeichen '0' und '1' unterstützt
@@ -186,11 +185,11 @@ class SoftMConverter(object):
             if rabattkennzeichen == '0':  # '0' ist "Rabatt in Prozent"
                 rabattep[i] = getattr(rabatt, 'positionsrabatt%dp' % i)
                 if rabattep[i]:
-                    abschlagtext.append("%s: %s %%" % (rabattet.get(i, '*unknown*'), rabattep[i]))
+                    abschlagtext.append("%s: %.2f %%" % (rabatttext, rabattep[i]))
             elif rabattkennzeichen == '1':  # '1' ist Rabatt als Betrag
                 rabatteb[i] = getattr(rabatt, 'rabattbetrag%d' % i)
                 if rabatteb[i]:
-                    abschlagtext.append("%s: %.2f Euro" % (rabattet.get(i, '*unknown'), -1 * float(str(rabatteb[i]))))
+                    abschlagtext.append("%s: %.2f Euro" % (rabatttext, -1 * float(str(rabatteb[i]))))
             else:
                 raise ValueError(u"%s: nicht unterstütztes Rabattkennzeichen: %r" % (line['guid'], rabattkennzeichen))
 
@@ -390,12 +389,11 @@ class SoftMInvoiceConverter(SoftMConverter):
 
         # FK = Kopftexte
         # FE = Rechnungs-Endetexte
-        # FX = Texte Kopfrabatt
         # FV = Texte Versandart
         # FL = Texte Lieferbedingung
         # FN = Texte Nebenkosten
         zeilen = []
-        for k in ['FK', 'FE', 'FX', 'FV', 'FL', 'FN']:
+        for k in ['FK', 'FE', 'FV', 'FL', 'FN']:
             if k in invoice_records:
                 zeilen.extend(get_text(invoice_records[k]))
         if zeilen:
@@ -505,7 +503,7 @@ class SoftMABConverter(SoftMConverter):
     header_records = ['A1', 'A2', 'A8', 'A9', 'AV', 'AL', 'AN', 'AK', 'AX', 'AE']
 
     # Records, die n mal pro Position auftreten
-    position_records = ['A3', 'A4', 'A6', 'AP']
+    position_records = ['A3', 'A4', 'A6', 'AP', 'AR']
 
     def convert_header(self, records):
         """Auftragskopf konvertieren"""
@@ -551,10 +549,10 @@ class SoftMABConverter(SoftMConverter):
             summe_rabatte=huTools.monetary.euro_to_cent(a9.summe_rabatte),
 
             kopfrabatt1=huTools.monetary.euro_to_cent(a9.kopfrabatt1),
-            kopfrabatt1_pct=a9.kopfrabatt1_pct,
+            kopfrabatt1_pct=a9.kopfrabatt1_prozent,
             textschluessel1=a9.textschluessel1,
             kopfrabatt2=huTools.monetary.euro_to_cent(a9.kopfrabatt2),
-            kopfrabatt2pct=a9.kopfrabatt2_pct,
+            kopfrabatt2pct=a9.kopfrabatt2_prozent,
             textschluessel2=a9.textschluessel2,
 
             # verpackungskosten1=a9.verpackungskosten1,
@@ -567,6 +565,17 @@ class SoftMABConverter(SoftMConverter):
             steuernr_kunde=str(a1.ustdid_rechnungsempfaenger),
             steuernr_lieferant=str(a1.ustdid_absender),
         )
+
+        if a9.summe_rabatte:
+            kopf['abschlag_text'] = []
+            if a9.kopfrabatt1_prozent:
+                kopf['abschlag_text'].append("Rabatt (%.2f %%)" % a9.kopfrabatt1_prozent)
+            if a9.kopfrabatt2_prozent:
+                kopf['abschlag_text'].append("Rabatt (%.2f %%)" % a9.kopfrabatt2_prozent)
+            kopf['abschlag_text'] = ', '.join(kopf['abschlag_text'])
+            # Abschlag = a9.kopfrabatt1 + a9.kopfrabatt2
+            kopf['abschlag'] = huTools.monetary.euro_to_cent(-a9.summe_rabatte)
+            kopf['hint']['abschlag_prozent'] = "%.2f" % float(str(a9.kopfrabatt1_prozent + a9.kopfrabatt2_prozent))
 
         if a1.skontotage1:
             kopf['skontotage'] = a1.skontotage1
@@ -600,7 +609,7 @@ class SoftMABConverter(SoftMConverter):
             kopf['lieferadresse']['iln'] = str(a2.iln_warenempfaenger)
 
         zeilen = []
-        for key in ('AV', 'AL', 'AN', 'AK', 'AX', 'AE'):
+        for key in ('AV', 'AL', 'AN', 'AK', 'AE'):
             if key in records:
                 zeilen.extend(get_text(records[key], separator='\n'))
 
