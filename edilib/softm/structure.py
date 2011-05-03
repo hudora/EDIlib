@@ -398,8 +398,8 @@ FELDERA9 = [
     dict(length=16, startpos=283, endpos=298, name='summe_rabatte', fieldclass=DecimalFieldNoDotSigned, precision=3),
     dict(length=16, startpos=299, endpos=314, name='summe_zuschlaege', fieldclass=DecimalFieldNoDotSigned, precision=3),
 
-    dict(length=15, startpos=315, endpos=329, name='kopfrabatt1_pct', fieldclass=DecimalFieldNoDot, precision=3),
-    dict(length=15, startpos=330, endpos=344, name='kopfrabatt2_pct', fieldclass=DecimalFieldNoDot, precision=3),
+    dict(length=15, startpos=315, endpos=329, name='kopfrabatt1_prozent', fieldclass=DecimalFieldNoDot, precision=3),
+    dict(length=15, startpos=330, endpos=344, name='kopfrabatt2_prozent', fieldclass=DecimalFieldNoDot, precision=3),
 
     # Vorzeichen Kopfrabatt...
 
@@ -925,6 +925,7 @@ def parse_to_objects(lines):
         AP=generate_field_datensatz_class(FELDERTEXT, name='positionstext', length=496),
         AX=generate_field_datensatz_class(FELDERTEXT, name='kopfrabatttext', length=496),
         AE=generate_field_datensatz_class(FELDERTEXT, name='endetext', length=496),
+        AR=generate_field_datensatz_class(FELDERTEXT, name='positionsrabatttext', length=496),
 
         R1=R1satzklasse,
         R2=R2satzklasse,
