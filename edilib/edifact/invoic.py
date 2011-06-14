@@ -20,14 +20,213 @@ import datetime
 import time
 import struct
 import base64
+import huTools.monetary
 
 
-def date_to_EDIFACT(d):
+def date_to_EDIFACT(d, fmt='%Y%m%d'):
     if hasattr(d, 'strftime'):
-        return d.strftime('%Y%m%d')
+        return d.strftime(fmt)
     if hasattr(d, 'replace'):
         return d.replace('-', '')[:8]
     return d
+
+
+def invoice_to_INVOICD01B(invoice):
+    """
+    Convert from a dictionary in SimpleInvoiceProtocol format to edifact d01b format.
+
+    Returns a (latin-1) encoded bytestream which must not be re-encoded,
+    because the encoding is codified in the header.  ## XXXXX: CODIFIED?!
+    """
+
+    # TODO: ?! Warum hier die Daten?!
+    param = dict(absenderadresse_iln=u'4005998000007',
+                 absenderadresse_name1=u'HUDORA GmbH',
+                 absenderadresse_name2=u'Fakturierung',
+                 absenderadresse_name3=u'',
+                 absenderadresse_strasse=u'Jägerwald 13',
+                 absenderadresse_ort=u'Remscheid',
+                 absenderadresse_plz=u'42897',
+                 absenderadresse_land=u'DE')
+    param.update(invoice)
+    param.update(dict(  # der ID darf 14-stellig sein, unserer ist eine 13stellige codeirte Unix Timestamp
+         uebertragungsnr=base64.b32encode(struct.pack('>d', time.time())).strip('=\n')[:14],
+         unhnr=base64.b32encode(struct.pack('>d', time.time() - 1000000000)).strip('=\n')[:14],
+         rechnungsdatum=date_to_EDIFACT(invoice['rechnungsdatum']),
+         leistungsdatum=date_to_EDIFACT(invoice.get('leistungsdatum', invoice.get('rechnungsdatum'))),
+         date=date_to_EDIFACT(datetime.date.today(), fmt='%y%m%d'),
+         time=datetime.datetime.now().strftime('%H%M'),
+         absenderadresse_iln='4005998000007',
+        ))
+
+    # Convert monetary values from Eurocent to Euro
+    for key in 'rechnungsbetrag', 'warenwert', 'zu_zahlen', 'rechnung_steueranteil':
+        param[key] = huTools.monetary.cent_to_euro(invoice[key])
+
+    # Message Envelope:
+    envelope = []
+    # Standard delimiter characters
+    # Add 'Service String Advice'
+    envelope.append("UNA:+.? '")
+
+    # Add 'Interchange Header'
+    # UN/ECE level C (ISO 8859-1), Syntax Version 3
+    # Partner identification via GS1 GLN (= 14)
+    envelope.append("UNB+UNOC:3+%(absenderadresse_iln)s:14+%(iln)s:14+%(date)s:%(time)s+%(uebertragungsnr)s'" % param)
+
+    # Message Header:
+    header = ["UNH+%(unhnr)s+INVOIC:D:01B:UN:EAN010'" % param]
+    # Begin of Message: Document code 380 (Commercial Invoice), Message function code 9 (Original)
+    header.append("BGM+380+%(rechnungsnr)s+9'" % param)
+    # Date/Time/Period
+    # Function code qualifier: 137 (Document/message date/time)
+    # Format code 102 (CCYYMMDD)
+    header.append("DTM+137:%(rechnungsdatum)s:102'" % param)
+    # Function code qualifier: 35 (Delivery date/time, actual)
+    # Format code 718 - TODO: oder doch 102? 718 ist period
+    # header.append("DTM+263:%(leistungsdatum)s%(leistungsdatum)s:718'" % param)
+    header.append("DTM+35:%(leistungsdatum)s:102'" % param)
+
+    # PAI       -C      1       - Payment instructions
+    # PAT -M 1  - Payment terms basis This segment is used by the issuer of the invoice to specify the payment terms for the complete invoice.
+    # DTM -C 5  - Date/time/period This segment is used to specify any dates associated with the payment terms for the invoice.
+    # PCD -C 1  - Percentage details This segment is used to specify percentages which will be allowed or charged if the invoicee pays (does not pay) to terms.
+    # MOA -C 1  - Monetary amount This segment is used to specify monetary values which will be allowed or charged if the invoicee pays (does not pay) to terms.
+    # PAI       -C      1       - Payment instructions This segment is used to specify payment instructions related to payment terms.
+
+    if 'lieferscheinnr' in param:  # Delivery note number
+        header.append("RFF+DQ:%(lieferscheinnr)s'" % param)
+    if 'kundenauftragsnr' in param:  # Order document identifier, buyer assigned
+        header.append("RFF+ON:%(kundenauftragsnr)s'" % param)
+
+    # TODO
+    # if 'guid' in param:
+    #     k.append("RFF+ZZZ:%(guid)s'" % param)  # Mutually defined reference number
+    # if 'auftragsnr' in param:
+    #     k.append("RFF+AAJ:%(auftragsnr)s'" % param)  # AAJ       Delivery order number - Reference number assigned by issuer to a delivery order.
+    # if 'infotext_kunde' in param:  # Supplier remarks Remarks from or for a supplier of goods or services.
+    #     k.append("FTX+SUR+++%(infotext_kunde)s'" % param)
+    # if 'erfasst_von' in param:  # Internal auditing information Text relating to internal auditing information.
+    #     k.append("FTX+AEZ+++Erfasser: %(erfasst_von)s'" % param)
+
+    # FTX+AAI   General information
+    # FTX+AAJ   Additional conditions of sale/purchase Additional conditions specific to this order or pro
+    # FTX+AAR   Terms of delivery (4053) Free text of the non Incoterms terms of delivery. For Incoterms, use: 4053.
+    # FTX+ABN   Accounting information The text contains information related to accounting.
+    # FTX+AFB   Comment Denotes that the associated text is a comment.
+    # FTX+AFD   Help text Denotes that the associated text is an item of help text.
+    # FTX+BLU   Waste information Text describing waste related information.
+    # FTX+PAC   Packing/marking information Information regarding the packaging and/or marking of goods.
+    # FTX+PAI   Payment instructions information The free text contains payment instructions information relevant to the message.
+    # FTX+PMD   Payment detail/remittance information The free text contains payment details.
+    # FTX+PMT   Payment information Note contains payments information.
+    # Avisierungshinweise: FTX+WHI      Warehouse instruction/information Note contains warehouse information.
+
+    # Name and address of Seller given as GLN
+    header.append("NAD+SU+%(absenderadresse_iln)s::9'" % param)
+
+    # # Kontoverbindung FII       -C      5       - Financial institution information  # XXX: ???
+    if param.get('unsere_lieferantennr'):
+        header.append("RFF+YC1:%(unsere_lieferantennr)s'" % param)
+    if 'hint_steuernr_lieferant' in param:
+        header.append("RFF+VA:%(hint_steuernr_lieferant)s'" % param)
+
+    # Name and address of Buyer given as GLN
+    header.append("NAD+BY+%(iln)s::9'" % param)
+    header.append("RFF+IT:%(kundennr)s'" % param)
+    if 'hint_steuernr_kunde' in param:
+        header.append("RFF+VA:%(hint_steuernr_kunde)s'" % param)
+
+    # Name and address of XXX given as GLN
+    header.append("NAD+DP+%(iln)s::9'" % param)
+
+    # - Warenendempfänger (DE3035 = UC); Kannfeld; N 13
+    # NAD+UC+9012345000035::9'
+    # - Besteller (DE3035 = OB); Kannfeld; N 13
+    # NAD+OB+9012345000042::9'
+
+    # Tax Record: Function code qualifier 7 (Tax), Name code VAT (Value added tax),
+    # Tax rate, Category code S (Standard)
+    header.append("TAX+7+VAT+++:::%(steuer_prozent)s+S'" % param)
+
+    # Currecny Record: Reference currency, Currency type code qualifier 4 (Invoicing currency)
+    header.append("CUX+2:%(waehrung)s:4'" % param)
+    envelope.extend(header)
+    number_of_records = len(header)
+
+    # Orderline / Positions
+    for positionsnummer, orderline in enumerate(invoice['orderlines']):
+        position = []
+        orderline = copy.copy(orderline)
+        orderline.update(dict(positionsnummer=positionsnummer + 1))
+        if 'ean' in orderline:
+            position.append("LIN+%(positionsnummer)s++%(ean)s:SRV'" % orderline)
+        else:
+            position.append("LIN+%(positionsnummer)s++:SRV'" % orderline)
+
+        # Additional Product ID
+        # artnr is supplier's item no (SA), defined by supplier (91)
+        # kundenartnr is buyer's item no (IN), defined by buyer (92)
+        if 'kundenartnr' in orderline:
+            position.append("PIA+%(positionsnummer)s+%(artnr)s:SA::91+%(kundenartnr)s:IN::92")
+
+        # Item description
+        if 'name' in orderline:
+            position.append("IMD+A++:::%(name)s::DE'" % orderline)
+        else:
+            raise RuntimeError("no product name")
+
+        # Line item is an invoicing unit
+        position.append("IMD+C++IN::9'")
+        # Line item is a consumer unit
+        position.append("IMD+C++CU::9'")
+        # Quantity given in peaces (PCE)
+        position.append("QTY+47:%(menge)s:PCE'" % orderline)
+
+        if orderline.get('abschlag'):
+            position.append("FTX+ABN+++Abschlag?: %(abschlag)s %%'" % orderline)
+
+        # TODO: Artikelnettobetrag
+        # TODO: Als Dezimalzahl huTools.monetary.cent_to_euro()
+        # position.append("MOA+203:%(zu_zahlen)s'" % orderline)  # - Rechnungsbetrag
+        # position.append("MOA+66:%(warenwert)s'" % orderline)  # 66 Goods item total Net price x quantity for the line item.
+        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
+        # abschlag_prozent
+
+        # Price information, prices as calculation net (AAA) per 1 piece (PCE)
+        position.append("PRI+AAA:%(einzelpreis)s:::1:PCE'" % orderline)
+        # position.append("TAX+7+VAT+++:::19+S'")
+
+        if 'bestellnr' in orderline:
+            position.append("RFF+ON:%(bestellnr)s'" % orderline)
+        if 'lieferscheinnr' in orderline:
+            position.append("RFF+DQ:%(lieferscheinnr)s'" % orderline)
+
+        envelope.extend(position)
+        number_of_records += len(position)
+
+    # Message Footer:
+    footer = ["UNS+S'"]
+    # Invoice amount (77)
+    footer.append("MOA+77:%(zu_zahlen).2f'" % param)
+    # Total line items amount (79)
+    footer.append("MOA+79:%(warenwert).2f'" % param)
+    # Taxable amount (125)
+    footer.append("MOA+125:%(rechnungsbetrag).2f'" % param)
+    # Tax amount (124)
+    footer.append("MOA+124:%(rechnung_steueranteil).2f'" % param)
+    envelope.extend(footer)
+
+    # TODO: VERSANDKOSTEN !!! XXX
+    # # 64    Freight charge - Amount to be paid for moving goods, by whatever means, from one place to another, inclusive discounts,
+    # # allowances, rebates, adjustment factors and additional cost relating to freight costs (UN/ECE Recommendation no 23).
+    # if invoice.get('versandkosten'):
+    #     k.append("MOA+64:%(versandkosten)s'" % invoice)
+    number_of_records += len(footer)
+    # TODO:
+    envelope.append("UNT+%d+%s'" % (number_of_records + 1, param['unhnr']))
+    envelope.append("UNZ+1+%(uebertragungsnr)s'" % param)
+    return u'\n'.join(envelope).encode('iso-8859-1')
 
 
 def invoice_to_INVOICD09A(invoice):
