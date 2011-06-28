@@ -24,11 +24,35 @@ import huTools.monetary
 
 
 def date_to_EDIFACT(d, fmt='%Y%m%d'):
+    """Convert date to EDIfact date"""
+
     if hasattr(d, 'strftime'):
         return d.strftime(fmt)
     if hasattr(d, 'replace'):
         return d.replace('-', '')[:8]
     return d
+
+
+def split_text(text, length, max_records=1, separator=':'):
+    """Split text into records of `length` characters separated by `separator`
+
+    If max_records is given, create at most `max_records` records.
+
+    >>> split_text('AAABBBCCCDDD', 3)
+    'AAA'
+    >>> split_text('AAABBBCCCDDD', 3, max_records=3)
+    'AAA:BBB:CCC'
+    >>> split_text('ABC', 1, max_records=2, separator='.')
+    'A.B'
+    """
+
+    records = []
+    while text:
+        records.append(text[:length])
+        text = [length:]
+        if len(records) == max_records:
+           break
+    return separator.join(records)
 
 
 def invoice_to_INVOICD01B(invoice):
@@ -49,7 +73,7 @@ def invoice_to_INVOICD01B(invoice):
                  absenderadresse_plz=u'42897',
                  absenderadresse_land=u'DE')
     param.update(invoice)
-    param.update(dict(  # der ID darf 14-stellig sein, unserer ist eine 13stellige codeirte Unix Timestamp
+    param.update(dict(  # der ID darf 14-stellig sein, unserer ist ein 13stelliger, kodierter Unix-Timestamp
          uebertragungsnr=base64.b32encode(struct.pack('>d', time.time())).strip('=\n')[:14],
          unhnr=base64.b32encode(struct.pack('>d', time.time() - 1000000000)).strip('=\n')[:14],
          rechnungsdatum=date_to_EDIFACT(invoice['rechnungsdatum']),
@@ -60,72 +84,60 @@ def invoice_to_INVOICD01B(invoice):
         ))
 
     # Convert monetary values from Eurocent to Euro
-    for key in 'rechnungsbetrag', 'warenwert', 'zu_zahlen', 'rechnung_steueranteil':
+    for key in 'rechnungsbetrag', 'warenwert', 'zu_zahlen', 'rechnung_steueranteil', 'versandkosten':
         param[key] = huTools.monetary.cent_to_euro(invoice[key])
 
     # Message Envelope:
-    envelope = []
-    # Standard delimiter characters
-    # Add 'Service String Advice'
-    envelope.append("UNA:+.? '")
+    # Add 'Service String Advice' with tandard delimiter characters 
+    envelope = ["UNA:+.? '"]
 
     # Add 'Interchange Header'
     # UN/ECE level C (ISO 8859-1), Syntax Version 3
     # Partner identification via GS1 GLN (= 14)
     envelope.append("UNB+UNOC:3+%(absenderadresse_iln)s:14+%(iln)s:14+%(date)s:%(time)s+%(uebertragungsnr)s'" % param)
 
-    # Message Header:
+    # UNH - Message Header:
     header = ["UNH+%(unhnr)s+INVOIC:D:01B:UN:EAN010'" % param]
     # Begin of Message: Document code 380 (Commercial Invoice), Message function code 9 (Original)
     header.append("BGM+380+%(rechnungsnr)s+9'" % param)
-    # Date/Time/Period
+    # DTM - Date/Time/Period
     # Function code qualifier: 137 (Document/message date/time)
     # Format code 102 (CCYYMMDD)
     header.append("DTM+137:%(rechnungsdatum)s:102'" % param)
     # Function code qualifier: 35 (Delivery date/time, actual)
-    # Format code 718 - TODO: oder doch 102? 718 ist period
-    # header.append("DTM+263:%(leistungsdatum)s%(leistungsdatum)s:718'" % param)
     header.append("DTM+35:%(leistungsdatum)s:102'" % param)
 
-    # PAI       -C      1       - Payment instructions
-    # PAT -M 1  - Payment terms basis This segment is used by the issuer of the invoice to specify the payment terms for the complete invoice.
     # DTM -C 5  - Date/time/period This segment is used to specify any dates associated with the payment terms for the invoice.
     # PCD -C 1  - Percentage details This segment is used to specify percentages which will be allowed or charged if the invoicee pays (does not pay) to terms.
     # MOA -C 1  - Monetary amount This segment is used to specify monetary values which will be allowed or charged if the invoicee pays (does not pay) to terms.
     # PAI       -C      1       - Payment instructions This segment is used to specify payment instructions related to payment terms.
 
+    # PAI - Payment instructions
+    # ALI - Additional information
+    
+    # FTX - Free text
+    if 'infotext_kunde' in param:  # Supplier remarks Remarks from or for a supplier of goods or services.
+        header.append("FTX+SUR+++%(infotext_kunde)s'" % param)
+
+    # RFF - Reference
     if 'lieferscheinnr' in param:  # Delivery note number
         header.append("RFF+DQ:%(lieferscheinnr)s'" % param)
-    if 'kundenauftragsnr' in param:  # Order document identifier, buyer assigned
+        # DTM for delivery note
+    if 'kundenauftragsnr' in param:  # Order document identifier, buyer assigned (ON)
         header.append("RFF+ON:%(kundenauftragsnr)s'" % param)
+        # DTM for ordering date
+    if 'guid' in param:  # Originator's reference (ABO)
+        header.append("RFF+ABO:%(guid)s'" % param)
+    if 'auftragsnr' in param:  # Order number (supplier) (VN)
+        header.append("RFF+VN:%(auftragsnr)s'" % param)
 
-    # TODO
-    # if 'guid' in param:
-    #     k.append("RFF+ZZZ:%(guid)s'" % param)  # Mutually defined reference number
-    # if 'auftragsnr' in param:
-    #     k.append("RFF+AAJ:%(auftragsnr)s'" % param)  # AAJ       Delivery order number - Reference number assigned by issuer to a delivery order.
-    # if 'infotext_kunde' in param:  # Supplier remarks Remarks from or for a supplier of goods or services.
-    #     k.append("FTX+SUR+++%(infotext_kunde)s'" % param)
-    # if 'erfasst_von' in param:  # Internal auditing information Text relating to internal auditing information.
-    #     k.append("FTX+AEZ+++Erfasser: %(erfasst_von)s'" % param)
-
-    # FTX+AAI   General information
-    # FTX+AAJ   Additional conditions of sale/purchase Additional conditions specific to this order or pro
-    # FTX+AAR   Terms of delivery (4053) Free text of the non Incoterms terms of delivery. For Incoterms, use: 4053.
-    # FTX+ABN   Accounting information The text contains information related to accounting.
-    # FTX+AFB   Comment Denotes that the associated text is a comment.
-    # FTX+AFD   Help text Denotes that the associated text is an item of help text.
-    # FTX+BLU   Waste information Text describing waste related information.
-    # FTX+PAC   Packing/marking information Information regarding the packaging and/or marking of goods.
-    # FTX+PAI   Payment instructions information The free text contains payment instructions information relevant to the message.
-    # FTX+PMD   Payment detail/remittance information The free text contains payment details.
-    # FTX+PMT   Payment information Note contains payments information.
-    # Avisierungshinweise: FTX+WHI      Warehouse instruction/information Note contains warehouse information.
-
-    # Name and address of Seller given as GLN
+    # NAD - Name and addres:
+    # Name and address of seller given as GLN
     header.append("NAD+SU+%(absenderadresse_iln)s::9'" % param)
-
-    # # Kontoverbindung FII       -C      5       - Financial institution information  # XXX: ???
+    # FII - Financial information
+    # "FII+RB+%(IBAN)s+:25:5'"
+    # "FII+RB+%(BIC)s+:25:17'"
+    header.append("FFI+RB+%(kontonr)s:TODONAME+BANKNAME:25:5'")
     if param.get('unsere_lieferantennr'):
         header.append("RFF+YC1:%(unsere_lieferantennr)s'" % param)
     if 'hint_steuernr_lieferant' in param:
@@ -137,20 +149,40 @@ def invoice_to_INVOICD01B(invoice):
     if 'hint_steuernr_kunde' in param:
         header.append("RFF+VA:%(hint_steuernr_kunde)s'" % param)
 
-    # Name and address of XXX given as GLN
-    header.append("NAD+DP+%(iln)s::9'" % param)
+    # Name and address of supplier given as GLN
+    header.append("NAD+DP+%(absenderadresse_iln)s::9'" % param)
 
-    # - Warenendempfänger (DE3035 = UC); Kannfeld; N 13
-    # NAD+UC+9012345000035::9'
-    # - Besteller (DE3035 = OB); Kannfeld; N 13
-    # NAD+OB+9012345000042::9'
+    # Name and address of ultimate consignee given as GLN
+    if param.get('lieferadresse', {}).get('iln'):
+        header.append("NAD+UC+%(iln)s::9'" % param['lieferadresse'])
 
     # Tax Record: Function code qualifier 7 (Tax), Name code VAT (Value added tax),
     # Tax rate, Category code S (Standard)
     header.append("TAX+7+VAT+++:::%(steuer_prozent)s+S'" % param)
 
-    # Currecny Record: Reference currency, Currency type code qualifier 4 (Invoicing currency)
+    # Currency Record: Reference currency, Currency type code qualifier 4 (Invoicing currency)
+    if not 'waehrung' in param:
+        param['waehrung'] = 'EUR'
     header.append("CUX+2:%(waehrung)s:4'" % param)
+
+    # Skonto
+    if param.get('skonto_prozent'):
+        header.append("PAT+3'")
+        param['hint_skontodatum'] = date_to_EDIFACT(param['hint_skontodatum'], fmt='%y%m%d')
+        header.append("DTM+12:%(hint_skontodatum):102'" % param)
+        header.append("PCD+12:%(skonto_prozent)s'" % param)
+
+    # Due date
+    header.append("PAT+3'")
+    param['hint_zahlungsdatum'] = date_to_EDIFACT(param['hint_zahlungsdatum'], fmt='%y%m%d')
+    header.append("DTM+13:%(hint_zahlungsdatum):102'" % param)
+
+    # Monetary amount for freight charge
+    if param.get('versandkosten'):
+        header.append("ALC+C+FC'")
+        header.append("MOA+8:%(versandkosten).2f'" % param)
+        header.append("TAX+7+VAT+++:::%(steuer_prozent)s+S'" % param)
+
     envelope.extend(header)
     number_of_records = len(header)
 
@@ -159,6 +191,7 @@ def invoice_to_INVOICD01B(invoice):
         position = []
         orderline = copy.copy(orderline)
         orderline.update(dict(positionsnummer=positionsnummer + 1))
+
         if 'ean' in orderline:
             position.append("LIN+%(positionsnummer)s++%(ean)s:SRV'" % orderline)
         else:
@@ -190,17 +223,21 @@ def invoice_to_INVOICD01B(invoice):
         # TODO: Als Dezimalzahl huTools.monetary.cent_to_euro()
         # position.append("MOA+203:%(zu_zahlen)s'" % orderline)  # - Rechnungsbetrag
         # position.append("MOA+66:%(warenwert)s'" % orderline)  # 66 Goods item total Net price x quantity for the line item.
-        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203       Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
-        # abschlag_prozent
+        # TODO: p.append("MOA+203:%s'" % (warenwert-hint_abschlag)) # Netto – Netto Einkaufspreis (AAA) durch Menge X Preis 203
+        # Line item amount Goods item total minus allowances plus charges for line item. See also Code 66.
 
         # Price information, prices as calculation net (AAA) per 1 piece (PCE)
         position.append("PRI+AAA:%(einzelpreis)s:::1:PCE'" % orderline)
-        # position.append("TAX+7+VAT+++:::19+S'")
 
+        # Das sind unbekannte Felder...
         if 'bestellnr' in orderline:
             position.append("RFF+ON:%(bestellnr)s'" % orderline)
         if 'lieferscheinnr' in orderline:
             position.append("RFF+DQ:%(lieferscheinnr)s'" % orderline)
+
+        # Free text
+        if position.get('infotext_kunde'):
+            position.append("FTX+ZZZ+++%s'" % split_text(position['infotext_kunde'], 512, max_records=3))
 
         envelope.extend(position)
         number_of_records += len(position)
@@ -217,13 +254,9 @@ def invoice_to_INVOICD01B(invoice):
     footer.append("MOA+124:%(rechnung_steueranteil).2f'" % param)
     envelope.extend(footer)
 
-    # TODO: VERSANDKOSTEN !!! XXX
-    # # 64    Freight charge - Amount to be paid for moving goods, by whatever means, from one place to another, inclusive discounts,
-    # # allowances, rebates, adjustment factors and additional cost relating to freight costs (UN/ECE Recommendation no 23).
-    # if invoice.get('versandkosten'):
-    #     k.append("MOA+64:%(versandkosten)s'" % invoice)
+    # TODO: hint/abschlag, abschlag_prozent?
+
     number_of_records += len(footer)
-    # TODO:
     envelope.append("UNT+%d+%s'" % (number_of_records + 1, param['unhnr']))
     envelope.append("UNZ+1+%(uebertragungsnr)s'" % param)
     return u'\n'.join(envelope).encode('iso-8859-1')
