@@ -401,12 +401,12 @@ class SoftMInvoiceConverter(SoftMConverter):
 
         if f1.ust2_fuer_skonto:
             logging.critical("2. Skontosatz: %s %r", f1.ust2_fuer_skonto, kopf)
-            raise ValueError("%s hat einen zweiten Steuersatz - das ist nicht unterstützt" % (rechnungsnr))
+            raise ValueError(u"%s hat einen zweiten Steuersatz - das ist nicht unterstützt" % (rechnungsnr))
         if f1.skontodatum2 or f1.skontotage2 or f1.skonto2:
             logging.critical("2. Skontosatz: %r", kopf)
-            raise ValueError("%s hat 2. Skontosatz - das ist nicht unterstützt" % (rechnungsnr))
+            raise ValueError(u"%s hat 2. Skontosatz - das ist nicht unterstützt" % (rechnungsnr))
         if not f1.waehrung in ['EUR', 'USD']:
-            logging.critical("Währungsproblem: %r", kopf)
+            logging.critical(u"Währungsproblem: %r", kopf)
             raise ValueError("%s ist nicht in EUR/USD - das ist nicht unterstützt" % (rechnungsnr))
 
         # ungenutzte Felder entfernen
