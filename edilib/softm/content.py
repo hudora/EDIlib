@@ -125,14 +125,14 @@ class SoftMConverter(object):
                     anwendungsreferenz=record.umgebung,
                     testkennzeichen=record.testkennzeichen)
 
-    def convert_position(self, guid, position_records):
+    def convert_position(self, header, position_records):
         """Converts SoftM position record to orderline"""
 
         position = position_records[self.position_key]
         rabatt = position_records[self.get_recordname('4')]
 
         line = dict(
-            guid="%s-%s" % (guid, position.positionsnr),
+            guid="%s-%s" % (header['guid'], position.positionsnr),
             menge=int(position.menge),
             artnr=position.artnr,
             kundenartnr=position.artnr_kunde,
@@ -146,6 +146,10 @@ class SoftMConverter(object):
             #steuersatz=position.steuersatz,
             #steuerbetrag=position.steuerbetrag,
         )
+
+        # Wenn die Transaktionsart 'Gutschrift' ist, müssen die Mengen negiert werden.
+        if header.get('transaktionsart') == 'Gutschrift':
+            line['menge'] *= -1
 
         # Füge EAN ein, wenn nicht leerer String oder nur aus '0' bestehend
         if position.ean and int(position.ean):
@@ -474,7 +478,7 @@ class SoftMInvoiceConverter(SoftMConverter):
             if not positions:
                 raise RuntimeError("Keine Auftragspositionen!")
             invoice = self.convert_header(records)
-            invoice['orderlines'] = [self.convert_position(invoice['guid'], position) for position in positions]
+            invoice['orderlines'] = [self.convert_position(invoice, position) for position in positions]
             invoices.append(invoice)
 
             if 'R1' in records and not footer:
@@ -624,7 +628,7 @@ class SoftMABConverter(SoftMConverter):
         for records, positions in files:
             # Auftrags(-bestätigungs)kopf
             ab = self.convert_header(records)
-            ab['positionen'] = [self.convert_position(ab['guid'], position) for position in positions]
+            ab['positionen'] = [self.convert_position(ab, position) for position in positions]
 
             # Schreibe frühsten und spätesten Liefertermin der Positionen als
             # anliefertermin_ab und anliefertermin_bis in die Auftragsbestätigung
