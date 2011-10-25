@@ -14,7 +14,7 @@ Copyright (c) 2008, 2010 HUDORA. All rights reserved.
 import datetime
 import edilib.softm.structure
 import huTools.monetary
-import husoftm.tools
+import husoftm2.tools
 import logging
 import os
 
@@ -271,7 +271,7 @@ class SoftMInvoiceConverter(SoftMConverter):
             name2=fa.rechnung_name2,
             name3=fa.rechnung_name3,
             strasse=fa.rechnung_strasse,
-            land=husoftm.tools.land2iso(fa.rechnung_land),
+            land=husoftm2.tools.land2iso(fa.rechnung_land),
             plz=fa.rechnung_plz,
             ort=fa.rechnung_ort,
             rechnungsnr=rechnungsnr,
@@ -359,7 +359,7 @@ class SoftMInvoiceConverter(SoftMConverter):
                 strasse=f2.liefer_strasse,
                 plz=f2.liefer_plz,
                 ort=f2.liefer_ort,
-                land=husoftm.tools.land2iso(f2.liefer_land),  # fixup to iso country code
+                land=husoftm2.tools.land2iso(f2.liefer_land),  # fixup to iso country code
                 #rec119_lieferaddr.internepartnerid = f2.warenempfaenger
             )
 
@@ -604,7 +604,7 @@ class SoftMABConverter(SoftMConverter):
             strasse=a2.liefer_strasse,
             plz=a2.liefer_plz,
             ort=a2.liefer_ort,
-            land=husoftm.tools.land2iso(a2.liefer_land),
+            land=husoftm2.tools.land2iso(a2.liefer_land),
         )
 
         if a2.liefer_iln and a2.liefer_iln != '0':
