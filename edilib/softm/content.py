@@ -280,7 +280,7 @@ class SoftMInvoiceConverter(SoftMConverter):
             # <kundenbestelldatum: datetime.date(2008, 12, 16)>
             auftragsdatum=f1.auftragsdatum,
             rechnungsdatum=f1.rechnungsdatum,
-            leistungsdatum=f1.liefertermin,
+            leistungsdatum=f1.lieferscheindatum,
             infotext_kunde=str(f1.lieferantennummer).strip(),
 
             versandkosten=huTools.monetary.euro_to_cent(f9.versandkosten1),
