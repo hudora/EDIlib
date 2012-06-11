@@ -43,17 +43,14 @@ def lieferschein_to_DESADV(lieferschein):
                   absenderadresse_land='DE')
 
     params.update(lieferschein)
+    if not 'name3' in params:
+      params['name3'] = ''
+
     params.update(dict(uebertragungsnr=base64.b32encode(struct.pack('>d', time())).strip('=\n')[:14],
                        msgrefnr=base64.b32encode(struct.pack('>d', time() - 1000000000)).strip('=\n')[:14],
                        date=date.today().strftime('%y%m%d'),
                        time=datetime.now().strftime('%H%M'),
                        ))
-
-    # TEST
-    #params['absenderadresse_iln'] = '4007731' # Metro
-    #params['absenderadresse_iln'] = '5400102' # Carrefour
-    #params['iln'] = '5400107009992' # BRICO Belgium
-    # TEST
 
     envelope = ["UNA:+.? ",     # :     component data element separator
                                 # +     data element separator
