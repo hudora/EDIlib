@@ -83,7 +83,7 @@ def lieferschein_to_csv(lieferschein, delimiter=';'):
                          lieferschein['lieferscheinnr'],
                          lieferschein['auftragsnr'],
                          lieferschein['kundennr'],
-                         position['auftragpos_guid'],
+                         position.get('_posnr_auftrag', ''),
                          position['guid'],
                          position['menge'],
                          position['artnr'],
