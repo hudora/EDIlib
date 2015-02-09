@@ -52,7 +52,7 @@ def lieferschein_to_DESADV(lieferschein):
                        time=datetime.now().strftime('%H%M'),
                        ))
 
-    envelope = ["UNA:+.? ",     # :     component data element separator
+    envelope = ["UNA:+.? '",    # :     component data element separator
                                 # +     data element separator
                                 # .     decimal notation
                                 # ?     release character
