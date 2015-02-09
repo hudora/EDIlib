@@ -201,7 +201,7 @@ def invoice_to_INVOICD01B(invoice):
         # artnr is supplier's item no (SA), defined by supplier (91)
         # kundenartnr is buyer's item no (IN), defined by buyer (92)
         if 'kundenartnr' in orderline:
-            position.append("PIA+%(positionsnummer)s+%(artnr)s:SA::91+%(kundenartnr)s:IN::92")
+            position.append("PIA+%(positionsnummer)s+%(artnr)s:SA::91+%(kundenartnr)s:IN::92'")
 
         # Item description
         if 'name' in orderline:
