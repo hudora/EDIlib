@@ -6,8 +6,9 @@ Created by Christian Klein on 2010-10-21.
 Copyright (c) 2010, 2011 HUDORA GmbH. All rights reserved.
 """
 
-from cStringIO import StringIO
 import csv
+
+from cStringIO import StringIO
 
 
 def invoice_to_csv(invoice, delimiter=';'):
@@ -50,7 +51,7 @@ def invoice_to_csv(invoice, delimiter=';'):
 
         return row
 
-    # GUID der Rechnung, wird für jeden Satz gebraucht
+    # GUID des Rechnung, wird für jeden Satz gebraucht
     guid = invoice.get('guid', '').encode('iso8859-1')
 
     fileobj = StringIO()
@@ -79,13 +80,18 @@ def lieferschein_to_csv(lieferschein, delimiter=';'):
     buf = StringIO()
     writer = csv.writer(buf, delimiter=delimiter)
     for position in lieferschein.get('positionen', []):
-        writer.writerow(['P',
-                         lieferschein['lieferscheinnr'],
-                         lieferschein['auftragsnr'],
-                         lieferschein['kundennr'],
-                         position.get('_posnr_auftrag', ''),
-                         position['guid'],
-                         position['menge'],
-                         position['artnr'],
-                         position['infotext_kunde']])
+        writer.writerow([
+            'P',
+            lieferschein['lieferscheinnr'],
+            lieferschein['auftragsnr'],
+            lieferschein['kundennr'],
+            position.get('_posnr_auftrag', ''),
+            position.get(  # verzweifeltes datengesammel für alte Belege
+                'guid',
+                position.get(
+                    'guid_kommiauftag',
+                    "%s-%s" % (lieferschein['lieferscheinnr'], position.get('_posnr_auftrag', '')))),
+            position['menge'],
+            position['artnr'],
+            position['infotext_kunde']])
     return buf.getvalue()
