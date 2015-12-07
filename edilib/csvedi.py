@@ -44,15 +44,17 @@ def invoice_to_csv(invoice, delimiter=';'):
 
             try:
                 value = obj.get(attr, '')
-                value = unicode(value).encode('iso8859-1')
-            except UnicodeDecodeError, exception:
-                raise RuntimeError(u"Error in Record %s, field %s: %s" % (recordtype, attr, str(exception)))
+                if value is None:
+                    value = ''
+                value = unicode(value).encode('utf-8')
+            except UnicodeDecodeError as exception:
+                raise RuntimeError(u"Error in Record %s, field %s: %s" % (recordtype, attr, exception))
             row.append(value)
 
         return row
 
     # GUID des Rechnung, wird für jeden Satz gebraucht
-    guid = invoice.get('guid', '').encode('iso8859-1')
+    guid = invoice.get('guid', '').encode('utf-8')
 
     fileobj = StringIO()
     writer = csv.writer(fileobj, delimiter=delimiter)
